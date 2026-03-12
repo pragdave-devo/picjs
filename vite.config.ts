@@ -14,6 +14,7 @@ export default defineConfig({
         exports: 'named',
       },
     },
+    minify: 'esbuild',
     sourcemap: true,
   },
 });

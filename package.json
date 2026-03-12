@@ -1,6 +1,6 @@
 {
   "name": "jspic",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "description": "Native TypeScript implementation of PIC-like diagram language to SVG",
   "type": "module",
   "main": "./dist/jspic.umd.js",
