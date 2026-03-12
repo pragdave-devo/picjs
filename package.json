@@ -3,12 +3,39 @@
   "version": "1.0.0",
   "description": "Native TypeScript implementation of PIC-like diagram language to SVG",
   "type": "module",
-  "main": "src/jspic.ts",
-  "scripts": {
-    "build": "tsc",
-    "test": "node --import=tsx src/test.ts",
-    "dev": "vite"
+  "main": "./dist/jspic.umd.js",
+  "module": "./dist/jspic.js",
+  "types": "./dist/jspic.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/jspic.d.ts",
+      "import": "./dist/jspic.js",
+      "require": "./dist/jspic.umd.js"
+    }
   },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "vite build && tsc --emitDeclarationOnly --outDir dist",
+    "test": "node --import=tsx src/test.ts",
+    "dev": "vite",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pragdave/jspic.git"
+  },
+  "keywords": [
+    "diagram",
+    "svg",
+    "pic",
+    "pikchr",
+    "graphics",
+    "visualization"
+  ],
+  "author": "Dave Thomas",
   "devDependencies": {
     "tsx": "^4.7.0",
     "typescript": "^5.9.3",
