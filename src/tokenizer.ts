@@ -466,11 +466,12 @@ export class TokenStream {
         }
         if (p.nCtx >= MAX_CTX) {
           pikError(p, token, 'macros nested too deep');
-        } else {
-          p.aCtx[p.nCtx++] = { ...token };
-          this._tokenizeInput(aParam[token.eCode], null);
-          p.nCtx--;
+          break;
         }
+        p.aCtx[p.nCtx++] = { ...token };
+        this._tokenizeInput(aParam[token.eCode], null);
+        p.nCtx--;
+        if (p.nErr) break;
         i += sz;
         continue;
       }
@@ -496,6 +497,7 @@ export class TokenStream {
           this._tokenizeInput(pMac.macroBody, args);
           p.nCtx--;
           pMac.inUse = false;
+          if (p.nErr) break;
           i = j + argLen;
           continue;
         }
@@ -620,6 +622,8 @@ export class TokenStream {
     p.nCtx--;
     pMac.inUse = false;
 
+    if (p.nErr) return false;
+
     // Insert expanded tokens at current position
     this.tokens.splice(this.pos, 0, ...expandedTokens);
     return true;
@@ -672,6 +676,7 @@ export class TokenStream {
           p.aCtx[p.nCtx++] = { ...token };
           this._tokenizeMacroBody(aParam[token.eCode], null, out);
           p.nCtx--;
+          if (p.nErr) break;
         }
         i += sz;
         continue;
@@ -698,6 +703,7 @@ export class TokenStream {
           this._tokenizeMacroBody(nestedMac.macroBody, nestedArgs, out);
           p.nCtx--;
           nestedMac.inUse = false;
+          if (p.nErr) break;
           i = j + argLen;
           continue;
         }

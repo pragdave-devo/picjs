@@ -46,6 +46,7 @@ const {
   T_START, T_THE, T_TOP, T_BOTTOM, T_UNTIL, T_UP, T_VERTEX,
   T_WAY, T_X, T_Y, T_THIS,
   T_CODEBLOCK,
+  T_FOR, T_DO, T_STEP,
 } = TokenType;
 
 // --------------------------------------------------------------------------
@@ -87,6 +88,10 @@ function parseStatementList(p: Pik, ts: TokenStream): PList | null {
     if (ts.atEnd() || ts.peek().eType === T_RB) break;
     const obj2 = parseStatement(p, ts);
     list = pikElistAppend(p, list, obj2);
+  }
+  // If list is null but p.list has objects (e.g., from for-loops), use p.list
+  if (!list && p.list && p.list.n > 0) {
+    return p.list;
   }
   return list;
 }
@@ -229,6 +234,13 @@ function parseStatement(p: Pik, ts: TokenStream): PObj | null {
     return null;
   }
 
+  // for-loop
+  if (t.eType === T_FOR) {
+    ts.advance();
+    parseForLoop(p, ts);
+    return null;
+  }
+
   // unnamed_statement (object-definition)
   return parseUnnamedStatement(p, ts);
 }
@@ -277,9 +289,10 @@ function parseBasetype(p: Pik, ts: TokenStream): PObj | null {
 
   if (t.eType === T_STRING) {
     const str = ts.advance();
+    const expanded = expandStringInterpolation(p, str);
     const pos = parseTextposition(p, ts);
-    str.eCode = pos;
-    return pikElemNew(p, null, str, null);
+    expanded.eCode = pos;
+    return pikElemNew(p, null, expanded, null);
   }
 
   if (t.eType === T_LB) {
@@ -562,8 +575,9 @@ function parseAttribute(p: Pik, ts: TokenStream, obj: PObj): boolean {
   // STRING textposition
   if (t.eType === T_STRING) {
     const str = ts.advance();
+    const expanded = expandStringInterpolation(p, str);
     const pos = parseTextposition(p, ts);
-    pikAddTxt(p, str, pos);
+    pikAddTxt(p, expanded, pos);
     return true;
   }
 
@@ -1413,4 +1427,328 @@ function isBetweenStart(t: PToken, ts?: TokenStream): boolean {
 function isPostRelexprKeyword(t: PToken): boolean {
   // Tokens that should follow an optrelexpr (so we should NOT consume them as expr)
   return t.eType === T_HEADING || t.eType === T_EDGEPT;
+}
+
+// --------------------------------------------------------------------------
+// For-loop implementation
+// Supports two syntaxes:
+//   for var in [ val1, val2, ... ] do { body }
+//   for var from n1 to n2 [step n3] do { body }
+// --------------------------------------------------------------------------
+
+const PIKCHR_LOOP_LIMIT = 10000;
+let loopIterationCount = 0;
+
+function checkIterationLimit(p: Pik, tok: PToken): boolean {
+  if (++loopIterationCount > PIKCHR_LOOP_LIMIT) {
+    pikError(p, tok, `loop exceeded ${PIKCHR_LOOP_LIMIT} iterations`);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Parse a for-loop statement.
+ * for var in [ ... ] do { ... }
+ * for var from expr to expr [step expr] do { ... }
+ */
+function parseForLoop(p: Pik, ts: TokenStream): void {
+  // Reset iteration counter at start of top-level for-loop
+  loopIterationCount = 0;
+
+  const varToken = ts.expect(T_ID, 'expected variable name after "for"');
+  if (p.nErr) return;
+
+  const t = ts.peek();
+  if (t.eType === T_IN) {
+    ts.advance();
+    parseForInLoop(p, ts, varToken);
+  } else if (t.eType === T_FROM) {
+    ts.advance();
+    parseForRangeLoop(p, ts, varToken);
+  } else {
+    pikError(p, t, 'expected "in" or "from" after variable name');
+  }
+}
+
+/**
+ * Parse list iteration: for var in [ val1, val2, ... ] do { body }
+ */
+function parseForInLoop(p: Pik, ts: TokenStream, varToken: PToken): void {
+  // Expect '['
+  ts.expect(T_LB, 'expected "[" after "in"');
+  if (p.nErr) return;
+
+  // Collect values into array
+  const values: PNum[] = [];
+  let first = true;
+  while (p.nErr === 0) {
+    const t = ts.peek();
+    if (t.eType === T_RB) {
+      ts.advance();
+      break;
+    }
+    if (!first) {
+      ts.expect(T_COMMA, 'expected "," or "]"');
+      if (p.nErr) return;
+    }
+    first = false;
+    const val = parseExpr(p, ts);
+    if (p.nErr) return;
+    values.push(val);
+  }
+
+  // Expect 'do'
+  ts.expect(T_DO, 'expected "do" after list');
+  if (p.nErr) return;
+
+  // Expect code block { ... }
+  const bodyToken = ts.expect(T_CODEBLOCK, 'expected "{" for loop body');
+  if (p.nErr) return;
+
+  // Extract body text (strip enclosing braces)
+  const bodyText = bodyToken.z.substring(1, bodyToken.n - 1);
+
+  // Execute loop body for each value
+  for (const val of values) {
+    if (!checkIterationLimit(p, varToken)) return;
+    if (p.nErr) return;
+
+    // Set the loop variable
+    const opToken = makeToken('=', 1, T_ASSIGN);
+    opToken.eCode = T_ASSIGN;
+    pikSetVar(p, varToken, val, opToken);
+
+    // Parse and execute the body
+    executeLoopBody(p, bodyText);
+  }
+}
+
+/**
+ * Parse range iteration: for var from n1 to n2 [step n3] do { body }
+ */
+function parseForRangeLoop(p: Pik, ts: TokenStream, varToken: PToken): void {
+  // Parse 'from expr'
+  const startVal = parseExpr(p, ts);
+  if (p.nErr) return;
+
+  // Expect 'to'
+  ts.expect(T_TO, 'expected "to" after start value');
+  if (p.nErr) return;
+
+  // Parse 'to expr'
+  const endVal = parseExpr(p, ts);
+  if (p.nErr) return;
+
+  // Optional 'step expr'
+  let stepVal = 1.0;
+  if (ts.peek().eType === T_STEP) {
+    ts.advance();
+    stepVal = parseExpr(p, ts);
+    if (p.nErr) return;
+  }
+
+  // Auto-invert step if direction mismatches
+  if (endVal < startVal && stepVal > 0) {
+    stepVal = -stepVal;
+  } else if (endVal > startVal && stepVal < 0) {
+    stepVal = -stepVal;
+  }
+
+  // Handle step == 0 to avoid infinite loop
+  if (stepVal === 0) {
+    pikError(p, varToken, 'step value cannot be zero');
+    return;
+  }
+
+  // Expect 'do'
+  ts.expect(T_DO, 'expected "do" after range specification');
+  if (p.nErr) return;
+
+  // Expect code block { ... }
+  const bodyToken = ts.expect(T_CODEBLOCK, 'expected "{" for loop body');
+  if (p.nErr) return;
+
+  // Extract body text (strip enclosing braces)
+  const bodyText = bodyToken.z.substring(1, bodyToken.n - 1);
+
+  // Execute loop body for range
+  const opToken = makeToken('=', 1, T_ASSIGN);
+  opToken.eCode = T_ASSIGN;
+
+  if (stepVal > 0) {
+    for (let i = startVal; i <= endVal; i += stepVal) {
+      if (!checkIterationLimit(p, varToken)) return;
+      if (p.nErr) return;
+
+      pikSetVar(p, varToken, i, opToken);
+      executeLoopBody(p, bodyText);
+    }
+  } else {
+    for (let i = startVal; i >= endVal; i += stepVal) {
+      if (!checkIterationLimit(p, varToken)) return;
+      if (p.nErr) return;
+
+      pikSetVar(p, varToken, i, opToken);
+      executeLoopBody(p, bodyText);
+    }
+  }
+}
+
+/**
+ * Execute a loop body by tokenizing and parsing it as a statement list.
+ * Objects created in the body are appended to the current p.list.
+ */
+function executeLoopBody(p: Pik, bodyText: string): void {
+  if (p.nErr) return;
+
+  // Create a new token stream for the body
+  const bodyStream = new TokenStream(p);
+  bodyStream.tokenize(bodyText);
+  if (p.nErr) return;
+
+  // Save the current list and its count so we only append NEW objects
+  const savedList = p.list;
+  const savedCount = savedList ? savedList.n : 0;
+
+  // Clear p.list so parseStatementList starts fresh for this iteration
+  p.list = null;
+
+  // Parse the body statements - this creates a new list
+  const bodyList = parseStatementList(p, bodyStream);
+
+  // Restore and merge: add only the newly created objects to the saved list
+  if (bodyList && bodyList.n > 0) {
+    if (savedList) {
+      // Append new body objects to the saved list
+      for (let i = 0; i < bodyList.n; i++) {
+        savedList.a.push(bodyList.a[i]);
+      }
+      savedList.n = savedList.a.length;
+      p.list = savedList;
+    } else {
+      // No saved list, use the body list
+      p.list = bodyList;
+    }
+  } else {
+    // No objects created, restore the saved list
+    p.list = savedList;
+  }
+}
+
+// --------------------------------------------------------------------------
+// String interpolation: expand ${expr} patterns in strings
+// --------------------------------------------------------------------------
+
+/**
+ * Expand string interpolation patterns like ${expr} in a string token.
+ * Returns a new token with the expanded string, or the original if no interpolation.
+ *
+ * Example: "Value is ${x + 1}" with x=5 becomes "Value is 6"
+ */
+function expandStringInterpolation(p: Pik, token: PToken): PToken {
+  // String tokens include the quotes: "..."
+  // Content is from index 1 to n-2
+  const str = token.z.substring(0, token.n);
+  if (!str.includes('${')) {
+    return token; // No interpolation needed
+  }
+
+  let result = '"';
+  let i = 1; // Skip opening quote
+  const end = token.n - 1; // Stop before closing quote
+
+  while (i < end) {
+    // Look for ${
+    if (str[i] === '$' && i + 1 < end && str[i + 1] === '{') {
+      // Find matching }
+      let depth = 1;
+      let j = i + 2;
+      while (j < end && depth > 0) {
+        if (str[j] === '{') depth++;
+        else if (str[j] === '}') depth--;
+        j++;
+      }
+
+      if (depth !== 0) {
+        pikError(p, token, 'unterminated ${...} in string');
+        return token;
+      }
+
+      // Extract expression text (between ${ and })
+      const exprText = str.substring(i + 2, j - 1);
+
+      // Parse and evaluate the expression
+      const exprValue = evaluateInterpolationExpr(p, exprText, token);
+      if (p.nErr) return token;
+
+      // Append the formatted value
+      result += formatInterpolatedValue(exprValue);
+      i = j;
+    } else {
+      result += str[i];
+      i++;
+    }
+  }
+
+  result += '"';
+
+  // Return a new token with the expanded string
+  return {
+    z: result,
+    n: result.length,
+    eType: token.eType,
+    eCode: token.eCode,
+    eEdge: token.eEdge,
+  };
+}
+
+/**
+ * Evaluate an expression from inside a string interpolation.
+ */
+function evaluateInterpolationExpr(p: Pik, exprText: string, errToken: PToken): PNum {
+  if (p.nErr) return 0;
+
+  // Create a temporary token stream to parse the expression
+  const exprStream = new TokenStream(p);
+  exprStream.tokenize(exprText);
+  if (p.nErr) return 0;
+
+  // Check if there are any tokens
+  if (exprStream.atEnd()) {
+    pikError(p, errToken, 'empty expression in ${...}');
+    return 0;
+  }
+
+  // Parse as an expression
+  const value = parseExpr(p, exprStream);
+
+  // Check that we consumed all tokens
+  if (!exprStream.atEnd() && p.nErr === 0) {
+    pikError(p, errToken, 'unexpected tokens after expression in ${...}');
+    return 0;
+  }
+
+  return value;
+}
+
+/**
+ * Format a numeric value for string interpolation.
+ * Produces clean output: integers without decimals, floats with reasonable precision.
+ */
+function formatInterpolatedValue(value: PNum): string {
+  if (Number.isNaN(value)) return 'NaN';
+  if (!Number.isFinite(value)) return value > 0 ? 'Infinity' : '-Infinity';
+
+  // Check if it's effectively an integer
+  if (Number.isInteger(value) || Math.abs(value - Math.round(value)) < 1e-9) {
+    return String(Math.round(value));
+  }
+
+  // For floats, use reasonable precision and strip trailing zeros
+  let s = value.toPrecision(10);
+  if (s.includes('.')) {
+    s = s.replace(/\.?0+$/, '');
+  }
+  return s;
 }
