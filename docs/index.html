@@ -213,6 +213,21 @@
       color: var(--accent);
     }
 
+    .header-links {
+      display: flex;
+      gap: 16px;
+      font-size: 0.9rem;
+    }
+
+    .header-links a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .header-links a:hover {
+      text-decoration: underline;
+    }
+
     /* Responsive: stack vertically on mobile */
     @media (max-width: 768px) {
       main {
@@ -228,23 +243,33 @@
       .result-pane {
         min-height: 40vh;
       }
+
+      .header-links {
+        display: none;
+      }
     }
   </style>
 </head>
 <body>
   <header>
     <div>
-      <h1><a href="#">picjs Playground</a></h1>
+      <h1><a href="./">picjs Playground</a></h1>
       <div class="subtitle">
         <p>
-        picjs crestes diagrams from text descriptions, typically embedded inside code blocks
+        picjs creates diagrams from text descriptions, typically embedded inside code blocks
         in markdown files (just like Mermaid).
         </p>
         <p>
-          Unlike Mermaid, pic focusses on layout: items are positioned relative to each other using
+          Unlike Mermaid, pic focuses on layout: items are positioned relative to each other using
           intuitive directional commands, and the renderer takes care of the rest.
         </p>
       </div>
+    </div>
+    <div class="header-links">
+      <a href="Introduction/">Introduction</a>
+      <a href="Guide/">Guide</a>
+      <a href="Reference/">Reference</a>
+      <a href="https://github.com/pragdave-devo/picjs" target="_blank">GitHub</a>
     </div>
   </header>
 
