@@ -169,12 +169,12 @@
 </head>
 <body>
   <header>
-    <h1><a href="/">jspic</a></h1>
+    <h1><a href="{{ '/' | url }}">jspic</a></h1>
     <nav>
-      <a href="/"{% if page.url == "/" %} class="active"{% endif %}>Playground</a>
-      <a href="/Introduction/"{% if page.url == "/Introduction/" %} class="active"{% endif %}>Introduction</a>
-      <a href="/Guide/"{% if page.url == "/Guide/" %} class="active"{% endif %}>Guide</a>
-      <a href="/Reference/"{% if page.url == "/Reference/" %} class="active"{% endif %}>Reference</a>
+      <a href="{{ '/' | url }}"{% if page.url == "/" %} class="active"{% endif %}>Playground</a>
+      <a href="{{ '/Introduction/' | url }}"{% if page.url == "/Introduction/" %} class="active"{% endif %}>Introduction</a>
+      <a href="{{ '/Guide/' | url }}"{% if page.url == "/Guide/" %} class="active"{% endif %}>Guide</a>
+      <a href="{{ '/Reference/' | url }}"{% if page.url == "/Reference/" %} class="active"{% endif %}>Reference</a>
       <a href="https://github.com/pragdave-devo/picjs" target="_blank">GitHub</a>
     </nav>
   </header>
@@ -183,7 +183,7 @@
     {{ content | safe }}
   </main>
 
-  <script src="/assets/jspic.umd.js"></script>
+  <script src="{{ '/assets/jspic.umd.js' | url }}"></script>
   <script>
     // Render all jspic diagrams
     document.querySelectorAll('code.jspic').forEach(el => {

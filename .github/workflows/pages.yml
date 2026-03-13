@@ -37,6 +37,8 @@ jobs:
 
       - name: Build docs with 11ty
         run: cd docs/_util && npm run build
+        env:
+          PATH_PREFIX: /picjs/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

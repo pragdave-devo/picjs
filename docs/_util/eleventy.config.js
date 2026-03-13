@@ -1,4 +1,7 @@
 module.exports = function(eleventyConfig) {
+  // Path prefix - set PATH_PREFIX env var for GitHub Pages (e.g., /picjs/)
+  const pathPrefix = process.env.PATH_PREFIX || "/";
+
   // Watch parent directory for MD file changes
   eleventyConfig.addWatchTarget("../*.md");
 
@@ -49,6 +52,7 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.ignores.add("_html/**");
 
   return {
+    pathPrefix: pathPrefix,
     dir: {
       input: "..",           // docs/
       output: "../_html",    // docs/_html/
