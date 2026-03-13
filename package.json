@@ -6,6 +6,9 @@
   "main": "./dist/jspic.umd.js",
   "module": "./dist/jspic.js",
   "types": "./dist/jspic.d.ts",
+  "bin": {
+    "jspic": "./bin/jspic"
+  },
   "exports": {
     ".": {
       "types": "./dist/jspic.d.ts",
@@ -15,12 +18,14 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "bin"
   ],
   "scripts": {
     "build": "vite build && tsc --emitDeclarationOnly --outDir dist",
     "test": "node --import=tsx src/test.ts",
     "dev": "vite",
+    "cli": "node --import=tsx bin/jspic",
     "prepublishOnly": "npm run build"
   },
   "repository": {
