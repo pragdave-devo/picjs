@@ -818,6 +818,10 @@ function textRender(p: Pik, pObj: PObj): void {
 // ============================================================
 
 function sublistInit(_p: Pik, pObj: PObj): void {
+  // Sublists are invisible containers - ensure they don't render
+  pObj.sw = -1.0;
+  pObj.fill = -1.0;
+  pObj.color = -1.0;
   const pList = pObj.pSublist;
   if (!pList) return;
   bboxInit(pObj.bbox);

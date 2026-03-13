@@ -298,11 +298,13 @@ function parseBasetype(p: Pik, ts: TokenStream): PObj | null {
   if (t.eType === T_LB) {
     ts.advance(); // consume '['
     const savedList = p.list;
+    const savedDir = p.eDir;  // Save direction before parsing sublist
     p.list = null;
     const sublist = parseStatementList(p, ts);
     ts.expect(T_RB, 'expected \"]\"');
     const endTok = ts.lastToken();
     p.list = savedList;
+    p.eDir = savedDir;  // Restore direction for proper sublist positioning
     const obj = pikElemNew(p, null, null, sublist);
     if (obj) obj.errTok = { ...endTok };
     return obj;
@@ -1607,12 +1609,10 @@ function executeLoopBody(p: Pik, bodyText: string): void {
   bodyStream.tokenize(bodyText);
   if (p.nErr) return;
 
-  // Save the current list and its count so we only append NEW objects
+  // Save the current list so we can merge new objects back into it.
+  // Keep p.list intact so pikElemNew can position the first object of each
+  // iteration relative to the last object from the previous iteration.
   const savedList = p.list;
-  const savedCount = savedList ? savedList.n : 0;
-
-  // Clear p.list so parseStatementList starts fresh for this iteration
-  p.list = null;
 
   // Parse the body statements - this creates a new list
   const bodyList = parseStatementList(p, bodyStream);

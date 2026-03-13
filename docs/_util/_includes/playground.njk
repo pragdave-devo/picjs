@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>jspic - PIC-like Diagrams in TypeScript</title>
+  <style>
+    :root {
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+      --bg-page: #f5f5f5;
+      --bg-panel: #ffffff;
+      --bg-header: #f0f0f0;
+      --border-color: #e0e0e0;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --accent: #1976d2;
+      --error-bg: #fff5f5;
+      --error-border: #ffcdd2;
+      --error-text: #c62828;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background: var(--bg-page);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      padding: 12px 20px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    header h1 a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    header .subtitle {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    header .subtitle a {
+      color: var(--accent);
+    }
+
+    .header-links {
+      display: flex;
+      gap: 16px;
+      font-size: 0.9rem;
+    }
+
+    .header-links a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .header-links a:hover {
+      text-decoration: underline;
+    }
+
+    /* Main split view */
+    main {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .pane-header {
+      padding: 8px 16px;
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    /* Editor pane */
+    .editor-pane {
+      border-right: 1px solid var(--border-color);
+    }
+
+    #source-editor {
+      flex: 1;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      tab-size: 2;
+      background: var(--bg-panel);
+    }
+
+    .editor-toolbar {
+      padding: 8px 16px;
+      background: var(--bg-header);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .editor-toolbar label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .editor-toolbar button {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--bg-panel);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .editor-toolbar button:hover {
+      background: var(--bg-header);
+    }
+
+    /* Result pane */
+    .result-pane {
+      background: var(--bg-panel);
+    }
+
+    #result-container {
+      flex: 1;
+      padding: 16px;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #result-container.has-error {
+      background: var(--error-bg);
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+
+    #result-container svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Error display */
+    #result-container pre {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      color: var(--text-primary);
+    }
+
+    #result-container.has-error pre {
+      padding: 16px;
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      border-radius: 4px;
+    }
+
+    /* Example selector */
+    #example-selector {
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--bg-panel);
+    }
+
+    /* Footer */
+    footer {
+      padding: 8px 20px;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border-color);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    footer a {
+      color: var(--accent);
+    }
+
+    /* Responsive: stack vertically on mobile */
+    @media (max-width: 768px) {
+      main {
+        flex-direction: column;
+      }
+
+      .editor-pane {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        min-height: 40vh;
+      }
+
+      .result-pane {
+        min-height: 40vh;
+      }
+
+      .header-links {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1><a href="/">jspic Playground</a></h1>
+      <div class="subtitle">
+        TypeScript implementation of <a href="https://pikchr.org" target="_blank">PIC-like</a> diagrams
+      </div>
+    </div>
+    <div class="header-links">
+      <a href="/Introduction/">Introduction</a>
+      <a href="/Guide/">Guide</a>
+      <a href="/Reference/">Reference</a>
+      <a href="https://github.com/pragdave-devo/picjs" target="_blank">GitHub</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="pane editor-pane">
+      <div class="pane-header">
+        <span>Source</span>
+        <select id="example-selector">
+          <option value="">-- Load Example --</option>
+          <option value="hello">Hello World</option>
+          <option value="flowchart">Flowchart</option>
+          <option value="shapes">All Shapes</option>
+          <option value="directions">Directions</option>
+          <option value="database">Database Flow</option>
+          <option value="styled">Styled Elements</option>
+          <option value="compass">Compass Points</option>
+          <option value="forloop">For Loop</option>
+        </select>
+      </div>
+      <textarea id="source-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">arrow right 200% "Markdown" "Source"
+box rad 10px "Markdown" "Formatter" "(jspic)" fit
+arrow right 200% "HTML+SVG" "Output"
+arrow <-> down from last box.s
+box same "jspic" "Diagram" "Renderer" fit</textarea>
+      <div class="editor-toolbar">
+        <label>
+          <input type="checkbox" id="auto-render" checked>
+          Auto-render
+        </label>
+        <button id="render-btn">Render</button>
+        <button id="clear-btn">Clear</button>
+      </div>
+    </section>
+
+    <section class="pane result-pane">
+      <div class="pane-header">
+        <span>Result</span>
+        <span id="render-status"></span>
+      </div>
+      <div id="result-container"></div>
+    </section>
+  </main>
+
+  <footer>
+    jspic &mdash; PIC-like diagrams in TypeScript |
+    Based on <a href="https://pikchr.org" target="_blank">pikchr</a> by D. Richard Hipp
+  </footer>
+
+  <script src="/assets/jspic.umd.js"></script>
+  <script>
+    // DOM elements
+    const editor = document.getElementById('source-editor');
+    const resultContainer = document.getElementById('result-container');
+    const autoRenderCheckbox = document.getElementById('auto-render');
+    const renderBtn = document.getElementById('render-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const exampleSelector = document.getElementById('example-selector');
+    const renderStatus = document.getElementById('render-status');
+
+    // Example diagrams
+    const examples = {
+      hello: `box "Hello"
+arrow
+box "World"`,
+
+      flowchart: `box "Input"
+arrow
+diamond "Valid?" fit
+arrow right "Yes" above
+box "Process"
+arrow
+box "Output"
+arrow down from 3rd last box.s "No" ljust
+box "Error" color red`,
+
+      shapes: `box "box"
+move
+circle "circle"
+move
+ellipse "ellipse"
+move
+oval "oval"
+move
+cylinder "cylinder"
+move right 0.5
+diamond "diamond" fit
+move
+file "file"
+move
+dot`,
+
+      directions: `right
+box "A"
+arrow
+box "B"
+down
+arrow from last box.s
+box "C"
+left
+arrow
+box "D"
+up
+arrow
+box "E"`,
+
+      database: `file "config.json" fit
+arrow
+box "Parser" rad 0.1
+arrow
+cylinder "Database" rad 0.15
+arrow
+box "API" rad 0.1
+arrow right 150%
+oval "Client" fit`,
+
+      styled: `box "Normal"
+arrow
+box "Dashed" dashed
+arrow
+box "Dotted" dotted
+arrow
+box "Thick" thickness 0.05
+arrow
+box "Colored" color blue fill lightblue
+arrow
+box "Rounded" rad 0.15`,
+
+      compass: `C: box "Center"
+$d = 0.75in
+dot "N" above at $d north of C
+dot "NE" above at $d ne of C
+dot "E" at $d east of C; "E" at last dot.e ljust
+dot "SE" below at $d se of C
+dot "S" below at $d south of C
+dot "SW" below at $d sw of C
+dot "W" at $d west of C; "W" at last dot.w rjust
+dot "NW" above at $d nw of C`,
+
+      forloop: `for x in [A, B, C, D, E] do {
+  box x fit
+  arrow
+}
+box "End" color green fit`
+    };
+
+    // Debounce function
+    function debounce(fn, delay) {
+      let timeoutId;
+      return function(...args) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
+
+    // Render function
+    function render() {
+      const source = editor.value;
+      const startTime = performance.now();
+
+      const result = jspic.jspic(source);
+
+      const elapsed = (performance.now() - startTime).toFixed(1);
+
+      if (result.isError) {
+        resultContainer.classList.add('has-error');
+        resultContainer.innerHTML = result.svg;
+        renderStatus.textContent = 'Error';
+        renderStatus.style.color = '#c62828';
+      } else {
+        resultContainer.classList.remove('has-error');
+        resultContainer.innerHTML = result.svg;
+        renderStatus.textContent = `${elapsed}ms`;
+        renderStatus.style.color = '';
+      }
+
+      // Save to localStorage
+      try {
+        localStorage.setItem('jspic-source', source);
+      } catch (e) {}
+    }
+
+    const debouncedRender = debounce(render, 300);
+
+    // Event handlers
+    editor.addEventListener('input', () => {
+      if (autoRenderCheckbox.checked) {
+        debouncedRender();
+      }
+    });
+
+    renderBtn.addEventListener('click', render);
+
+    clearBtn.addEventListener('click', () => {
+      editor.value = '';
+      render();
+    });
+
+    exampleSelector.addEventListener('change', (e) => {
+      const key = e.target.value;
+      if (key && examples[key]) {
+        editor.value = examples[key];
+        render();
+      }
+      e.target.value = ''; // Reset selector
+    });
+
+    // Keyboard shortcuts
+    editor.addEventListener('keydown', (e) => {
+      // Ctrl/Cmd + Enter: Force render
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        render();
+      }
+    });
+
+    // Load saved content or use default
+    function init() {
+      try {
+        const saved = localStorage.getItem('jspic-source');
+        if (saved) {
+          editor.value = saved;
+        }
+      } catch (e) {}
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
