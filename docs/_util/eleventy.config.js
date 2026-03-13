@@ -50,7 +50,6 @@ module.exports = function(eleventyConfig) {
   // Ignore the _util directory, _html output, and Vite dev index.html
   eleventyConfig.ignores.add("_util/**");
   eleventyConfig.ignores.add("_html/**");
-  eleventyConfig.ignores.add("index.html");
 
   return {
     pathPrefix: pathPrefix,
