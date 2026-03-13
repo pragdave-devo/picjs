@@ -234,10 +234,10 @@
 <body>
   <header>
     <div>
-      <h1><a href="#">jspic Playground</a></h1>
+      <h1><a href="#">picjs Playground</a></h1>
       <div class="subtitle">
         <p>
-        jspic crestes diagrams from text descriptions, typically embedded inside code blocks
+        picjs crestes diagrams from text descriptions, typically embedded inside code blocks
         in markdown files (just like Mermaid).
         </p>
         <p>
@@ -263,10 +263,10 @@
         </select>
       </div>
       <textarea id="source-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">arrow right 200% "Markdown" "Source"
-box rad 10px "Markdown" "Formatter" "(jspic)" fit
+box rad 10px "Markdown" "Formatter" "(picjs)" fit
 arrow right 200% "HTML+SVG" "Output"
 arrow <-> down from last box.s
-box same "jspic" "Diagram" "Renderer" fit</textarea>
+box same "picjs" "Diagram" "Renderer" fit</textarea>
       <div class="editor-toolbar">
         <label>
           <input type="checkbox" id="auto-render" checked>
@@ -287,11 +287,11 @@ box same "jspic" "Diagram" "Renderer" fit</textarea>
   </main>
 
   <footer>
-    jspic &mdash; constraint-based diagraming, embedded in your documents
+    picjs &mdash; constraint-based diagraming, embedded in your documents
   </foomer>
 
   <script type="module">
-    import { jspic } from './assets/picjs.umd.js';
+    import { picjs } from './assets/picjs.umd.js';
 
     // DOM elements
     const editor = document.getElementById('source-editor');
@@ -385,7 +385,7 @@ box "Rounded" rad 0.15`
       const source = editor.value;
       const startTime = performance.now();
 
-      const result = jspic(source);
+      const result = picjs(source);
 
       const elapsed = (performance.now() - startTime).toFixed(1);
 
@@ -403,7 +403,7 @@ box "Rounded" rad 0.15`
 
       // Save to localStorage
       try {
-        localStorage.setItem('jspic-source', source);
+        localStorage.setItem('picjs-source', source);
       } catch (e) {}
     }
 
@@ -444,7 +444,7 @@ box "Rounded" rad 0.15`
     // Load saved content or use default
     function init() {
       try {
-        const saved = localStorage.getItem('jspic-source');
+        const saved = localStorage.getItem('picjs-source');
         if (saved) {
           editor.value = saved;
         }
