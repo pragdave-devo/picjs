@@ -290,9 +290,8 @@ box same "picjs" "Diagram" "Renderer" fit</textarea>
     picjs &mdash; constraint-based diagraming, embedded in your documents
   </foomer>
 
-  <script type="module">
-    import { picjs } from './assets/picjs.umd.js';
-
+  <script src="assets/picjs.umd.js"></script>
+  <script>
     // DOM elements
     const editor = document.getElementById('source-editor');
     const resultContainer = document.getElementById('result-container');
@@ -385,7 +384,7 @@ box "Rounded" rad 0.15`
       const source = editor.value;
       const startTime = performance.now();
 
-      const result = picjs(source);
+      const result = picjs.picjs(source);
 
       const elapsed = (performance.now() - startTime).toFixed(1);
 

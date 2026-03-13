@@ -14,7 +14,8 @@ module.exports = function(eleventyConfig) {
   });
 
   // Copy assets (including picjs.umd.js) to output
-  eleventyConfig.addPassthroughCopy({ "../../dist": "assets" });
+  // Vite outputs to docs/dist/ when root is 'docs'
+  eleventyConfig.addPassthroughCopy({ "../dist": "assets" });
 
   // Custom renderer for ```picjs fenced code blocks
   eleventyConfig.amendLibrary("md", md => {
