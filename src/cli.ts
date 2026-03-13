@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// cli.ts — CLI entry point for jspic markdown processor
+// cli.ts — CLI entry point for picjs markdown processor
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname, join, resolve } from 'path';
@@ -15,9 +15,9 @@ import {
 } from './processor.ts';
 
 function printUsage(): void {
-  console.log(`Usage: jspic [options] <file.md> [file2.md ...]
+  console.log(`Usage: picjs [options] <file.md> [file2.md ...]
 
-Process markdown files containing jspic diagrams.
+Process markdown files containing picjs diagrams.
 
 Options:
   --out <dir>    Output directory for SVG files (default: _diagrams)
@@ -25,9 +25,9 @@ Options:
   --help, -h     Show this help message
 
 Examples:
-  jspic README.md
-  jspic docs/*.md --out ./images
-  jspic README.md --dry-run
+  picjs README.md
+  picjs docs/*.md --out ./images
+  picjs README.md --dry-run
 `);
 }
 

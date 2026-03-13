@@ -1,7 +1,7 @@
 // processor.ts — Markdown diagram processing logic
 
 import { createHash } from 'crypto';
-import { jspic } from './jspic.ts';
+import { picjs } from './picjs.ts';
 
 export interface DiagramBlock {
   name: string;
@@ -20,10 +20,10 @@ export interface RenderResult {
 // Generate a hash-based name for unnamed diagrams
 function generateHashName(source: string): string {
   const hash = createHash('sha256').update(source).digest('hex');
-  return `jspic-${hash.slice(0, 8)}`;
+  return `picjs-${hash.slice(0, 8)}`;
 }
 
-// Find all jspic diagram blocks in markdown content
+// Find all picjs diagram blocks in markdown content
 export function findDiagrams(content: string): DiagramBlock[] {
   const blocks: DiagramBlock[] = [];
   const lines = content.split('\n');
@@ -32,8 +32,8 @@ export function findDiagrams(content: string): DiagramBlock[] {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Check for raw code block: ```jspic [name]
-    const rawMatch = line.match(/^```jspic(?:\s+(\S+))?\s*$/);
+    // Check for raw code block: ```picjs [name]
+    const rawMatch = line.match(/^```picjs(?:\s+(\S+))?\s*$/);
     if (rawMatch) {
       const name = rawMatch[1] || null;
       const startLine = i;
@@ -57,8 +57,8 @@ export function findDiagrams(content: string): DiagramBlock[] {
       continue;
     }
 
-    // Check for comment block: <!-- jspic: name
-    const commentMatch = line.match(/^<!--\s*jspic:\s*(\S+)\s*$/);
+    // Check for comment block: <!-- picjs: name
+    const commentMatch = line.match(/^<!--\s*picjs:\s*(\S+)\s*$/);
     if (commentMatch) {
       const name = commentMatch[1];
       const startLine = i;
@@ -90,13 +90,13 @@ export function findDiagrams(content: string): DiagramBlock[] {
 
 // Convert a raw code block to comment form
 export function convertToCommentForm(name: string, source: string): string {
-  return `<!-- jspic: ${name}\n${source}\n-->`;
+  return `<!-- picjs: ${name}\n${source}\n-->`;
 }
 
-// Render a diagram using jspic
+// Render a diagram using picjs
 export function renderDiagram(source: string): RenderResult {
   try {
-    const result = jspic(source);
+    const result = picjs(source);
     if (result.isError) {
       // Extract error message from the SVG error output
       const errorMatch = result.svg.match(/<pre[^>]*>([\s\S]*?)<\/pre>/);
@@ -153,7 +153,7 @@ export function updateMarkdown(
 
     // Skip any existing error blocks after the source block
     let j = endIdx + 1;
-    while (j < lines.length && lines[j].match(/^<!--\s*jspic-error:/)) {
+    while (j < lines.length && lines[j].match(/^<!--\s*picjs-error:/)) {
       // Find end of this error block
       j++;
       while (j < lines.length && !lines[j].match(/^-->\s*$/)) {
@@ -172,13 +172,13 @@ export function updateMarkdown(
     const newLines: string[] = [];
 
     // Always use comment form
-    newLines.push(`<!-- jspic: ${name}`);
+    newLines.push(`<!-- picjs: ${name}`);
     newLines.push(block.source);
     newLines.push('-->');
 
     // Add error comment if render failed
     if (!result.success) {
-      newLines.push(`<!-- jspic-error: ${name}`);
+      newLines.push(`<!-- picjs-error: ${name}`);
       newLines.push(result.error || 'Unknown error');
       newLines.push('-->');
     }

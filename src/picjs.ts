@@ -1,4 +1,4 @@
-// jspic.ts — Public API + Mermaid-style browser code block processor
+// picjs.ts — Public API + Mermaid-style browser code block processor
 // Native TypeScript implementation of PIC-like diagram language to SVG.
 
 import {
@@ -59,14 +59,14 @@ function ensureInit(): void {
 // Public API
 // ---------------------------------------------------------------------------
 
-export interface JspicResult {
+export interface PicjsResult {
   svg: string;
   width: number;
   height: number;
   isError: boolean;
 }
 
-export interface JspicOptions {
+export interface PicjsOptions {
   cssClass?: string;
   darkMode?: boolean;
   plaintextErrors?: boolean;
@@ -75,7 +75,7 @@ export interface JspicOptions {
 /**
  * Compile PIC-like source text into SVG.
  */
-export function jspic(text: string, options?: JspicOptions): JspicResult {
+export function picjs(text: string, options?: PicjsOptions): PicjsResult {
   ensureInit();
 
   const p = createPik();
@@ -94,7 +94,7 @@ export function jspic(text: string, options?: JspicOptions): JspicResult {
   }
 
   if (!p.zOut && p.nErr === 0) {
-    p.zOut = '<!-- empty jspic diagram -->\n';
+    p.zOut = '<!-- empty picjs diagram -->\n';
   }
 
   return {
@@ -111,17 +111,17 @@ export function jspic(text: string, options?: JspicOptions): JspicResult {
 
 /**
  * Find all matching `<code>` elements and replace them with rendered SVG.
- * Default selector: 'code.jspic, pre > code.language-jspic'
+ * Default selector: 'code.picjs, pre > code.language-picjs'
  */
 export function processCodeBlocks(selector?: string): void {
   if (typeof document === 'undefined') return;
-  const sel = selector || 'code.jspic, pre > code.language-jspic';
+  const sel = selector || 'code.picjs, pre > code.language-picjs';
   const elements = document.querySelectorAll(sel);
   elements.forEach((el) => {
     const text = el.textContent || '';
-    const result = jspic(text);
+    const result = picjs(text);
     const container = document.createElement('div');
-    container.className = 'jspic-container';
+    container.className = 'picjs-container';
     container.innerHTML = result.svg;
     const parent = el.parentElement;
     if (parent && parent.tagName === 'PRE') {
@@ -132,9 +132,10 @@ export function processCodeBlocks(selector?: string): void {
   });
 }
 
-// Backwards compatibility alias
-export { jspic as pikchr };
-export type { JspicResult as PikchrResult, JspicOptions as PikchrOptions };
+// Backwards compatibility aliases
+export { picjs as jspic, picjs as pikchr };
+export type { PicjsResult as JspicResult, PicjsOptions as JspicOptions };
+export type { PicjsResult as PikchrResult, PicjsOptions as PikchrOptions };
 
 // Re-export key types
 export type { Pik, PList };

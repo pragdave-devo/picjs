@@ -1,6 +1,6 @@
-// test.ts — Comprehensive unit tests for jspic port
+// test.ts — Comprehensive unit tests for picjs port
 
-import { pikchr } from './jspic.ts';
+import { pikchr } from './picjs.ts';
 import {
   type PNum, type PPoint, type PBox, type PToken, type Pik,
   TokenType, createPik, makeToken, pointCopy,
@@ -59,7 +59,7 @@ function assertClose(a: number, b: number, eps: number = 0.001, msg?: string): v
   if (Math.abs(a - b) > eps) throw new Error(msg || `expected ~${b}, got ${a} (diff ${Math.abs(a-b)})`);
 }
 
-console.log('jspic — Comprehensive Unit Tests');
+console.log('picjs — Comprehensive Unit Tests');
 
 // ===========================================================================
 // types.ts tests
