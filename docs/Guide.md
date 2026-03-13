@@ -3,6 +3,7 @@ layout: base.njk
 title: Guide
 ---
 
+
 # jspic Guide
 
 This guide takes you from first diagram to advanced features. Each section builds on the previous.
