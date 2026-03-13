@@ -603,6 +603,27 @@ labeled_box("hello")
   }
 });
 
+test('macro in position context', () => {
+  const r = pikchr(`
+define point { ( $2*cos($1), $2*sin($1) ) }
+theta = 0
+r = 0.5
+box at point(theta, r)
+`);
+  assert(!r.isError, r.svg);
+});
+
+test('macro in move to context', () => {
+  const r = pikchr(`
+define point { ( $2*cos($1), $2*sin($1) ) }
+theta = 0
+r = 0.5
+move to point(theta, r)
+box "end"
+`);
+  assert(!r.isError, r.svg);
+});
+
 suite('pikchr() — Print and assert');
 
 test('print statement', () => {

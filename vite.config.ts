@@ -18,4 +18,23 @@ export default defineConfig({
     minify: 'esbuild',
     sourcemap: true,
   },
+  server: {
+    fs: {
+      allow: ['..'],
+    },
+  },
+  plugins: [
+    {
+      name: 'rewrite-assets-to-dist',
+      configureServer(server) {
+        // In dev, rewrite /assets/ requests to /dist/ so paths work like production
+        server.middlewares.use((req, res, next) => {
+          if (req.url?.startsWith('/assets/')) {
+            req.url = req.url.replace('/assets/', '/dist/');
+          }
+          next();
+        });
+      },
+    },
+  ],
 });

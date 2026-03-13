@@ -6,7 +6,7 @@ import {
   TokenType, pikRound, pikError,
   CP_N, CP_NE, CP_E, CP_SE, CP_S, CP_SW, CP_W, CP_NW, CP_C, CP_END, CP_START,
   DIR_RIGHT, DIR_DOWN, DIR_LEFT, DIR_UP,
-  FN_ABS, FN_COS, FN_INT, FN_MAX, FN_MIN, FN_SIN, FN_SQRT,
+  FN_ABS, FN_COS, FN_INT, FN_MAX, FN_MIN, FN_SIN, FN_SQRT, FN_D2R, FN_R2D,
 } from './types.ts';
 
 // ---------------------------------------------------------------------------
@@ -53,6 +53,7 @@ export const keywords: readonly PikWord[] = [
   { zWord: "dist",        nChar: 4,  eType: TokenType.T_DIST,      eCode: 0,         eEdge: 0        },
   { zWord: "do",          nChar: 2,  eType: TokenType.T_DO,        eCode: 0,         eEdge: 0        },
   { zWord: "dotted",      nChar: 6,  eType: TokenType.T_DOTTED,    eCode: 0,         eEdge: 0        },
+  { zWord: "d2r",         nChar: 3,  eType: TokenType.T_FUNC1,     eCode: FN_D2R,    eEdge: 0        },
   { zWord: "down",        nChar: 4,  eType: TokenType.T_DOWN,      eCode: DIR_DOWN,  eEdge: 0        },
   { zWord: "e",           nChar: 1,  eType: TokenType.T_EDGEPT,    eCode: 0,         eEdge: CP_E     },
   { zWord: "east",        nChar: 4,  eType: TokenType.T_EDGEPT,    eCode: 0,         eEdge: CP_E     },
@@ -89,6 +90,7 @@ export const keywords: readonly PikWord[] = [
   { zWord: "print",       nChar: 5,  eType: TokenType.T_PRINT,     eCode: 0,         eEdge: 0        },
   { zWord: "rad",         nChar: 3,  eType: TokenType.T_RADIUS,    eCode: 0,         eEdge: 0        },
   { zWord: "radius",      nChar: 6,  eType: TokenType.T_RADIUS,    eCode: 0,         eEdge: 0        },
+  { zWord: "r2d",         nChar: 3,  eType: TokenType.T_FUNC1,     eCode: FN_R2D,    eEdge: 0        },
   { zWord: "right",       nChar: 5,  eType: TokenType.T_RIGHT,     eCode: DIR_RIGHT, eEdge: CP_E     },
   { zWord: "rjust",       nChar: 5,  eType: TokenType.T_RJUST,     eCode: 0,         eEdge: 0        },
   { zWord: "s",           nChar: 1,  eType: TokenType.T_EDGEPT,    eCode: 0,         eEdge: CP_S     },
@@ -358,6 +360,8 @@ export function lookupColor(name: string): number {
 // Sorted alphabetically for binary search.
 // ---------------------------------------------------------------------------
 export const aBuiltin: readonly { zName: string; val: PNum }[] = [
+  { zName: "$2pi",        val: 2 * Math.PI },
+  { zName: "$pi",         val: Math.PI },
   { zName: "arcrad",      val: 0.25  },
   { zName: "arrowhead",   val: 2.0   },
   { zName: "arrowht",     val: 0.08  },

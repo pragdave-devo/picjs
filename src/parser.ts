@@ -11,7 +11,7 @@ import {
   pikValue, pikGetVar, pikLookupColor,
 } from './constants.ts';
 
-import { TokenStream, pikFindMacro } from './tokenizer.ts';
+import { TokenStream } from './tokenizer.ts';
 
 import {
   pikElemNew, pikElistAppend, pikAfterAddingAttributes,
@@ -103,33 +103,17 @@ function parseStatementList(p: Pik, ts: TokenStream): PList | null {
 
 function parseStatement(p: Pik, ts: TokenStream): PObj | null {
   if (p.nErr) return null;
-  let t = ts.peek();
+
+  // Skip leading EOLs (empty statements, or from macro expansion)
+  while (ts.peek().eType === T_EOL && !ts.atEnd()) {
+    ts.advance();
+  }
+
+  let t = ts.peek();  // Note: peek() handles macro expansion automatically
 
   // empty statement
   if (t.eType === T_EOL || ts.atEnd() || t.eType === T_RB) {
     return null;
-  }
-
-  // Check for macro invocation at statement level (handles macros that expand to statements)
-  if (t.eType === T_ID) {
-    const macName = t.z.substring(0, t.n);
-    const pMac = pikFindMacro(p, macName);
-    if (pMac) {
-      ts.advance(); // consume the macro name
-      const args = ts.parseMacroArgs();
-      if (ts.expandMacro(pMac, args || new Array(9).fill(null).map(() => makeToken()))) {
-        // Skip any leading EOLs in the expanded content
-        while (ts.peek().eType === T_EOL) ts.advance();
-        // Re-read the token and continue parsing (may be define, direction, etc.)
-        t = ts.peek();
-        if (t.eType === T_EOL || ts.atEnd() || t.eType === T_RB) {
-          return null;
-        }
-        // Fall through to continue parsing the expanded content
-      } else {
-        return null; // error occurred during expansion
-      }
-    }
   }
 
   // direction: up | down | left | right
@@ -149,6 +133,16 @@ function parseStatement(p: Pik, ts: TokenStream): PObj | null {
       const op = ts.advance();
       const rv = parseRvalue(p, ts);
       pikSetVar(p, lv, rv, op);
+      return null;
+    }
+  }
+
+  // Check for reserved names used as variables (e.g., t, n, s, e, w, c, x, y)
+  if (isReservedName(t.eType)) {
+    const t2 = ts.peekAhead(1);
+    if (t2.eType === T_ASSIGN) {
+      const name = t.z.substring(0, t.n);
+      pikError(p, t, `'${name}' is a reserved name`);
       return null;
     }
   }
@@ -226,7 +220,8 @@ function parseStatement(p: Pik, ts: TokenStream): PObj | null {
   // define
   if (t.eType === T_DEFINE) {
     ts.advance();
-    const id = ts.expect(T_ID, 'expected macro name');
+    // Use expectRaw to get the macro name without expanding it (it might already be defined)
+    const id = ts.expectRaw(T_ID, 'expected macro name');
     const code = ts.expect(T_CODEBLOCK, 'expected code block {...}');
     if (p.nErr === 0) {
       pikAddMacro(p, id, code);
@@ -263,24 +258,12 @@ function parseUnnamedStatement(p: Pik, ts: TokenStream): PObj | null {
 // --------------------------------------------------------------------------
 
 function parseBasetype(p: Pik, ts: TokenStream): PObj | null {
-  const t = ts.peek();
-
-  // Check for macro invocation: T_ID that matches a defined macro
-  if (t.eType === T_ID) {
-    const macName = t.z.substring(0, t.n);
-    const pMac = pikFindMacro(p, macName);
-    if (pMac) {
-      ts.advance(); // consume the macro name
-      const args = ts.parseMacroArgs(); // parse (arg1, arg2) if present
-      if (ts.expandMacro(pMac, args || new Array(9).fill(null).map(() => makeToken()))) {
-        // Skip any leading EOLs in the expanded content
-        while (ts.peek().eType === T_EOL) ts.advance();
-        // Recursively parse the expanded tokens
-        return parseBasetype(p, ts);
-      }
-      return null; // error occurred during expansion
-    }
+  // Skip leading EOLs (may come from macro expansion)
+  while (ts.peek().eType === T_EOL && !ts.atEnd()) {
+    ts.advance();
   }
+
+  const t = ts.peek();  // Note: peek() handles macro expansion automatically
 
   if (t.eType === T_CLASSNAME) {
     const cls = ts.advance();
@@ -730,6 +713,8 @@ function parsePritem(p: Pik, ts: TokenStream): void {
 
 function parsePosition(p: Pik, ts: TokenStream): PPoint {
   if (p.nErr) return { x: 0, y: 0 };
+
+  // Note: peek() handles macro expansion automatically
 
   // '(' position [',' position] ')'
   if (ts.peek().eType === T_LP) {
@@ -1353,6 +1338,11 @@ function isDirection(eType: number): boolean {
 
 function isLvalue(eType: number): boolean {
   return eType === T_ID || eType === T_FILL || eType === T_COLOR || eType === T_THICKNESS;
+}
+
+function isReservedName(eType: number): boolean {
+  // Single-letter keywords that look like variable names but are reserved
+  return eType === T_TOP || eType === T_EDGEPT || eType === T_X || eType === T_Y;
 }
 
 function isBasetypeStart(t: PToken): boolean {

@@ -12,7 +12,7 @@ import {
   TP_LJUST, TP_RJUST, TP_JMASK, TP_ABOVE, TP_ABOVE2, TP_CENTER,
   TP_BELOW, TP_BELOW2, TP_VMASK,
   TP_BIG, TP_SMALL, TP_XTRA, TP_SZMASK, TP_ITALIC, TP_BOLD, TP_MONO, TP_FMASK, TP_ALIGN,
-  FN_ABS, FN_COS, FN_INT, FN_MAX, FN_MIN, FN_SIN, FN_SQRT,
+  FN_ABS, FN_COS, FN_INT, FN_MAX, FN_MIN, FN_SIN, FN_SQRT, FN_D2R, FN_R2D,
   MAX_TXT, MAX_TPATH, PIKCHR_TOKEN_LIMIT,
   pikHdgAngle,
   createPObj, makeToken, pikRound, pikDist,
@@ -946,6 +946,8 @@ export function pikFunc(p: Pik, pFunc: PToken, x: PNum, y: PNum): PNum {
       return Math.sqrt(x);
     case FN_MAX:  return x > y ? x : y;
     case FN_MIN:  return x < y ? x : y;
+    case FN_D2R:  return x * Math.PI / 180;  // degrees to radians
+    case FN_R2D:  return x * 180 / Math.PI;  // radians to degrees
     default:      return 0.0;
   }
 }

@@ -1,0 +1,18 @@
+# outer ring
+outer_radius = 105
+
+# small ring
+
+inner-radius = 30
+offset_of_pen = .8  # proportion of distance of pen from center of small disk
+
+# equation of hypotrochoid
+
+for theta from 0 to 2 * $pi step 0.1 do {
+    t = theta
+    diff = outer_radius - inner_radius
+
+    x = diff * cos(t) + offset_of_pen * inner_radius * cos(diff / inner_radius * t)
+    y = diff * sin(t) - offset_of_pen * inner_radius * sin(diff / inner_radius * t)
+    line to (x, y)
+}

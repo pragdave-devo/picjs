@@ -1,0 +1,18 @@
+$pi = 3.1415926
+outer_radius = 10.5
+inner_radius = 4
+diff = outer_radius - inner_radius
+ratio = diff/inner_radius
+
+offset_of_pen = .8*inner_radius # proportion of distance of pen from center of small disk
+
+move to (outer_radius, 0)
+color = 0xff0020
+
+for theta from 0 to 16*$pi step 0.1 do {
+    xp = diff * cos(theta) + offset_of_pen * cos(ratio * theta)
+    yp = diff * sin(theta) - offset_of_pen * sin(ratio * theta)
+
+    line thickness 0.1 to (xp, yp)
+    color += 321
+}

@@ -1,0 +1,49 @@
+right
+
+Pipeline: [
+  down
+  "Internal Pipeline"
+  move 20%
+  BatchWriter: box wid 150% ht 60% fill 0xe0e0e0 "Batch Writer" \
+
+
+  arrow "post" aligned "commit" aligned
+  TriggerEvaluation: box same "Trigger Evaluation"
+  arrow "Trigger" aligned "Fired" aligned
+  TriggerBridge: box same "Trigger Bridge"
+]
+
+Database: cylinder "Database" with .e at Pipeline.BatchWriter.w -( 0.5, 0)
+
+
+box at Pipeline \
+   wid Pipeline.wid*1.1 ht Pipeline.ht*1.1 \
+   fill 0xf0f0f8 color lightgrey \
+    behind Pipeline
+
+move right 0.5
+
+Services: [
+  down
+  GPTuple: \
+    box wid 150% ht 60% fill 0xe0e0e0 "Get/Put Tuple"
+  arrow <-> "Validate" aligned above
+  box "Schemas" same
+  move down 0.2
+  box ht 0 dotted
+  move down same
+  box wid 150% ht 60% fill 0xe0e0e0 "Playbooks"
+  move down same
+  box same "Agents"
+
+]
+
+arrow from Pipeline.BatchWriter to Database chop
+arrow from Services.GPTuple.w to Pipeline.BatchWriter.e
+arrow <-> from Services.Playbooks.w to Pipeline.TriggerEvaluation.e
+arrow <-> from Services.Agents to Pipeline.TriggerBridge chop
+
+box at Services \
+   wid Services.wid*1.1 ht Services.ht*1.1 \
+   fill 0xf0f8f0 color lightgrey \
+    behind Pipeline

@@ -522,12 +522,40 @@ export class TokenStream {
     }
   }
 
-  /** Peek at the current token without advancing */
-  peek(): PToken {
-    if (this.pos >= this.tokens.length) {
-      return makeToken('', 0, T_EOL);
+  /** Peek at the current token without advancing.
+   *  If the current token is a macro invocation, expand it first (unless expandMacros=false).
+   */
+  peek(expandMacros: boolean = true): PToken {
+    // Loop to handle chained macro expansions
+    while (this.pos < this.tokens.length) {
+      const t = this.tokens[this.pos];
+
+      // Check for macro expansion: if current token is T_ID matching a macro,
+      // expand it. This handles macros defined earlier in the same input.
+      if (expandMacros && t.eType === T_ID) {
+        const macName = t.z.substring(0, t.n);
+        const pMac = pikFindMacro(this.p, macName);
+        if (pMac) {
+          // Remove the macro name token
+          this.tokens.splice(this.pos, 1);
+          // Parse macro arguments from the token stream
+          const args = this.parseMacroArgs() || new Array(9).fill(null).map(() => makeToken());
+          // Expand the macro (inserts tokens at current position)
+          this.expandMacro(pMac, args);
+          // Loop again to handle nested macro or return first token
+          continue;
+        }
+      }
+
+      return t;
     }
-    return this.tokens[this.pos];
+
+    return makeToken('', 0, T_EOL);
+  }
+
+  /** Peek at the current token without expanding macros */
+  peekRaw(): PToken {
+    return this.peek(false);
   }
 
   /** Peek at a token N positions ahead */
@@ -561,6 +589,16 @@ export class TokenStream {
   /** Expect the current token to be eType. Error if not. */
   expect(eType: number, msg: string): PToken {
     const t = this.peek();
+    if (t.eType === eType) {
+      return this.advance();
+    }
+    pikError(this.p, t.n > 0 ? t : this.lastToken(), msg);
+    return t;
+  }
+
+  /** Expect the current token to be eType without macro expansion. Error if not. */
+  expectRaw(eType: number, msg: string): PToken {
+    const t = this.peekRaw();
     if (t.eType === eType) {
       return this.advance();
     }

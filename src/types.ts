@@ -38,6 +38,8 @@ export const FN_MAX = 3;
 export const FN_MIN = 4;
 export const FN_SIN = 5;
 export const FN_SQRT = 6;
+export const FN_D2R = 7;  // degrees to radians
+export const FN_R2D = 8;  // radians to degrees
 
 // Text position and style flags (stored in PToken.eCode)
 export const TP_LJUST  = 0x0001;
