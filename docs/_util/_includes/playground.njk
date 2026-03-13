@@ -253,15 +253,15 @@
 <body>
   <header>
     <div>
-      <h1><a href="/">jspic Playground</a></h1>
+      <h1><a href="{{ '/' | url }}">jspic Playground</a></h1>
       <div class="subtitle">
         TypeScript implementation of <a href="https://pikchr.org" target="_blank">PIC-like</a> diagrams
       </div>
     </div>
     <div class="header-links">
-      <a href="/Introduction/">Introduction</a>
-      <a href="/Guide/">Guide</a>
-      <a href="/Reference/">Reference</a>
+      <a href="{{ '/Introduction/' | url }}">Introduction</a>
+      <a href="{{ '/Guide/' | url }}">Guide</a>
+      <a href="{{ '/Reference/' | url }}">Reference</a>
       <a href="https://github.com/pragdave-devo/picjs" target="_blank">GitHub</a>
     </div>
   </header>
@@ -311,7 +311,7 @@ box same "jspic" "Diagram" "Renderer" fit</textarea>
     Based on <a href="https://pikchr.org" target="_blank">pikchr</a> by D. Richard Hipp
   </footer>
 
-  <script src="/assets/jspic.umd.js"></script>
+  <script src="{{ '/assets/jspic.umd.js' | url }}"></script>
   <script>
     // DOM elements
     const editor = document.getElementById('source-editor');
