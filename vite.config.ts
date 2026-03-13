@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
+  root: 'docs',
   build: {
     lib: {
       entry: resolve(__dirname, 'src/jspic.ts'),
