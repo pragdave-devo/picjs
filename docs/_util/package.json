@@ -1,5 +1,5 @@
 {
-  "name": "jspic-docs",
+  "name": "picjs-docs",
   "private": true,
   "scripts": {
     "build": "eleventy",

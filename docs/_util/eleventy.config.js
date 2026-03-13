@@ -13,10 +13,10 @@ module.exports = function(eleventyConfig) {
     }]
   });
 
-  // Copy assets (including jspic.umd.js) to output
+  // Copy assets (including picjs.umd.js) to output
   eleventyConfig.addPassthroughCopy({ "../../dist": "assets" });
 
-  // Custom renderer for ```jspic fenced code blocks
+  // Custom renderer for ```picjs fenced code blocks
   eleventyConfig.amendLibrary("md", md => {
     const originalFence = md.renderer.rules.fence;
 
@@ -24,18 +24,18 @@ module.exports = function(eleventyConfig) {
       const token = tokens[idx];
       const info = token.info ? token.info.trim() : '';
 
-      if (info === 'jspic') {
-        // Wrap jspic code in a container that will be processed client-side
+      if (info === 'picjs') {
+        // Wrap picjs code in a container that will be processed client-side
         const code = md.utils.escapeHtml(token.content);
-        return `<div class="diagram-container"><code class="jspic">${code}</code></div>\n`;
+        return `<div class="diagram-container"><code class="picjs">${code}</code></div>\n`;
       }
 
-      if (info === 'jspic example') {
+      if (info === 'picjs example') {
         // Side-by-side: source code on left, rendered diagram on right
         const code = md.utils.escapeHtml(token.content);
         return `<div class="example-container">
   <pre class="example-source"><code>${code}</code></pre>
-  <div class="example-output"><code class="jspic">${code}</code></div>
+  <div class="example-output"><code class="picjs">${code}</code></div>
 </div>\n`;
       }
 

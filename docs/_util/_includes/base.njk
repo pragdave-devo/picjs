@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ title }} - jspic</title>
+  <title>{{ title }} - picjs</title>
   <style>
     :root {
       --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -169,7 +169,7 @@
 </head>
 <body>
   <header>
-    <h1><a href="{{ '/' | url }}">jspic</a></h1>
+    <h1><a href="{{ '/' | url }}">picjs</a></h1>
     <nav>
       <a href="{{ '/' | url }}"{% if page.url == "/" %} class="active"{% endif %}>Playground</a>
       <a href="{{ '/Introduction/' | url }}"{% if page.url == "/Introduction/" %} class="active"{% endif %}>Introduction</a>
@@ -183,11 +183,11 @@
     {{ content | safe }}
   </main>
 
-  <script src="{{ '/assets/jspic.umd.js' | url }}"></script>
+  <script src="{{ '/assets/picjs.umd.js' | url }}"></script>
   <script>
-    // Render all jspic diagrams
-    document.querySelectorAll('code.jspic').forEach(el => {
-      const result = jspic.jspic(el.textContent);
+    // Render all picjs diagrams
+    document.querySelectorAll('code.picjs').forEach(el => {
+      const result = picjs.picjs(el.textContent);
       if (!result.isError) {
         const div = document.createElement('div');
         div.innerHTML = result.svg;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>jspic - PIC-like Diagrams in TypeScript</title>
+  <title>picjs - PIC-like Diagrams in TypeScript</title>
   <style>
     :root {
       --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -253,7 +253,7 @@
 <body>
   <header>
     <div>
-      <h1><a href="{{ '/' | url }}">jspic Playground</a></h1>
+      <h1><a href="{{ '/' | url }}">picjs Playground</a></h1>
       <div class="subtitle">
         TypeScript implementation of <a href="https://pikchr.org" target="_blank">PIC-like</a> diagrams
       </div>
@@ -283,10 +283,10 @@
         </select>
       </div>
       <textarea id="source-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">arrow right 200% "Markdown" "Source"
-box rad 10px "Markdown" "Formatter" "(jspic)" fit
+box rad 10px "Markdown" "Formatter" "(picjs)" fit
 arrow right 200% "HTML+SVG" "Output"
 arrow <-> down from last box.s
-box same "jspic" "Diagram" "Renderer" fit</textarea>
+box same "picjs" "Diagram" "Renderer" fit</textarea>
       <div class="editor-toolbar">
         <label>
           <input type="checkbox" id="auto-render" checked>
@@ -307,11 +307,11 @@ box same "jspic" "Diagram" "Renderer" fit</textarea>
   </main>
 
   <footer>
-    jspic &mdash; PIC-like diagrams in TypeScript |
+    picjs &mdash; PIC-like diagrams in TypeScript |
     Based on <a href="https://pikchr.org" target="_blank">pikchr</a> by D. Richard Hipp
   </footer>
 
-  <script src="{{ '/assets/jspic.umd.js' | url }}"></script>
+  <script src="{{ '/assets/picjs.umd.js' | url }}"></script>
   <script>
     // DOM elements
     const editor = document.getElementById('source-editor');
@@ -422,7 +422,7 @@ box "End" color green fit`
       const source = editor.value;
       const startTime = performance.now();
 
-      const result = jspic.jspic(source);
+      const result = picjs.picjs(source);
 
       const elapsed = (performance.now() - startTime).toFixed(1);
 
@@ -440,7 +440,7 @@ box "End" color green fit`
 
       // Save to localStorage
       try {
-        localStorage.setItem('jspic-source', source);
+        localStorage.setItem('picjs-source', source);
       } catch (e) {}
     }
 
@@ -481,7 +481,7 @@ box "End" color green fit`
     // Load saved content or use default
     function init() {
       try {
-        const saved = localStorage.getItem('jspic-source');
+        const saved = localStorage.getItem('picjs-source');
         if (saved) {
           editor.value = saved;
         }

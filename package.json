@@ -1,19 +1,19 @@
 {
-  "name": "jspic",
+  "name": "picjs",
   "version": "0.1.1",
   "description": "Native TypeScript implementation of PIC-like diagram language to SVG",
   "type": "module",
-  "main": "./dist/jspic.umd.js",
-  "module": "./dist/jspic.js",
-  "types": "./dist/jspic.d.ts",
+  "main": "./dist/picjs.umd.js",
+  "module": "./dist/picjs.js",
+  "types": "./dist/picjs.d.ts",
   "bin": {
-    "jspic": "./bin/jspic"
+    "picjs": "./bin/picjs"
   },
   "exports": {
     ".": {
-      "types": "./dist/jspic.d.ts",
-      "import": "./dist/jspic.js",
-      "require": "./dist/jspic.umd.js"
+      "types": "./dist/picjs.d.ts",
+      "import": "./dist/picjs.js",
+      "require": "./dist/picjs.umd.js"
     }
   },
   "files": [
@@ -25,12 +25,12 @@
     "build": "vite build && tsc --emitDeclarationOnly --outDir dist",
     "test": "node --import=tsx src/test.ts",
     "dev": "vite",
-    "cli": "node --import=tsx bin/jspic",
+    "cli": "node --import=tsx bin/picjs",
     "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pragdave/jspic.git"
+    "url": "https://github.com/pragdave/picjs.git"
   },
   "keywords": [
     "diagram",
