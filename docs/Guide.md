@@ -106,13 +106,21 @@ picjs provides these shape primitives:
 
 ```picjs
 define show { [ down; $1 $2; $3 ]; move right 50% }
-show(box, "a box", "box \"a box\"")
-show(circle, "a circle", "circle \"a circle\"")
-show(ellipse, "a ellipse", "ellipse \"a ellipse\"")
-show(oval, "a oval", "oval \"a oval\"")
-show(cylinder, "a cylinder", "cylinder \"a cylinder\"")
-show(diamond, "a diamond", "diamond \"a diamond\"")
-show(file, "a file", "file \"a file\"")
+down
+[
+  right
+  show(box, "a box", "box \"a box\"")
+  show(circle, "a circle", "circle \"a circle\"")
+  show(ellipse, "a ellipse", "ellipse \"a ellipse\"")
+  show(oval, "a oval", "oval \"a oval\"")
+]
+move down .3
+[
+  right
+  show(cylinder, "a cylinder", "cylinder \"a cylinder\"")
+  show(diamond, "a diamond", "diamond \"a diamond\"")
+  show(file, "a file", "file \"a file\"")
+]
 ```
 
 **Line shapes** (connect points):
@@ -143,7 +151,7 @@ line thin dashed from S.sw to S.ne
 
 Use `arrow` and `line` to connect shapes:
 
-```picjs
+```picjs example
 box "A"
 arrow
 box "B"
@@ -346,6 +354,25 @@ box "Bold Italic" bold italic fit
 ```
 
 ---
+## Command Line
+
+The script in `bib/picjs` will take a markdown file containing `picjs` code
+blocks and generate SVG files (by default in a `_diagrams` directory. It then
+moved the original code block into an HTML comment and embed the
+corresponding diagram.
+
+If the diagram in the comment is subsequently changed, the tool will
+regenerate the corresponding diagram.
+
+### READMEs
+
+The `picjs` tool was written to allow diagrams to be added to GitHub READMEs,
+which don't allow scipts to be run.
+
+Just run `npm cli README.md`, add `_diagrams` to your repo, and check in.
+
+Alternatively, have a look at this projects .github/workflows for an action
+that does this for you on commit.
 
 ## Advanced Topics
 
