@@ -1,5 +1,5 @@
 # picjs
-
+pic
 Draw diagrams using plain-text descriptions. Embed drawing in (for example)
 Markdown.
 
@@ -61,20 +61,20 @@ box at P wid P.wid + .2 ht max(S.ht,P.ht) + .2 fill lightgrey color none behind 
 
 1. Load the library
   ``` html
-  <script src="https://cdn.jsdelivr.net/npm/jspic@0.1.1/dist/jspic.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/picjs@0.1.2/dist/picjs.umd.js"></script>
   ```
 
-2. Search for `picjs` code blocks in the page.
+2. Format  `picjs` code blocks in the page.
   ``` html
   <script>
-    jspic.processCodeBlocks();
+    picjs.processCodeBlocks();
 </</script>
   ```
 
 3. Make pretty pictures.
 
   ```html
-  <pre><code class="language-jspic">
+  <pre><code class="language-picjs">
   box "Hello"
   arrow
   box "World"

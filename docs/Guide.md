@@ -4,7 +4,7 @@ title: Guide
 ---
 
 
-# jspic Guide
+# picjs Guide
 
 This guide takes you from first diagram to advanced features. Each section builds on the previous.
 
@@ -12,35 +12,35 @@ This guide takes you from first diagram to advanced features. Each section build
 
 ### Browser Setup
 
-Add jspic to your HTML page. Once published to npm:
+Add picjs to your HTML page. Once published to npm:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/jspic@0.1.1/dist/jspic.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/picjs@0.1.1/dist/picjs.umd.js"></script>
 ```
 
-Or self-host by copying `jspic.umd.js` from the dist folder.
+Or self-host by copying `picjs.umd.js` from the dist folder.
 
 ### Automatic Code Block Processing
 
-jspic can automatically find and render diagram code blocks, similar to Mermaid:
+picjs can automatically find and render diagram code blocks, similar to Mermaid:
 
 ```html
-<pre><code class="language-jspic">
+<pre><code class="language-picjs">
 box "Hello"
 arrow
 box "World"
 </code></pre>
 
 <script>
-  // Process all jspic code blocks on page load
-  jspic.processCodeBlocks();
+  // Process all picjs code blocks on page load
+  picjs.processCodeBlocks();
 </script>
 ```
 
-The selector defaults to `code.jspic, pre > code.language-jspic`. Pass a custom selector if needed:
+The selector defaults to `code.picjs, pre > code.language-picjs`. Pass a custom selector if needed:
 
 ```javascript
-jspic.processCodeBlocks('pre.diagram > code');
+picjs.processCodeBlocks('pre.diagram > code');
 ```
 
 ### Direct API
@@ -48,7 +48,7 @@ jspic.processCodeBlocks('pre.diagram > code');
 For programmatic use:
 
 ```javascript
-const result = jspic.jspic('box "Hello"; arrow; box "World"');
+const result = picjs.picjs('box "Hello"; arrow; box "World"');
 
 console.log(result.svg);      // SVG markup string
 console.log(result.width);    // Width in pixels
@@ -59,7 +59,7 @@ console.log(result.isError);  // true if parsing failed
 Options:
 
 ```javascript
-jspic.jspic(source, {
+picjs.picjs(source, {
   cssClass: 'my-diagram',    // Add CSS class to SVG element
   darkMode: true,            // Invert colors for dark backgrounds
   plaintextErrors: true      // Return errors as plain text, not HTML
@@ -74,7 +74,7 @@ jspic.jspic(source, {
 
 The simplest diagram:
 
-```jspic example
+```picjs example
 box "Hello, World!"
 ```
 
@@ -84,7 +84,7 @@ This creates a single box with text centered inside.
 
 Chain objects with semicolons or newlines:
 
-```jspic example
+```picjs example
 box "Hello,"
 box "World!"
 ```
@@ -93,7 +93,7 @@ By default, objects flow to the right. Each new object appears to the right of t
 
 ### 3. Shapes
 
-jspic provides these shape primitives:
+picjs provides these shape primitives:
 
 **Block shapes** (have width, height, can contain text):
 - `box` — Rectangle
@@ -104,7 +104,7 @@ jspic provides these shape primitives:
 - `diamond` — Decision diamond
 - `file` — Document with folded corner
 
-```jspic
+```picjs
 define show { [ down; $1 $2; $3 ]; move right 50% }
 show(box, "a box", "box \"a box\"")
 show(circle, "a circle", "circle \"a circle\"")
@@ -121,7 +121,7 @@ show(file, "a file", "file \"a file\"")
 - `spline` — Curved line through points
 - `arc` — Circular arc
 
-``` jspic example
+``` picjs example
 S: box wid 2 ht 2 invis
 line from S.nw to S.ne
 spline color red from S.ne to \
@@ -143,7 +143,7 @@ line thin dashed from S.sw to S.ne
 
 Use `arrow` and `line` to connect shapes:
 
-```jspic
+```picjs
 box "A"
 arrow
 box "B"
@@ -161,7 +161,7 @@ Arrow variants:
 
 The default direction is `right`. Change it with direction statements:
 
-```jspic example
+```picjs example
 right
 box "A"
 arrow
@@ -184,7 +184,7 @@ Directions: `right`, `down`, `left`, `up`
 
 Every object has named points:
 
-``` jspic example
+``` picjs example
 S: box wid 1.4 ht 1.4 fill 0xf0f0f0 color lightgrey thin
 
 dot at S.s color green
@@ -219,7 +219,7 @@ Lines also have `.start` and `.end`.
 
 Reference these points to connect objects precisely:
 
-```jspic example
+```picjs example
 A: box "A"
 B: box "B" at 1 right of A
 arrow from A.e to B.w
@@ -229,7 +229,7 @@ arrow from A.e to B.w
 
 Use `at` with coordinates:
 
-```jspic example
+```picjs example
 box "Origin" at 0,0
 box "Right" at 1,0
 box "Up" at 0,1
@@ -237,7 +237,7 @@ box "Up" at 0,1
 
 #### Relative to other objects
 
-```jspic example
+```picjs example
 A: box "A"
 box "B" at 1 right of A
 box "C" at 0.5 below A
@@ -248,7 +248,7 @@ box "D" at 1 ne of A
 
 Give objects names (labels) for later reference:
 
-```jspic example
+```picjs example
 Start: box "Start"
 arrow
 Process: box "Process"
@@ -263,7 +263,7 @@ Labels must start with an uppercase letter.
 
 Set dimensions with `width`/`wid`, `height`/`ht`, `radius`/`rad`:
 
-```jspic example
+```picjs example
 box "Wide" width 2
 box "Tall" height 1.5
 box "Rounded" rad 0.2
@@ -272,7 +272,7 @@ circle "Big" radius 0.5
 
 Use percentages to scale relative to defaults:
 
-```jspic example
+```picjs example
 box "150% wide" width 150%
 arrow right 200%
 box "Normal"
@@ -280,7 +280,7 @@ box "Normal"
 
 The `fit` keyword sizes a shape to fit its text:
 
-```jspic example
+```picjs example
 box "Short" fit
 box "A much longer label" fit
 ```
@@ -289,7 +289,7 @@ box "A much longer label" fit
 
 #### Colors
 
-```jspic example
+```picjs example
 box "Red outline" color red
 box "Blue fill" fill blue
 box "Both" color white fill darkgreen
@@ -299,7 +299,7 @@ box "Both" color white fill darkgreen
 
 #### Line styles
 
-```jspic example
+```picjs example
 line "solid" right
 line "dashed" dashed right
 line "dotted" dotted right
@@ -309,7 +309,7 @@ box dotted
 
 #### Thickness
 
-```jspic example
+```picjs example
 line thick right 1
 line thin right 1
 line thickness 0.05 right 1
@@ -319,19 +319,19 @@ line thickness 0.05 right 1
 
 #### Position
 
-```jspic example
+```picjs example
 box "above" above "center" "below" below
 ```
 
 #### Alignment
 
-```jspic example
+```picjs example
 box "left" ljust "center" "right" rjust fit
 ```
 
 #### Style
 
-```jspic example
+```picjs example
 box "bold" bold
 box "italic" italic
 box "mono" mono
@@ -341,7 +341,7 @@ box "small" small
 
 Combine them:
 
-```jspic example
+```picjs example
 box "Bold Italic" bold italic fit
 ```
 
@@ -349,9 +349,9 @@ box "Bold Italic" bold italic fit
 
 ## Advanced Topics
 
-### How jspic Works
+### How picjs Works
 
-jspic is a single-pass layout engine:
+picjs is a single-pass layout engine:
 
 1. **Parse** statements left to right
 2. **Build** objects with default positions
@@ -362,7 +362,7 @@ The key insight: each object's position is determined by constraints relative to
 
 ### The Position Model
 
-**Current position**: jspic tracks a "current position" that advances as objects are created.
+**Current position**: picjs tracks a "current position" that advances as objects are created.
 
 **Default placement**: New objects appear at the current position, offset in the current direction.
 
@@ -374,7 +374,7 @@ The key insight: each object's position is determined by constraints relative to
 
 Group objects with `[ ... ]`:
 
-```jspic example
+```picjs example
 [
   box "A"
   arrow
@@ -397,7 +397,7 @@ A sublist acts as a single object with its own bounding box. Use it to:
 
 Store values in variables (lowercase names or starting with `$` or `@`):
 
-```jspic example
+```picjs example
 $gap = 0.5
 box "A"
 move right $gap
@@ -410,7 +410,7 @@ Assignment operators: `=`, `+=`, `-=`, `*=`, `/=`
 
 Built-in variables control defaults:
 
-```jspic example
+```picjs example
 boxwid = 1.5
 boxht = 0.75
 box "Wider and shorter"
@@ -420,7 +420,7 @@ box "Wider and shorter"
 
 Embed expressions in strings with `${...}`:
 
-```jspic example
+```picjs example
 $n = 42
 box "Value: ${$n}"
 
@@ -432,7 +432,7 @@ box "Width: ${A.wid}"
 
 Define reusable patterns:
 
-```jspic example
+```picjs example
 define roundbox { box rad 0.15 $1 }
 
 roundbox("First")
@@ -447,7 +447,7 @@ The `$1`, `$2`, etc. are positional parameters.
 ### For Loops
 
 
-```jspic example
+```picjs example
 for i from 1 to 3 do {
   box "Box ${i}"
   arrow
@@ -456,7 +456,7 @@ for i from 1 to 3 do {
 
 With step:
 
-```jspic example
+```picjs example
 for i from 5 to 10 step 2 do {
   box "${i}"
   move
@@ -467,7 +467,7 @@ for i from 5 to 10 step 2 do {
 
 The `chop` keyword shortens lines so they don't overlap shapes:
 
-```jspic example
+```picjs example
 A: circle "A"
 B: circle "B" at 2 right of A
 arrow from A to B chop
@@ -479,7 +479,7 @@ Without `chop`, the arrow would extend into the circles.
 
 Copy attributes from a previous object:
 
-```jspic example
+```picjs example
 box "Template" color blue fill lightblue rad 0.1 fit
 box "Copy 1" same
 box "Copy 2" same
@@ -487,7 +487,7 @@ box "Copy 2" same
 
 Or reference a specific object:
 
-```jspic example
+```picjs example
 A: box "A" color red
 B: box "B" color blue
 box "Like A" same as A
@@ -497,7 +497,7 @@ box "Like A" same as A
 
 Use `invis` or `invisible` to create spacing without visible output:
 
-```jspic example
+```picjs example
 box "Visible"
 box invis
 box "Also visible"
@@ -511,7 +511,7 @@ Useful for alignment and layout control.
 
 1. **Start simple**: Get basic layout working before adding styling
 2. **Use labels**: Name important objects for easier reference
-3. **Use fit**: Let jspic size boxes to fit text
+3. **Use fit**: Let picjs size boxes to fit text
 4. **Use variables**: Store repeated values
 5. **Use sublists**: Group related objects
 6. **Test incrementally**: Add one thing at a time

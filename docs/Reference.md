@@ -3,9 +3,9 @@ layout: base.njk
 title: Reference
 ---
 
-# jspic Language Reference
+# picjs Language Reference
 
-Complete specification of the jspic diagram language.
+Complete specification of the picjs diagram language.
 
 ## Lexical Elements
 
@@ -76,7 +76,7 @@ With units:
 
 ### Statement List
 
-A jspic script is a list of statements separated by newlines or semicolons:
+A picjs script is a list of statements separated by newlines or semicolons:
 
 ```
 statement
@@ -471,7 +471,7 @@ for VAR from start to end step increment do {
 
 ## Color Names
 
-jspic supports all 148 standard HTML/CSS color names. Examples:
+picjs supports all 148 standard HTML/CSS color names. Examples:
 
 **Basic colors**: `red`, `green`, `blue`, `yellow`, `cyan`, `magenta`, `black`, `white`, `gray`/`grey`
 
@@ -498,7 +498,7 @@ Color names are case-insensitive.
 
 ## SVG Output
 
-jspic renders to SVG at 144 pixels per inch by default (controlled by internal `rScale`).
+picjs renders to SVG at 144 pixels per inch by default (controlled by internal `rScale`).
 
 Coordinate transformation:
 - X increases to the right
