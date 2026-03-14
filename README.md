@@ -26,7 +26,13 @@ S: [
 ]
 
 [
-line right then up .2 then down .4 right .3 then down.4 left .3 then up .2 then left close fill 0xa0b0c0 color none
+  line right \
+       then up .2 \
+       then down .4 right .3 \
+       then down.4 left .3   \
+       then up .2 \
+       then left  \
+       close fill 0xa0b0c0 color none rad .03
 ]
 
 P: [
@@ -40,9 +46,9 @@ P: [
     ellipse at last arc.n fill pink "Adjust" "Weighting"
 ]
 
-box at S wid S.wid + .2 ht max(S.ht,P.ht) + .2 fill 0xf0f0f0 color none behind S
+box at S wid S.wid + .2 ht max(S.ht,P.ht) + .2 fill 0xf0f0f0 color none behind S rad .1
 
-box at P wid P.wid + .2 ht max(S.ht,P.ht) + .2 fill lightgrey color none behind S
+box at P wid P.wid + .2 ht max(S.ht,P.ht) + .2 fill lightgrey color none behind S rad .1
 
 -->
 ![](./_diagrams/example.svg)
