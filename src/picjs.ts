@@ -132,10 +132,5 @@ export function processCodeBlocks(selector?: string): void {
   });
 }
 
-// Backwards compatibility aliases
-export { picjs as jspic, picjs as pikchr };
-export type { PicjsResult as JspicResult, PicjsOptions as JspicOptions };
-export type { PicjsResult as PikchrResult, PicjsOptions as PikchrOptions };
-
 // Re-export key types
 export type { Pik, PList };

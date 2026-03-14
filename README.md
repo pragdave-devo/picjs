@@ -8,7 +8,7 @@ A bit like Mermaid, but:
 * no specific drawing types
 * dependable, consistent layout controls based on constraints
 
-``` picjs example
+<!-- picjs: example
 oval "Input"
 arrow
 box "Process" fill lightgreen
@@ -17,12 +17,33 @@ oval "Output"
 
 arc -> from last oval.n to first oval.n
 ellipse at last arc.n fill pink "Adjust" "Weighting"
-```
+-->
+![](./_diagrams/example.svg)
 
-* Playground
-* Guide
-* Reference
+* [Playground](https://pragdave-devo.github.io/picjs/)
+* [Guide](https://pragdave-devo.github.io/picjs/Guide/)
+* [Reference](https://pragdave-devo.github.io/picjs/Reference/)
 
 ## For The Impatient
 
+1. Load the library
+  ``` html
+  <script src="https://cdn.jsdelivr.net/npm/jspic@0.1.1/dist/jspic.umd.js"></script>
+  ```
 
+2. Search for `picjs` code blocks in the page.
+  ``` html
+  <script>
+    jspic.processCodeBlocks();
+</</script>
+  ```
+
+3. Make pretty pictures.
+
+  ```html
+  <pre><code class="language-jspic">
+  box "Hello"
+  arrow
+  box "World"
+  </code></pre>
+  ```

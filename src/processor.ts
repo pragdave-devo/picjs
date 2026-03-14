@@ -33,7 +33,7 @@ export function findDiagrams(content: string): DiagramBlock[] {
     const line = lines[i];
 
     // Check for raw code block: ```picjs [name]
-    const rawMatch = line.match(/^```picjs(?:\s+(\S+))?\s*$/);
+    const rawMatch = line.match(/^```\s*picjs(?:\s+(\S+))?\s*$/);
     if (rawMatch) {
       const name = rawMatch[1] || null;
       const startLine = i;
