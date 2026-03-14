@@ -1,25 +1,27 @@
-<svg xmlns='http://www.w3.org/2000/svg' style='font-size:initial;' viewBox="0 0 1077.12 213.48000000000002">
-<path d="M2.159999999999986,209.33999999999997L462.96,209.33999999999997L462.96,4.140000000000024L2.159999999999986,4.140000000000024Z"  style="fill:rgb(211,211,211);stroke-width:2.16;stroke:rgb(0,0,0);" />
-<text x="19.44" y="31.140000000000008" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">oval "Input" fill white</text>
-<text x="19.44" y="56.34" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">arrow</text>
-<text x="19.44" y="81.54" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">box "Process" fill lightgreen</text>
-<text x="19.44" y="106.74000000000001" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">arrow</text>
-<text x="19.44" y="131.94000000000003" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">oval "Output" same</text>
-<text x="19.44" y="157.14000000000001" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">arc -&gt; from last oval.n to first oval.n</text>
-<text x="19.44" y="182.34" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">ellipse at last arc.n fill pink "Adjust" "Weighting"</text>
-<path d="M570.96,211.32000000000005L642.96,211.32000000000005A36 36 0 0 0 678.96 175.32000000000005A36 36 0 0 0 642.96 139.32000000000002L570.96,139.32000000000002A36 36 0 0 0 534.96 175.32000000000005A36 36 0 0 0 570.96 211.32000000000005Z"  style="fill:rgb(255,255,255);stroke-width:2.16;stroke:rgb(0,0,0);" />
-<text x="606.96" y="175.32000000000005" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Input</text>
-<polygon points="750.96,175.32000000000005 739.4399999999999,179.64000000000001 739.4399999999999,171" style="fill:rgb(0,0,0)"/>
-<path d="M678.96,175.32000000000005L745.1999999999999,175.32000000000005"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
-<path d="M750.96,211.32000000000005L858.96,211.32000000000005L858.96,139.32000000000002L750.96,139.32000000000002Z"  style="fill:rgb(144,238,144);stroke-width:2.16;stroke:rgb(0,0,0);" />
-<text x="804.96" y="175.32000000000005" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Process</text>
-<polygon points="930.96,175.32000000000005 919.4399999999999,179.64000000000001 919.4399999999999,171" style="fill:rgb(0,0,0)"/>
-<path d="M858.96,175.32000000000005L925.1999999999999,175.32000000000005"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
-<path d="M966.96,211.32000000000005L1038.96,211.32000000000005A36 36 0 0 0 1074.96 175.32000000000005A36 36 0 0 0 1038.96 139.32000000000002L966.96,139.32000000000002A36 36 0 0 0 930.96 175.32000000000005A36 36 0 0 0 966.96 211.32000000000005Z"  style="fill:rgb(255,255,255);stroke-width:2.16;stroke:rgb(0,0,0);" />
-<text x="1002.96" y="175.32000000000005" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Output</text>
-<polygon points="606.96,139.32000000000002 612.0511688245431,128.1194285860051 618.1605714139948,134.22883117545686" style="fill:rgb(0,0,0)"/>
-<path d="M1002.96,139.32000000000002Q804.96,-58.67999999999995 611.0329350596345,135.24706494036548"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
-<ellipse cx="804.96" cy="38.160000000000004" rx="54" ry="36"  style="fill:rgb(255,192,203);stroke-width:2.16;stroke:rgb(0,0,0);" />
-<text x="804.96" y="28.07999999999999" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Adjust</text>
-<text x="804.96" y="48.24" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Weighting</text>
+<svg xmlns='http://www.w3.org/2000/svg' style='font-size:initial;' viewBox="0 0 1120.32 242.28000000000003">
+<path d="M2.159999999999986,240.12L462.96,240.12L462.96,2.160000000000002L2.159999999999986,2.160000000000002Z"  style="fill:rgb(240,240,240);" />
+<path d="M549.3599999999999,240.12L1118.16,240.12L1118.16,2.160000000000002L549.3599999999999,2.160000000000002Z"  style="fill:rgb(211,211,211);" />
+<text x="19.44" y="45.540000000000006" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">oval "Input" fill white</text>
+<text x="19.44" y="70.74000000000001" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">arrow</text>
+<text x="19.44" y="95.94" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">box "Process" fill lightgreen</text>
+<text x="19.44" y="121.14000000000001" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">arrow</text>
+<text x="19.44" y="146.34" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">oval "Output" same</text>
+<text x="19.44" y="171.54000000000002" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">arc -&gt; from last oval.n to first oval.n</text>
+<text x="19.44" y="196.74" text-anchor="start" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">ellipse at last arc.n fill pink "Adjust" "Weighting"</text>
+<path d="M448.56000000000006,92.34L520.5600000000001,92.34L520.5600000000001,63.540000000000006L563.76,121.14000000000001L520.5600000000001,178.74L520.5600000000001,149.94L448.56000000000006,149.94Z"  style="fill:rgb(160,176,192);" />
+<path d="M599.76,225.72000000000003L671.76,225.72000000000003A36 36 0 0 0 707.76 189.72000000000003A36 36 0 0 0 671.76 153.72000000000003L599.76,153.72000000000003A36 36 0 0 0 563.76 189.72000000000003A36 36 0 0 0 599.76 225.72000000000003Z"  style="fill:rgb(255,255,255);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="635.76" y="189.72000000000003" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Input</text>
+<polygon points="779.76,189.72000000000003 768.24,194.04000000000002 768.24,185.4" style="fill:rgb(0,0,0)"/>
+<path d="M707.76,189.72000000000003L774,189.72000000000003"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M779.76,225.72000000000003L887.76,225.72000000000003L887.76,153.72000000000003L779.76,153.72000000000003Z"  style="fill:rgb(144,238,144);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="833.76" y="189.72000000000003" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Process</text>
+<polygon points="959.76,189.72000000000003 948.24,194.04000000000002 948.24,185.4" style="fill:rgb(0,0,0)"/>
+<path d="M887.76,189.72000000000003L954,189.72000000000003"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M995.76,225.72000000000003L1067.76,225.72000000000003A36 36 0 0 0 1103.76 189.72000000000003A36 36 0 0 0 1067.76 153.72000000000003L995.76,153.72000000000003A36 36 0 0 0 959.76 189.72000000000003A36 36 0 0 0 995.76 225.72000000000003Z"  style="fill:rgb(255,255,255);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1031.76" y="189.72000000000003" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Output</text>
+<polygon points="635.76,153.72000000000003 640.8511688245432,142.5194285860051 646.9605714139949,148.6288311754569" style="fill:rgb(0,0,0)"/>
+<path d="M1031.76,153.72000000000003Q833.76,-44.27999999999999 639.8329350596346,149.64706494036548"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<ellipse cx="833.76" cy="52.56" rx="54" ry="36"  style="fill:rgb(255,192,203);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="833.76" y="42.47999999999999" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Adjust</text>
+<text x="833.76" y="62.64" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Weighting</text>
 </svg>

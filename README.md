@@ -25,10 +25,11 @@ S: [
     $t("ellipse at last arc.n fill pink \"Adjust\" \"Weighting\"" ljust)
 ]
 
-box at S wid S.wid + .2 ht S.ht + .2 fill lightgrey behind S
-
-move
 [
+line right then up .2 then down .4 right .3 then down.4 left .3 then up .2 then left close fill 0xa0b0c0 color none
+]
+
+P: [
     oval "Input" fill white
     arrow
     box "Process" fill lightgreen
@@ -38,6 +39,11 @@ move
     arc -> from last oval.n to first oval.n
     ellipse at last arc.n fill pink "Adjust" "Weighting"
 ]
+
+box at S wid S.wid + .2 ht max(S.ht,P.ht) + .2 fill 0xf0f0f0 color none behind S
+
+box at P wid P.wid + .2 ht max(S.ht,P.ht) + .2 fill lightgrey color none behind S
+
 -->
 ![](./_diagrams/example.svg)
 
