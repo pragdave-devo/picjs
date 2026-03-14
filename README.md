@@ -9,11 +9,11 @@ A bit like Mermaid, but:
 * dependable, consistent layout controls based on constraints
 
 <!-- picjs: example
-oval "Input"
+oval "Input" fill white
 arrow
 box "Process" fill lightgreen
 arrow
-oval "Output"
+oval "Output" same
 
 arc -> from last oval.n to first oval.n
 ellipse at last arc.n fill pink "Adjust" "Weighting"

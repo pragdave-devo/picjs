@@ -1,5 +1,5 @@
 <svg xmlns='http://www.w3.org/2000/svg' style='font-size:initial;' viewBox="0 0 544.32 213.48">
-<path d="M38.160000000000004,211.32L110.16,211.32A36 36 0 0 0 146.16000000000003 175.32A36 36 0 0 0 110.16 139.32L38.160000000000004,139.32A36 36 0 0 0 2.160000000000002 175.32A36 36 0 0 0 38.160000000000004 211.32Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M38.160000000000004,211.32L110.16,211.32A36 36 0 0 0 146.16000000000003 175.32A36 36 0 0 0 110.16 139.32L38.160000000000004,139.32A36 36 0 0 0 2.160000000000002 175.32A36 36 0 0 0 38.160000000000004 211.32Z"  style="fill:rgb(255,255,255);stroke-width:2.16;stroke:rgb(0,0,0);" />
 <text x="74.16" y="175.32" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Input</text>
 <polygon points="218.16000000000003,175.32 206.64000000000001,179.64000000000001 206.64000000000001,171" style="fill:rgb(0,0,0)"/>
 <path d="M146.16000000000003,175.32L212.4,175.32"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
@@ -7,7 +7,7 @@
 <text x="272.16" y="175.32" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Process</text>
 <polygon points="398.16,175.32 386.64,179.64000000000001 386.64,171" style="fill:rgb(0,0,0)"/>
 <path d="M326.16,175.32L392.40000000000003,175.32"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
-<path d="M434.16,211.32L506.16,211.32A36 36 0 0 0 542.16 175.32A36 36 0 0 0 506.16 139.32L434.16,139.32A36 36 0 0 0 398.16 175.32A36 36 0 0 0 434.16 211.32Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M434.16,211.32L506.16,211.32A36 36 0 0 0 542.16 175.32A36 36 0 0 0 506.16 139.32L434.16,139.32A36 36 0 0 0 398.16 175.32A36 36 0 0 0 434.16 211.32Z"  style="fill:rgb(255,255,255);stroke-width:2.16;stroke:rgb(0,0,0);" />
 <text x="470.16" y="175.32" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Output</text>
 <polygon points="74.16,139.32 79.25116882454316,128.11942858600509 85.36057141399492,134.22883117545686" style="fill:rgb(0,0,0)"/>
 <path d="M470.16,139.32Q272.16,-58.67999999999999 78.23293505963453,135.24706494036548"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
