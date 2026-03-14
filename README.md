@@ -9,14 +9,35 @@ A bit like Mermaid, but:
 * dependable, consistent layout controls based on constraints
 
 <!-- picjs: example
-oval "Input" fill white
-arrow
-box "Process" fill lightgreen
-arrow
-oval "Output" same
+define $t {
+  box wid 3 $1 ljust mono ht 35% invis
+}
 
-arc -> from last oval.n to first oval.n
-ellipse at last arc.n fill pink "Adjust" "Weighting"
+S: [
+    down
+    $t("oval \"Input\" fill white" ljust)
+    $t("arrow" ljust)
+    $t("box \"Process\" fill lightgreen" ljust)
+    $t("arrow" ljust)
+    $t("oval \"Output\" same" ljust)
+
+    $t("arc -> from last oval.n to first oval.n" ljust)
+    $t("ellipse at last arc.n fill pink \"Adjust\" \"Weighting\"" ljust)
+]
+
+box at S wid S.wid + .2 ht S.ht + .2 fill lightgrey behind S
+
+move
+[
+    oval "Input" fill white
+    arrow
+    box "Process" fill lightgreen
+    arrow
+    oval "Output" same
+
+    arc -> from last oval.n to first oval.n
+    ellipse at last arc.n fill pink "Adjust" "Weighting"
+]
 -->
 ![](./_diagrams/example.svg)
 
