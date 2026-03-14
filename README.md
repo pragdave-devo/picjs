@@ -68,3 +68,19 @@ move
   box "World"
   </code></pre>
   ```
+
+# With Thanks
+
+To Brian Kernighan and the folks at Bell Labs who wrote the amazing
+Designers Work Bench over fifty years ago. They changed the way we write
+documents profoundly.
+
+And to D. Richard Hipp, who created both SQLite and pikchr, the pic clone on
+which this was based.
+
+
+  # Copyright and License
+
+  Copyright 2026 Devo, Inc
+
+  Licensed under the [Mozilla Public License](LICENSE.md)
