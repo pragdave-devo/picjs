@@ -1,82 +1,45 @@
-<svg fill="none" viewBox="0 0 840 320" width="840" height="320" xmlns="http://www.w3.org/2000/svg">
-  <foreignObject width="100%" height="100%">
-    <div xmlns="http://www.w3.org/1999/xhtml">
-      <style>
-        .gallery {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 16px;
-          padding: 16px;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-        }
-        .gallery-item {
-          width: 128px;
-          text-align: center;
-        }
-        .gallery-item a {
-          display: block;
-          text-decoration: none;
-          color: #0969da;
-        }
-        .gallery-item a:hover {
-          text-decoration: underline;
-        }
-        .gallery-item img {
-          width: 128px;
-          height: 128px;
-          object-fit: contain;
-          border: 1px solid #d0d7de;
-          border-radius: 6px;
-          background: #fff;
-          padding: 4px;
-        }
-        .gallery-item img:hover {
-          border-color: #0969da;
-          box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
-        }
-        .gallery-item .label {
-          margin-top: 6px;
-          font-size: 12px;
-        }
-      </style>
-      <div class="gallery">
-        <div class="gallery-item">
-          <a href="https://pragdave-devo.github.io/picjs/?example=architecture" target="_blank">
-            <img src="architecture.svg" alt="Architecture" />
-            <div class="label">Architecture</div>
-          </a>
-        </div>
-        <div class="gallery-item">
-          <a href="https://pragdave-devo.github.io/picjs/?example=economy" target="_blank">
-            <img src="economy.svg" alt="Economy" />
-            <div class="label">Economy</div>
-          </a>
-        </div>
-        <div class="gallery-item">
-          <a href="https://pragdave-devo.github.io/picjs/?example=kernighan" target="_blank">
-            <img src="kernighan-page-18.svg" alt="Kernighan" />
-            <div class="label">Kernighan</div>
-          </a>
-        </div>
-        <div class="gallery-item">
-          <a href="https://pragdave-devo.github.io/picjs/?example=snail" target="_blank">
-            <img src="snail.svg" alt="Snail" />
-            <div class="label">Snail</div>
-          </a>
-        </div>
-        <div class="gallery-item">
-          <a href="https://pragdave-devo.github.io/picjs/?example=spiro" target="_blank">
-            <img src="spiro.svg" alt="Spiro" />
-            <div class="label">Spiro</div>
-          </a>
-        </div>
-        <div class="gallery-item">
-          <a href="https://pragdave-devo.github.io/picjs/?example=gear" target="_blank">
-            <img src="gear.svg" alt="Gear" />
-            <div class="label">Gear</div>
-          </a>
-        </div>
-      </div>
-    </div>
-  </foreignObject>
+<svg viewBox="0 0 880 340" width="880" height="340" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <style>
+    .label { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; fill: #0969da; }
+    .frame { fill: #fff; stroke: #d0d7de; stroke-width: 1; rx: 6; }
+    a:hover .frame { stroke: #0969da; stroke-width: 2; }
+    a:hover .label { text-decoration: underline; }
+  </style>
+
+  <!-- Row 1 -->
+  <a xlink:href="https://pragdave-devo.github.io/picjs/?example=architecture" target="_blank">
+    <rect class="frame" x="16" y="16" width="128" height="128"/>
+    <image xlink:href="architecture.svg" x="20" y="20" width="120" height="120" preserveAspectRatio="xMidYMid meet"/>
+    <text class="label" x="80" y="162" text-anchor="middle">Architecture</text>
+  </a>
+
+  <a xlink:href="https://pragdave-devo.github.io/picjs/?example=economy" target="_blank">
+    <rect class="frame" x="160" y="16" width="128" height="128"/>
+    <image xlink:href="economy.svg" x="164" y="20" width="120" height="120" preserveAspectRatio="xMidYMid meet"/>
+    <text class="label" x="224" y="162" text-anchor="middle">Economy</text>
+  </a>
+
+  <a xlink:href="https://pragdave-devo.github.io/picjs/?example=kernighan" target="_blank">
+    <rect class="frame" x="304" y="16" width="128" height="128"/>
+    <image xlink:href="kernighan-page-18.svg" x="308" y="20" width="120" height="120" preserveAspectRatio="xMidYMid meet"/>
+    <text class="label" x="368" y="162" text-anchor="middle">Kernighan</text>
+  </a>
+
+  <a xlink:href="https://pragdave-devo.github.io/picjs/?example=snail" target="_blank">
+    <rect class="frame" x="448" y="16" width="128" height="128"/>
+    <image xlink:href="snail.svg" x="452" y="20" width="120" height="120" preserveAspectRatio="xMidYMid meet"/>
+    <text class="label" x="512" y="162" text-anchor="middle">Snail</text>
+  </a>
+
+  <a xlink:href="https://pragdave-devo.github.io/picjs/?example=spiro" target="_blank">
+    <rect class="frame" x="592" y="16" width="128" height="128"/>
+    <image xlink:href="spiro.svg" x="596" y="20" width="120" height="120" preserveAspectRatio="xMidYMid meet"/>
+    <text class="label" x="656" y="162" text-anchor="middle">Spiro</text>
+  </a>
+
+  <a xlink:href="https://pragdave-devo.github.io/picjs/?example=gear" target="_blank">
+    <rect class="frame" x="736" y="16" width="128" height="128"/>
+    <image xlink:href="gear.svg" x="740" y="20" width="120" height="120" preserveAspectRatio="xMidYMid meet"/>
+    <text class="label" x="800" y="162" text-anchor="middle">Gear</text>
+  </a>
 </svg>
