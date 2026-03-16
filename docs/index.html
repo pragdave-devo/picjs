@@ -102,15 +102,28 @@
     #source-editor {
       flex: 1;
       width: 100%;
-      padding: 16px;
-      border: none;
-      outline: none;
-      resize: none;
+      overflow: auto;
+      background: var(--bg-panel);
+    }
+
+    /* CodeMirror customizations */
+    #source-editor .cm-editor {
+      height: 100%;
       font-family: var(--font-mono);
       font-size: 13px;
+    }
+
+    #source-editor .cm-scroller {
+      padding: 16px;
       line-height: 1.5;
+    }
+
+    #source-editor .cm-content {
       tab-size: 2;
-      background: var(--bg-panel);
+    }
+
+    #source-editor .cm-focused {
+      outline: none;
     }
 
     .editor-toolbar {
@@ -299,11 +312,7 @@
           </optgroup>
         </select>
       </div>
-      <textarea id="source-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">arrow right 200% "Markdown" "Source"
-box rad 10px "Markdown" "Formatter" "(picjs)" fit
-arrow right 200% "HTML+SVG" "Output"
-arrow <-> down from last box.s
-box same "picjs" "Diagram" "Renderer" fit</textarea>
+      <div id="source-editor"></div>
       <div class="editor-toolbar">
         <label>
           <input type="checkbox" id="auto-render" checked>
@@ -328,9 +337,136 @@ box same "picjs" "Diagram" "Renderer" fit</textarea>
   </foomer>
 
   <script src="assets/picjs.umd.js"></script>
-  <script>
+  <script type="module">
+    // CodeMirror 6 imports
+    import {EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter} from 'https://esm.sh/@codemirror/view@6';
+    import {EditorState} from 'https://esm.sh/@codemirror/state@6';
+    import {StreamLanguage} from 'https://esm.sh/@codemirror/language@6';
+    import {syntaxHighlighting, HighlightStyle} from 'https://esm.sh/@codemirror/language@6';
+    import {tags} from 'https://esm.sh/@lezer/highlight@1';
+    import {history, defaultKeymap, historyKeymap} from 'https://esm.sh/@codemirror/commands@6';
+
+    // picjs language mode for syntax highlighting
+    const picjsLanguage = StreamLanguage.define({
+      token(stream) {
+        // Skip whitespace
+        if (stream.eatSpace()) return null;
+
+        // Comments: # or //
+        if (stream.match(/^#.*/) || stream.match(/^\/\/.*/)) {
+          return 'comment';
+        }
+
+        // Strings
+        if (stream.match(/^"([^"\\]|\\.)*"/)) {
+          return 'string';
+        }
+
+        // Numbers (including hex colors like 0xff0000)
+        if (stream.match(/^0x[0-9a-fA-F]+/) || stream.match(/^-?\d+(\.\d*)?(%|px|pt|in|cm|mm|pc)?/)) {
+          return 'number';
+        }
+
+        // Labels (Name:)
+        if (stream.match(/^[A-Z][A-Za-z0-9_]*:/)) {
+          return 'definition';
+        }
+
+        // Keywords - shapes
+        if (stream.match(/\b(box|circle|ellipse|oval|cylinder|diamond|file|line|arrow|spline|arc|dot|text|move)\b/)) {
+          return 'keyword';
+        }
+
+        // Keywords - directions and positions
+        if (stream.match(/\b(right|down|left|up|from|to|at|with|then|go|heading|cw|ccw|chop)\b/)) {
+          return 'keyword';
+        }
+
+        // Keywords - attributes
+        if (stream.match(/\b(wid|width|ht|height|rad|radius|diam|diameter|thick|thickness|fit|same|invis|invisible|behind)\b/)) {
+          return 'keyword';
+        }
+
+        // Keywords - style
+        if (stream.match(/\b(dashed|dotted|solid|color|fill|stroke)\b/)) {
+          return 'keyword';
+        }
+
+        // Keywords - position references
+        if (stream.match(/\b(first|last|previous|start|end|center|north|south|east|west|ne|nw|se|sw|n|s|e|w|c|top|bottom)\b/)) {
+          return 'atom';
+        }
+
+        // Keywords - control flow
+        if (stream.match(/\b(define|for|do|step|if|else|print|assert)\b/)) {
+          return 'keyword';
+        }
+
+        // Built-in variables and functions
+        if (stream.match(/\b(boxwid|boxht|circlerad|arcrad|linewid|lineht|movewid|moveht|arrowwid|arrowht|arrowhead|scale|fontscale|charwid|charht|linerad|fill|thickness|color)\b/)) {
+          return 'variableName.special';
+        }
+
+        // Math functions
+        if (stream.match(/\b(sin|cos|tan|asin|acos|atan2|sqrt|abs|max|min|int)\b/)) {
+          return 'function';
+        }
+
+        // Color names (common ones)
+        if (stream.match(/\b(red|green|blue|yellow|cyan|magenta|white|black|gray|grey|orange|pink|purple|brown|lightblue|lightgreen|lightyellow|lightgrey|lightgray|darkblue|darkgreen|darkred)\b/)) {
+          return 'color';
+        }
+
+        // Color functions
+        if (stream.match(/\b(rgb|oklch)\b/)) {
+          return 'function';
+        }
+
+        // Variables starting with $
+        if (stream.match(/^\$[a-zA-Z_][a-zA-Z0-9_]*/)) {
+          return 'variableName.special';
+        }
+
+        // Identifiers
+        if (stream.match(/^[a-zA-Z_][a-zA-Z0-9_]*/)) {
+          return 'variableName';
+        }
+
+        // Operators
+        if (stream.match(/^[+\-*\/=<>!&|]+/)) {
+          return 'operator';
+        }
+
+        // Skip other characters
+        stream.next();
+        return null;
+      }
+    });
+
+    // Highlight style
+    const picjsHighlightStyle = HighlightStyle.define([
+      { tag: tags.comment, color: '#6a737d' },
+      { tag: tags.string, color: '#032f62' },
+      { tag: tags.number, color: '#005cc5' },
+      { tag: tags.keyword, color: '#d73a49' },
+      { tag: tags.definition(tags.variableName), color: '#6f42c1' },
+      { tag: tags.function(tags.variableName), color: '#6f42c1' },
+      { tag: tags.atom, color: '#005cc5' },
+      { tag: tags.variableName, color: '#24292e' },
+      { tag: tags.special(tags.variableName), color: '#e36209' },
+      { tag: tags.operator, color: '#d73a49' },
+      { tag: tags.color, color: '#22863a' },
+    ]);
+
+    // Default source code
+    const defaultSource = `arrow right 200% "Markdown" "Source"
+box rad 10px "Markdown" "Formatter" "(picjs)" fit
+arrow right 200% "HTML+SVG" "Output"
+arrow <-> down from last box.s
+box same "picjs" "Diagram" "Renderer" fit`;
+
     // DOM elements
-    const editor = document.getElementById('source-editor');
+    const editorContainer = document.getElementById('source-editor');
     const resultContainer = document.getElementById('result-container');
     const autoRenderCheckbox = document.getElementById('auto-render');
     const renderBtn = document.getElementById('render-btn');
@@ -604,7 +740,7 @@ hue = 0
 
 offset_of_pen = .8*inner_radius # proportion of distance of pen from center of small disk
 
-move to (outer_radius, 0)
+move to (diff + offset_of_pen, 0)
 
 for theta from 0 to 32*$pi step 0.1 do {
     xp = diff * cos(theta) + offset_of_pen * cos(ratio * theta)
@@ -664,9 +800,12 @@ for _count from 1 to teeth do {
       };
     }
 
+    // Editor instance (will be initialized later)
+    let editor;
+
     // Render function
     function render() {
-      const source = editor.value;
+      const source = editor.state.doc.toString();
       const startTime = performance.now();
 
       const result = picjs.picjs(source);
@@ -709,21 +848,18 @@ for _count from 1 to teeth do {
       history.replaceState(null, '', url);
     }
 
-    // Event handlers
-    editor.addEventListener('input', () => {
-      // Clear example from URL when editor is modified
-      if (getExampleFromUrl()) {
-        setExampleInUrl(null);
-      }
-      if (autoRenderCheckbox.checked) {
-        debouncedRender();
-      }
-    });
+    // Helper to set editor content
+    function setEditorContent(content) {
+      editor.dispatch({
+        changes: { from: 0, to: editor.state.doc.length, insert: content }
+      });
+    }
 
+    // Event handlers
     renderBtn.addEventListener('click', render);
 
     clearBtn.addEventListener('click', () => {
-      editor.value = '';
+      setEditorContent('');
       setExampleInUrl(null);
       render();
     });
@@ -731,43 +867,71 @@ for _count from 1 to teeth do {
     exampleSelector.addEventListener('change', (e) => {
       const key = e.target.value;
       if (key && examples[key]) {
-        editor.value = examples[key];
+        setEditorContent(examples[key]);
         setExampleInUrl(key);
         render();
       }
       e.target.value = ''; // Reset selector
     });
 
-    // Keyboard shortcuts
-    editor.addEventListener('keydown', (e) => {
-      // Ctrl/Cmd + Enter: Force render
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        render();
-      }
-    });
-
     // Load saved content or use default
-    function init() {
+    function getInitialContent() {
       // Check URL for example parameter first
       const urlExample = getExampleFromUrl();
       if (urlExample && examples[urlExample]) {
-        editor.value = examples[urlExample];
-        render();
-        return;
+        return examples[urlExample];
       }
 
       // Otherwise load from localStorage
       try {
         const saved = localStorage.getItem('picjs-source');
-        if (saved) {
-          editor.value = saved;
-        }
+        if (saved) return saved;
       } catch (e) {}
-      render();
+
+      return defaultSource;
     }
 
-    init();
+    // Custom keymap for Cmd/Ctrl+Enter
+    const picjsKeymap = keymap.of([
+      {
+        key: 'Mod-Enter',
+        run: () => { render(); return true; }
+      }
+    ]);
+
+    // Create editor update listener for auto-render
+    const updateListener = EditorView.updateListener.of((update) => {
+      if (update.docChanged) {
+        // Clear example from URL when editor is modified
+        if (getExampleFromUrl()) {
+          setExampleInUrl(null);
+        }
+        if (autoRenderCheckbox.checked) {
+          debouncedRender();
+        }
+      }
+    });
+
+    // Initialize CodeMirror
+    editor = new EditorView({
+      doc: getInitialContent(),
+      extensions: [
+        lineNumbers(),
+        highlightActiveLine(),
+        highlightActiveLineGutter(),
+        history(),
+        keymap.of([...defaultKeymap, ...historyKeymap]),
+        picjsKeymap,
+        picjsLanguage,
+        syntaxHighlighting(picjsHighlightStyle),
+        updateListener,
+        EditorView.lineWrapping,
+      ],
+      parent: editorContainer,
+    });
+
+    // Initial render
+    render();
   </script>
 </body>
 </html>

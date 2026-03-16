@@ -7,7 +7,8 @@ hue = 0
 
 offset_of_pen = .8*inner_radius # proportion of distance of pen from center of small disk
 
-move to (outer_radius, 0)
+move to (diff + offset_of_pen, 0)
+
 
 for theta from 0 to 32*$pi step 0.1 do {
     xp = diff * cos(theta) + offset_of_pen * cos(ratio * theta)
