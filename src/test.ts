@@ -1,6 +1,6 @@
 // test.ts — Comprehensive unit tests for picjs port
 
-import { pikchr } from './picjs.ts';
+import { picjs as pikchr } from './picjs.ts';
 import {
   type PNum, type PPoint, type PBox, type PToken, type Pik,
   TokenType, createPik, makeToken, pointCopy,

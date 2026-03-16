@@ -40,6 +40,9 @@ export const FN_SIN = 5;
 export const FN_SQRT = 6;
 export const FN_D2R = 7;  // degrees to radians
 export const FN_R2D = 8;  // radians to degrees
+export const FN_RGB = 9;  // rgb(r, g, b) color
+export const FN_HSL = 10; // hsl(h, s, l) color
+export const FN_OKLCH = 11; // oklch(l, c, h) color
 
 // Text position and style flags (stored in PToken.eCode)
 export const TP_LJUST  = 0x0001;
@@ -177,6 +180,7 @@ export enum TokenType {
   T_EVEN,
   T_FUNC1,
   T_FUNC2,
+  T_FUNC3,
   T_IN,
   T_LAST,
   T_LEFT,
@@ -320,7 +324,7 @@ export const PIKCHR_DARK_MODE = 0x0002;
 export const MAX_TPATH = 1000;
 export const MAX_CTX = 10;
 export const MAX_TXT = 5;
-export const PIKCHR_TOKEN_LIMIT = 100000;
+export const PIKCHR_TOKEN_LIMIT = 200000;
 
 // The main Pik parser/render state
 export interface Pik {

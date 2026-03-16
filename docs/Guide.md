@@ -305,6 +305,18 @@ box "Both" color white fill darkgreen
 
 148 named colors are supported (HTML/CSS color names).
 
+You can also create colors programmatically:
+
+```picjs example
+box "RGB" fill rgb(255, 128, 0)
+box "HSL" fill hsl(210, 80, 60)
+box "OKLCH" fill oklch(70, 0.15, 150)
+```
+
+- `rgb(r, g, b)` — red, green, blue (0-255 each)
+- `hsl(h, s, l)` — hue (0-360), saturation (0-100), lightness (0-100)
+- `oklch(l, c, h)` — lightness (0-100), chroma (0-0.4), hue (0-360)
+
 #### Line styles
 
 ```picjs example
@@ -434,6 +446,26 @@ box "C"
 ```
 
 Assignment operators: `=`, `+=`, `-=`, `*=`, `/=`
+
+#### Mathematical constants
+
+Use `$pi` and `$2pi` for trigonometric calculations:
+
+```picjs example
+for angle from 0 to $2pi step 0.3 do {
+    dot at (0.8*cos(angle), 0.8*sin(angle))
+}
+```
+
+For working with degrees instead of radians, use `d2r()` and `r2d()`:
+
+```picjs example
+for deg from 0 to 360 step 30 do {
+    dot at (0.8*cos(d2r(deg)), 0.8*sin(d2r(deg)))
+}
+```
+
+#### Built-in variables
 
 Built-in variables control defaults:
 

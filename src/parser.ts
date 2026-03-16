@@ -42,7 +42,7 @@ const {
   T_AND, T_AS, T_ASSERT, T_BETWEEN, T_DEFINE, T_DIST,
   T_DOT_E, T_DOT_L, T_DOT_U, T_DOT_XY,
   T_DOWN, T_END, T_EVEN,
-  T_FUNC1, T_FUNC2, T_IN, T_LAST, T_LEFT, T_PRINT, T_RIGHT,
+  T_FUNC1, T_FUNC2, T_FUNC3, T_IN, T_LAST, T_LEFT, T_PRINT, T_RIGHT,
   T_START, T_THE, T_TOP, T_BOTTOM, T_UNTIL, T_UP, T_VERTEX,
   T_WAY, T_X, T_Y, T_THIS,
   T_CODEBLOCK,
@@ -1184,7 +1184,7 @@ function parsePrimary(p: Pik, ts: TokenStream): PNum {
     ts.expect(T_LP, 'expected \"(\"');
     const x = parseExpr(p, ts);
     ts.expect(T_RP, 'expected \")\"');
-    return pikFunc(p, fn, x, 0.0);
+    return pikFunc(p, fn, x, 0.0, 0.0);
   }
 
   // FUNC2 LP expr COMMA expr RP
@@ -1195,7 +1195,20 @@ function parsePrimary(p: Pik, ts: TokenStream): PNum {
     ts.expect(T_COMMA, 'expected \",\"');
     const y = parseExpr(p, ts);
     ts.expect(T_RP, 'expected \")\"');
-    return pikFunc(p, fn, x, y);
+    return pikFunc(p, fn, x, y, 0.0);
+  }
+
+  // FUNC3 LP expr COMMA expr COMMA expr RP (rgb, hsl, oklch)
+  if (t.eType === T_FUNC3) {
+    const fn = ts.advance();
+    ts.expect(T_LP, 'expected \"(\"');
+    const x = parseExpr(p, ts);
+    ts.expect(T_COMMA, 'expected \",\"');
+    const y = parseExpr(p, ts);
+    ts.expect(T_COMMA, 'expected \",\"');
+    const z = parseExpr(p, ts);
+    ts.expect(T_RP, 'expected \")\"');
+    return pikFunc(p, fn, x, y, z);
   }
 
   // DIST LP position COMMA position RP
@@ -1371,7 +1384,7 @@ function isEdge(t: PToken): boolean {
 function isExprStart(t: PToken): boolean {
   return t.eType === T_NUMBER || t.eType === T_ID || t.eType === T_LP ||
          t.eType === T_PLUS || t.eType === T_MINUS ||
-         t.eType === T_FUNC1 || t.eType === T_FUNC2 || t.eType === T_DIST ||
+         t.eType === T_FUNC1 || t.eType === T_FUNC2 || t.eType === T_FUNC3 || t.eType === T_DIST ||
          t.eType === T_PLACENAME || t.eType === T_NTH || t.eType === T_LAST ||
          t.eType === T_THIS;
 }

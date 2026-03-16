@@ -13,6 +13,7 @@ import {
   TP_BELOW, TP_BELOW2, TP_VMASK,
   TP_BIG, TP_SMALL, TP_XTRA, TP_SZMASK, TP_ITALIC, TP_BOLD, TP_MONO, TP_FMASK, TP_ALIGN,
   FN_ABS, FN_COS, FN_INT, FN_MAX, FN_MIN, FN_SIN, FN_SQRT, FN_D2R, FN_R2D,
+  FN_RGB, FN_HSL, FN_OKLCH,
   MAX_TXT, MAX_TPATH, PIKCHR_TOKEN_LIMIT,
   pikHdgAngle,
   createPObj, makeToken, pikRound, pikDist,
@@ -932,7 +933,7 @@ export function pikPropertyOf(pObj: PObj | null, pProp: PToken): PNum {
 // ---------------------------------------------------------------------------
 // Built-in functions
 // ---------------------------------------------------------------------------
-export function pikFunc(p: Pik, pFunc: PToken, x: PNum, y: PNum): PNum {
+export function pikFunc(p: Pik, pFunc: PToken, x: PNum, y: PNum, z: PNum): PNum {
   switch (pFunc.eCode) {
     case FN_ABS:  return x < 0 ? -x : x;
     case FN_COS:  return Math.cos(x);
@@ -948,8 +949,81 @@ export function pikFunc(p: Pik, pFunc: PToken, x: PNum, y: PNum): PNum {
     case FN_MIN:  return x < y ? x : y;
     case FN_D2R:  return x * Math.PI / 180;  // degrees to radians
     case FN_R2D:  return x * 180 / Math.PI;  // radians to degrees
+    case FN_RGB:  return pikRgb(x, y, z);
+    case FN_HSL:  return pikHsl(x, y, z);
+    case FN_OKLCH: return pikOklch(x, y, z);
     default:      return 0.0;
   }
+}
+
+// Helper: clamp value to 0-255 range
+function clamp255(v: number): number {
+  return Math.max(0, Math.min(255, Math.round(v)));
+}
+
+// rgb(r, g, b) - r,g,b in 0-255 range
+function pikRgb(r: PNum, g: PNum, b: PNum): PNum {
+  return (clamp255(r) << 16) | (clamp255(g) << 8) | clamp255(b);
+}
+
+// hsl(h, s, l) - h in 0-360, s and l in 0-100 (or 0-1)
+function pikHsl(h: PNum, s: PNum, l: PNum): PNum {
+  // Normalize inputs: h in degrees, s and l as fractions
+  h = ((h % 360) + 360) % 360;  // normalize to 0-360
+  // Allow both 0-100 and 0-1 ranges for s and l
+  if (s > 1) s = s / 100;
+  if (l > 1) l = l / 100;
+  s = Math.max(0, Math.min(1, s));
+  l = Math.max(0, Math.min(1, l));
+
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+
+  let r = 0, g = 0, b = 0;
+  if (h < 60)       { r = c; g = x; b = 0; }
+  else if (h < 120) { r = x; g = c; b = 0; }
+  else if (h < 180) { r = 0; g = c; b = x; }
+  else if (h < 240) { r = 0; g = x; b = c; }
+  else if (h < 300) { r = x; g = 0; b = c; }
+  else              { r = c; g = 0; b = x; }
+
+  return pikRgb((r + m) * 255, (g + m) * 255, (b + m) * 255);
+}
+
+// oklch(l, c, h) - l in 0-1 (or 0-100), c in 0-0.4 typical, h in 0-360
+function pikOklch(l: PNum, c: PNum, h: PNum): PNum {
+  // Normalize L to 0-1 range (allow 0-100 input)
+  if (l > 1) l = l / 100;
+  l = Math.max(0, Math.min(1, l));
+  c = Math.max(0, c);
+  h = h * Math.PI / 180;  // convert to radians
+
+  // OKLCH to OKLab
+  const a = c * Math.cos(h);
+  const b = c * Math.sin(h);
+
+  // OKLab to linear RGB (approximate)
+  const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = l - 0.0894841775 * a - 1.2914855480 * b;
+
+  const l3 = l_ * l_ * l_;
+  const m3 = m_ * m_ * m_;
+  const s3 = s_ * s_ * s_;
+
+  let r = +4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3;
+  let g = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3;
+  let bl = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3;
+
+  // Linear to sRGB gamma
+  const toSrgb = (v: number) => v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1/2.4) - 0.055;
+
+  r = toSrgb(r);
+  g = toSrgb(g);
+  bl = toSrgb(bl);
+
+  return pikRgb(r * 255, g * 255, bl * 255);
 }
 
 // ---------------------------------------------------------------------------

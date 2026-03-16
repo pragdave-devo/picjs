@@ -342,15 +342,36 @@ expr / expr         # Division
 
 ### Functions
 
+**Math:**
 ```
 abs( expr )                    # Absolute value
-cos( expr )                    # Cosine (degrees)
-sin( expr )                    # Sine (degrees)
+cos( expr )                    # Cosine (radians)
+sin( expr )                    # Sine (radians)
 sqrt( expr )                   # Square root
 int( expr )                    # Integer part
 max( expr , expr )             # Maximum
 min( expr , expr )             # Minimum
 dist( position , position )    # Distance between points
+```
+
+**Angle conversion:**
+```
+d2r( degrees )                 # Degrees to radians
+r2d( radians )                 # Radians to degrees
+```
+
+**Color:**
+```
+rgb( r, g, b )                 # RGB color (0-255 per channel)
+hsl( h, s, l )                 # HSL color (h: 0-360, s/l: 0-100 or 0-1)
+oklch( l, c, h )               # OKLCH color (l: 0-100 or 0-1, c: 0-0.4, h: 0-360)
+```
+
+Example:
+```
+box color rgb(255, 128, 0)           # Orange
+box fill hsl(210, 80, 60)            # Blue
+box fill oklch(70, 0.15, 150)        # Muted green
 ```
 
 ### Object Properties
@@ -429,6 +450,20 @@ for VAR from start to end step increment do {
 
 ## Built-in Variables
 
+### Mathematical Constants
+
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `$pi` | 3.14159... | Pi |
+| `$2pi` | 6.28318... | 2 * Pi (full circle in radians) |
+
+Example:
+```
+for angle from 0 to $2pi step 0.1 do {
+    dot at (cos(angle), sin(angle))
+}
+```
+
 ### Shape Defaults
 
 | Variable | Default | Description |
@@ -436,7 +471,7 @@ for VAR from start to end step increment do {
 | `arcrad` | 0.25 | Arc radius |
 | `arrowhead` | 2.0 | Arrowhead scale |
 | `arrowht` | 0.08 | Arrowhead height |
-| `arrowwid` | 0.035 | Arrowhead width |
+| `arrowwid` | 0.06 | Arrowhead width |
 | `boxht` | 0.5 | Box height |
 | `boxrad` | 0 | Box corner radius |
 | `boxwid` | 0.75 | Box width |
@@ -448,8 +483,8 @@ for VAR from start to end step increment do {
 | `cylrad` | 0.075 | Cylinder cap radius |
 | `cylwid` | 0.75 | Cylinder width |
 | `dashwid` | 0.05 | Dash length |
-| `diamondht` | 0.5 | Diamond height |
-| `diamondwid` | 0.75 | Diamond width |
+| `diamondht` | 0.75 | Diamond height |
+| `diamondwid` | 1.0 | Diamond width |
 | `dotrad` | 0.015 | Dot radius |
 | `ellipseht` | 0.5 | Ellipse height |
 | `ellipsewid` | 0.75 | Ellipse width |
@@ -457,6 +492,7 @@ for VAR from start to end step increment do {
 | `filerad` | 0.15 | File corner fold |
 | `filewid` | 0.5 | File width |
 | `fill` | -1 (none) | Default fill color |
+| `fontscale` | 1.0 | Global font scale (1.5 = 150%) |
 | `lineht` | 0.5 | Line height (vertical) |
 | `linewid` | 0.5 | Line width (horizontal) |
 | `movewid` | 0.5 | Move distance |
@@ -469,7 +505,9 @@ for VAR from start to end step increment do {
 
 ---
 
-## Color Names
+## Colors
+
+### Color Names
 
 picjs supports all 148 standard HTML/CSS color names. Examples:
 
@@ -480,6 +518,20 @@ picjs supports all 148 standard HTML/CSS color names. Examples:
 **Special values**: `None`, `Off` (no color / transparent)
 
 Color names are case-insensitive.
+
+### Hex Literals
+
+Use `0xRRGGBB` format for exact colors:
+
+```
+box color 0xff0000              # Red
+box fill 0x00ff00               # Green
+box color 0x336699              # Steel blue
+```
+
+### Color Functions
+
+See [Functions](#functions) for `rgb()`, `hsl()`, and `oklch()` color functions.
 
 ---
 

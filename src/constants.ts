@@ -7,6 +7,7 @@ import {
   CP_N, CP_NE, CP_E, CP_SE, CP_S, CP_SW, CP_W, CP_NW, CP_C, CP_END, CP_START,
   DIR_RIGHT, DIR_DOWN, DIR_LEFT, DIR_UP,
   FN_ABS, FN_COS, FN_INT, FN_MAX, FN_MIN, FN_SIN, FN_SQRT, FN_D2R, FN_R2D,
+  FN_RGB, FN_HSL, FN_OKLCH,
 } from './types.ts';
 
 // ---------------------------------------------------------------------------
@@ -68,6 +69,7 @@ export const keywords: readonly PikWord[] = [
   { zWord: "heading",     nChar: 7,  eType: TokenType.T_HEADING,   eCode: 0,         eEdge: 0        },
   { zWord: "height",      nChar: 6,  eType: TokenType.T_HEIGHT,    eCode: 0,         eEdge: 0        },
   { zWord: "ht",          nChar: 2,  eType: TokenType.T_HEIGHT,    eCode: 0,         eEdge: 0        },
+  { zWord: "hsl",         nChar: 3,  eType: TokenType.T_FUNC3,     eCode: FN_HSL,    eEdge: 0        },
   { zWord: "in",          nChar: 2,  eType: TokenType.T_IN,        eCode: 0,         eEdge: 0        },
   { zWord: "int",         nChar: 3,  eType: TokenType.T_FUNC1,     eCode: FN_INT,    eEdge: 0        },
   { zWord: "invis",       nChar: 5,  eType: TokenType.T_INVIS,     eCode: 0,         eEdge: 0        },
@@ -85,12 +87,14 @@ export const keywords: readonly PikWord[] = [
   { zWord: "north",       nChar: 5,  eType: TokenType.T_EDGEPT,    eCode: 0,         eEdge: CP_N     },
   { zWord: "nw",          nChar: 2,  eType: TokenType.T_EDGEPT,    eCode: 0,         eEdge: CP_NW    },
   { zWord: "of",          nChar: 2,  eType: TokenType.T_OF,        eCode: 0,         eEdge: 0        },
+  { zWord: "oklch",       nChar: 5,  eType: TokenType.T_FUNC3,     eCode: FN_OKLCH,  eEdge: 0        },
   { zWord: "pikchr_date", nChar: 11, eType: TokenType.T_ISODATE,   eCode: 0,         eEdge: 0        },
   { zWord: "previous",    nChar: 8,  eType: TokenType.T_LAST,      eCode: 0,         eEdge: 0        },
   { zWord: "print",       nChar: 5,  eType: TokenType.T_PRINT,     eCode: 0,         eEdge: 0        },
   { zWord: "rad",         nChar: 3,  eType: TokenType.T_RADIUS,    eCode: 0,         eEdge: 0        },
   { zWord: "radius",      nChar: 6,  eType: TokenType.T_RADIUS,    eCode: 0,         eEdge: 0        },
   { zWord: "r2d",         nChar: 3,  eType: TokenType.T_FUNC1,     eCode: FN_R2D,    eEdge: 0        },
+  { zWord: "rgb",         nChar: 3,  eType: TokenType.T_FUNC3,     eCode: FN_RGB,    eEdge: 0        },
   { zWord: "right",       nChar: 5,  eType: TokenType.T_RIGHT,     eCode: DIR_RIGHT, eEdge: CP_E     },
   { zWord: "rjust",       nChar: 5,  eType: TokenType.T_RJUST,     eCode: 0,         eEdge: 0        },
   { zWord: "s",           nChar: 1,  eType: TokenType.T_EDGEPT,    eCode: 0,         eEdge: CP_S     },
@@ -386,6 +390,7 @@ export const aBuiltin: readonly { zName: string; val: PNum }[] = [
   { zName: "filerad",     val: 0.15  },
   { zName: "filewid",     val: 0.5   },
   { zName: "fill",        val: -1.0  },
+  { zName: "fontscale",   val: 1.0   },
   { zName: "lineht",      val: 0.5   },
   { zName: "linewid",     val: 0.5   },
   { zName: "movewid",     val: 0.5   },
