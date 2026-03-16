@@ -69,13 +69,7 @@ box at P wid P.wid + .2 ht max(S.ht,P.ht) + .2 fill lightgrey color none behind 
 
 (click to open in playground)
 
-![](_diagrams/architecture.svg)](https://pragdave-devo.github.io/picjs/architecture)
-![](_diagrams/economy.svg)](https://pragdave-devo.github.io/picjs/economy)
-![](_diagrams/example.svg)](https://pragdave-devo.github.io/picjs/example)
-![](_diagrams/gear.svg)](https://pragdave-devo.github.io/picjs/gear)
-![](_diagrams/kernighan-page-18.svg)](https://pragdave-devo.github.io/picjs/kernighan-page-18)
-![](_diagrams/snail.svg)](https://pragdave-devo.github.io/picjs/snail)
-![](_diagrams/spiro.svg)](https://pragdave-devo.github.io/picjs/spiro)
+![](_diagrams/_gallery.svg)
 
 ## CLI
 
