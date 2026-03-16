@@ -1,0 +1,9 @@
+spin = 4
+color_factor = 255/(spin*$pi)
+
+for i from spin*$pi to 1 step .1 do {
+  circle at (i*sin(i), i*cos(i)) \
+         radius i \
+         color oklch(0.4, 0.3, i*color_factor) \
+         fill  oklch(0.6, 0.3, i*color_factor)
+}

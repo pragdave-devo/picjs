@@ -1,0 +1,124 @@
+down
+
+fill = oklch(.95, 0, 0)
+boxrad = 0.1
+qtr = boxwid / 4
+trd = boxht / 4
+greenish = oklch(.6, .4, 150)
+blueish  = oklch(.6, .4, 200)
+orangeish = oklch(0.9, 0.3, 72)
+reddish = oklch(0.6, 0.35, 40)
+blackish = oklch(0.6, 0, 0)
+
+Col: [
+  box "Government"
+  move 70%
+  box "Households"
+  move same
+  box invis
+  move same
+  box "Firms"
+  move same
+  Row: box "Rest of" "World"
+]
+
+Row: [
+  right
+  Markets: box "Markets for" "goods and" "services"
+  move
+  box invis
+  move
+  Factor: box "Factor" "markets"
+  move
+  FM: box "Financial" "markets"
+] with .w at Col.w - (boxwid+movewid, 0)
+
+thickness =  0.1
+arrowht = .15
+arrowwid = .2
+linerad = .15
+fontscale = 0.7
+
+line -> color blueish \
+   from Col.Households.e + (0,trd) \
+   right until even with Row.FM.n - (qtr,0) \
+   then to Row.FM.n - (qtr,0)
+"Private savings" with .s at last line.n + (0, .05)
+
+
+line -> color orangeish \
+  from Col.Firms.e + (0,trd) \
+   right until even with Row.Factor.s  \
+   then to Row.Factor.s
+box invis "Wages, profit," "interest" with .w at last line.w
+
+
+line <- color orangeish \
+  from Col.Firms.e - (0,trd) \
+   right until even with Row.FM.s - (qtr,0)  \
+   then to Row.FM.s - (qtr,0)
+
+box invis "Borrowing and stock" "issues by firms" with .se at last line.se - (0.1,0.05)
+
+
+line -> color orangeish \
+  from Col.Firms.w - (0,trd) \
+   left until even with Row.Markets.s   \
+   then to Row.Markets.s
+box invis "Investment" "spending" with .n at last line.s + (0.0,0.05)
+
+line <- color blackish \
+  from Col.Firms.w + (0,trd) \
+   left until even with Row.Markets.s + (qtr, 0) \
+   then to Row.Markets.s + (qtr,0)
+box invis "GDP"   at last line - (0.0,0.1)
+
+
+line <-> color reddish \
+  from Col.Row.w  \
+   left until even with Row.Markets.s - (qtr,0)  \
+   then to Row.Markets.s - (qtr, 0)
+box invis "Imports/Exports"   at last line.s - (0.0,0.1)
+
+line <-> color reddish \
+  from Col.Row.e  \
+   right until even with Row.FM.s + (qtr,0)  \
+   then to Row.FM.s + (qtr, 0)
+box invis "Foreign lending/stock sales"   at last line.s + (0.0,0.12)
+box invis "Foreign borrowing/stock purchases"   at last line.s - (0.0,0.1)
+
+
+line <- color blueish \
+   from Col.Households.e - (0,trd) \
+   right until even with Row.Factor.n  \
+   then to Row.Factor.n
+box invis "Wages, profit," "interest" with .w at last line.w
+
+
+line -> color blueish \
+   from Col.Government.s + (qtr,0) \
+   to Col.Households.n + (qtr,0)
+box invis "Govt. transfers" with .w at last line.w + (0.05, 0.05)
+
+line <- color greenish \
+  from Col.Government.s - (qtr,0) \
+  to Col.Households.n - (qtr,0)
+box invis "Taxes" with .e at last line.w + (0.1, 0.05)
+
+line -> color blueish  \
+   from Col.Households.w left until even with Row.Markets + (qtr,0) \
+   then to Row.Markets.n + (qtr, 0)
+box invis "Consumer" "Spending" with .se at last line.c + (0.3, -.1)
+
+
+line -> color greenish  \
+   from Col.Government.w left until even with Row.Markets - (qtr,0) \
+   then down until even with Row.Markets.t
+box invis "Government purchases" "of goods and services" with .s at last line.t - (0, 0.05)
+
+line -> color greenish  \
+   from Row.FM.n + (qtr,0) up until even with Col.Government \
+   then left to Col.Government.e
+box invis "Government Borrowing" with .se at last line.n + (0.3, -.1)
+
+
