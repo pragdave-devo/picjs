@@ -2,7 +2,8 @@
 // cli.ts — CLI entry point for picjs markdown processor
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
-import { dirname, join, resolve } from 'path';
+import { dirname, join, resolve, extname } from 'path';
+import { picjs } from './picjs.ts';
 import {
   findDiagrams,
   renderDiagram,
@@ -15,9 +16,15 @@ import {
 } from './processor.ts';
 
 function printUsage(): void {
-  console.log(`Usage: picjs [options] <file.md> [file2.md ...]
+  console.log(`Usage: picjs [options] <file> [file2 ...]
 
-Process markdown files containing picjs diagrams.
+Process picjs diagram files or markdown files containing picjs diagrams.
+
+For .picjs/.pikchr files:
+  Renders the diagram and outputs SVG to stdout.
+
+For .md files:
+  Extracts diagrams, renders them to SVG files, and updates the markdown.
 
 Options:
   --out <dir>    Output directory for SVG files (default: _diagrams)
@@ -25,6 +32,7 @@ Options:
   --help, -h     Show this help message
 
 Examples:
+  picjs diagram.picjs > output.svg
   picjs README.md
   picjs docs/*.md --out ./images
   picjs README.md --dry-run
@@ -73,7 +81,25 @@ function parseArgs(args: string[]): { files: string[]; options: ProcessOptions }
   return { files, options: { outDir, dryRun } };
 }
 
-function processFile(filePath: string, options: ProcessOptions): ProcessResult {
+function processPicjsFile(filePath: string): boolean {
+  let source: string;
+  try {
+    source = readFileSync(filePath, 'utf-8');
+  } catch (err) {
+    console.error(`Error reading ${filePath}: ${err instanceof Error ? err.message : err}`);
+    return false;
+  }
+
+  const result = picjs(source);
+  if (result.isError) {
+    // Error output goes to stderr, SVG (with error) still goes to stdout
+    console.error(`Error in ${filePath}`);
+  }
+  process.stdout.write(result.svg);
+  return !result.isError;
+}
+
+function processMarkdownFile(filePath: string, options: ProcessOptions): ProcessResult {
   const result: ProcessResult = {
     file: filePath,
     rawConverted: 0,
@@ -173,13 +199,36 @@ function main(): void {
 
   const { files, options } = parsed;
 
+  // Check if all files are .picjs/.pikchr files
+  const isPicjsExt = (f: string) => {
+    const ext = extname(f).toLowerCase();
+    return ext === '.picjs' || ext === '.pikchr';
+  };
+  const picjsFiles = files.filter(isPicjsExt);
+  const mdFiles = files.filter(f => !isPicjsExt(f));
+
+  // Handle .picjs files - output SVG to stdout
+  if (picjsFiles.length > 0) {
+    if (mdFiles.length > 0) {
+      console.error('Error: Cannot mix .picjs/.pikchr files with other file types');
+      process.exit(1);
+    }
+    if (picjsFiles.length > 1) {
+      console.error('Error: Can only process one .picjs/.pikchr file at a time');
+      process.exit(1);
+    }
+    const success = processPicjsFile(picjsFiles[0]);
+    process.exit(success ? 0 : 1);
+  }
+
+  // Handle markdown files
   let totalRaw = 0;
   let totalRendered = 0;
   let totalErrors = 0;
 
-  for (const file of files) {
+  for (const file of mdFiles) {
     console.log(`Processing ${file}...`);
-    const result = processFile(file, options);
+    const result = processMarkdownFile(file, options);
 
     if (result.diagrams.length === 0) {
       console.log('  No diagrams found');
@@ -207,7 +256,7 @@ function main(): void {
     totalErrors += result.errors;
   }
 
-  if (files.length > 1) {
+  if (mdFiles.length > 1) {
     console.log(`\nTotal: ${totalRendered} rendered, ${totalRaw} converted, ${totalErrors} error(s)`);
   }
 

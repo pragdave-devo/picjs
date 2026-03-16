@@ -7,6 +7,7 @@ A bit like Mermaid, but:
 
 * no specific drawing types
 * dependable, consistent layout controls based on constraints
+* variables, loops, and color support
 
 <!-- picjs: example
 define $t {
@@ -56,6 +57,37 @@ box at P wid P.wid + .2 ht max(S.ht,P.ht) + .2 fill lightgrey color none behind 
 * [Playground](https://pragdave-devo.github.io/picjs/)
 * [Guide](https://pragdave-devo.github.io/picjs/Guide/)
 * [Reference](https://pragdave-devo.github.io/picjs/Reference/)
+
+### Extras
+
+* Syntax highlighting support (currently vim and VSC) under `editor-support/`
+* `SKILL.md` lets agents create diagrams
+* CLI for local processing
+* GitHub action for formatting README.md on push
+
+## Examples
+
+(click to open in playground)
+
+![](_diagrams/architecture.svg)](https://pragdave-devo.github.io/picjs/architecture)
+![](_diagrams/economy.svg)](https://pragdave-devo.github.io/picjs/economy)
+![](_diagrams/example.svg)](https://pragdave-devo.github.io/picjs/example)
+![](_diagrams/gear.svg)](https://pragdave-devo.github.io/picjs/gear)
+![](_diagrams/kernighan-page-18.svg)](https://pragdave-devo.github.io/picjs/kernighan-page-18)
+![](_diagrams/snail.svg)](https://pragdave-devo.github.io/picjs/snail)
+![](_diagrams/spiro.svg)](https://pragdave-devo.github.io/picjs/spiro)
+
+## CLI
+
+* Give it a `picjs` file on stdin, or pass it the name of a file ending
+  `.picjs` and it writes the generated SVG to stdout.
+
+* Pass it a Markdown file and it will process `\`\`\` picjs` blocks. An SVG
+  will be generated in a subdirectory (`_diagrams` by default) and the
+  Markdown will embed that image. The original `picjs` markup is left in the
+  file, but placed into an HTML comment. The CLI tool will also process
+  pictures in these comments, so you can edit your diagram, rerun `picjs` and
+  it will update the SVG.
 
 ## For The Impatient
 

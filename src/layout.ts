@@ -200,9 +200,21 @@ export function pikAddMacro(p: Pik, pId: PToken, pCode: PToken): void {
   }
   // Strip the enclosing braces: { ... } -> ...
   // pCode.z starts at '{', pCode.n is the full length including braces
-  const bodyLen = pCode.n - 2;
-  pNew.macroBody.z = pCode.z.substring(1, 1 + bodyLen);
-  pNew.macroBody.n = bodyLen;
+  let body = pCode.z.substring(1, pCode.n - 1);
+  // Strip leading whitespace and newlines
+  let start = 0;
+  while (start < body.length && (body[start] === ' ' || body[start] === '\t' ||
+         body[start] === '\n' || body[start] === '\r')) {
+    start++;
+  }
+  // Strip trailing whitespace and newlines
+  let end = body.length;
+  while (end > start && (body[end - 1] === ' ' || body[end - 1] === '\t' ||
+         body[end - 1] === '\n' || body[end - 1] === '\r')) {
+    end--;
+  }
+  pNew.macroBody.z = body.substring(start, end);
+  pNew.macroBody.n = end - start;
 }
 
 // ---------------------------------------------------------------------------

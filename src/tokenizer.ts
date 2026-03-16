@@ -383,9 +383,9 @@ export function pikTokenLength(token: PToken, bAllowCodeBlock: boolean): number 
         return i;
       }
 
-      // Macro parameter $1..$9
+      // Macro parameter $1..$9 (but not $2pi or similar variable names)
       if (c === '$' && n > 1 && z[1] >= '1' && z[1] <= '9' &&
-          !(n > 2 && isDigit(z[2]))) {
+          !(n > 2 && (isAlnum(z[2]) || z[2] === '_'))) {
         token.eType = T_PARAMETER;
         token.eCode = z[1].charCodeAt(0) - '1'.charCodeAt(0);
         return 2;

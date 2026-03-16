@@ -279,12 +279,24 @@
         <span>Source</span>
         <select id="example-selector">
           <option value="">-- Load Example --</option>
-          <option value="hello">Hello World</option>
-          <option value="flowchart">Flowchart</option>
-          <option value="shapes">All Shapes</option>
-          <option value="directions">Directions</option>
-          <option value="database">Database Flow</option>
-          <option value="styled">Styled Elements</option>
+          <optgroup label="Basic">
+            <option value="hello">Hello World</option>
+            <option value="flowchart">Flowchart</option>
+            <option value="shapes">All Shapes</option>
+            <option value="directions">Directions</option>
+            <option value="database">Database Flow</option>
+            <option value="styled">Styled Elements</option>
+          </optgroup>
+          <optgroup label="Architecture">
+            <option value="architecture">Pipeline Architecture</option>
+            <option value="kernighan">Hash Table (Kernighan)</option>
+            <option value="economy">Circular Flow of Economy</option>
+          </optgroup>
+          <optgroup label="Generative">
+            <option value="snail">Spiral Circles</option>
+            <option value="spiro">Spirograph</option>
+            <option value="gear">Gear Pattern</option>
+          </optgroup>
         </select>
       </div>
       <textarea id="source-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">arrow right 200% "Markdown" "Source"
@@ -332,31 +344,40 @@ box same "picjs" "Diagram" "Renderer" fit</textarea>
 arrow
 box "World"`,
 
-      flowchart: `box "Input"
-arrow
+      flowchart: `boxht = 0.7 * boxht
+down
+box "Input"
+arrow 50%
 diamond "Valid?" fit
-arrow right "Yes" above
+arrow 50% "Yes" ljust
 box "Process"
-arrow
-box "Output"
-arrow down from 3rd last box.s "No" ljust
+
+arrow right from last diamond.e "No" above
 box "Error" color red`,
 
-      shapes: `box "box"
+      shapes: `down
+[
+  right
+  box "box"
+  move
+  circle "circle"
+  move
+  ellipse "ellipse"
+  move
+  oval "oval"
+]
+
 move
-circle "circle"
-move
-ellipse "ellipse"
-move
-oval "oval"
-move
-cylinder "cylinder"
-move right 0.5
-diamond "diamond" fit
-move
-file "file"
-move
-dot`,
+[
+  right
+  cylinder "cylinder"
+  move
+  diamond "diamond" fit
+  move
+  file "file"
+  move
+  dot
+]`,
 
       directions: `right
 box "A"
@@ -370,29 +391,268 @@ arrow
 box "D"
 up
 arrow
-box "E"`,
+`,
 
       database: `file "config.json" fit
 arrow
 box "Parser" rad 0.1
 arrow
-cylinder "Database" rad 0.15
+cylinder "Database"
 arrow
 box "API" rad 0.1
-arrow right 150%
+arrow right 75%
 oval "Client" fit`,
 
       styled: `box "Normal"
 arrow
 box "Dashed" dashed
-arrow
+arrow dashed
 box "Dotted" dotted
-arrow
+arrow  right 50% then down 150% then left 50% dotted
 box "Thick" thickness 0.05
-arrow
+arrow thick
 box "Colored" color blue fill lightblue
-arrow
-box "Rounded" rad 0.15`
+arrow color blue
+box "Rounded" rad 0.15`,
+
+      architecture: `right
+
+Pipeline: [
+  down
+  "Internal Pipeline"
+  move 20%
+  BatchWriter: box wid 150% ht 60% fill 0xe0e0e0 "Batch Writer"
+
+  arrow "post" aligned "commit" aligned
+  TriggerEvaluation: box same "Trigger Evaluation"
+  arrow "Trigger" aligned "Fired" aligned
+  TriggerBridge: box same "Trigger Bridge"
+]
+
+Database: cylinder "Database" with .e at Pipeline.BatchWriter.w - (0.5, 0)
+
+box at Pipeline \\
+   wid Pipeline.wid*1.1 ht Pipeline.ht*1.1 \\
+   fill 0xf0f0f8 color lightgrey \\
+   behind Pipeline
+
+move right 0.5
+
+Services: [
+  down
+  GPTuple: box wid 150% ht 60% fill 0xe0e0e0 "Get/Put Tuple"
+  arrow <-> "Validate" aligned above
+  box "Schemas" same
+  move down 0.2
+  box ht 0 dotted
+  move down same
+  box wid 150% ht 60% fill 0xe0e0e0 "Playbooks"
+  move down same
+  box same "Agents"
+]
+
+arrow from Pipeline.BatchWriter to Database chop
+arrow from Services.GPTuple.w to Pipeline.BatchWriter.e
+arrow <-> from Services.Playbooks.w to Pipeline.TriggerEvaluation.e
+arrow <-> from Services.Agents to Pipeline.TriggerBridge chop
+
+box at Services \\
+   wid Services.wid*1.1 ht Services.ht*1.1 \\
+   fill 0xf0f8f0 color lightgrey \\
+   behind Pipeline`,
+
+      kernighan: `define ndblock {
+  box wid boxwid/2 ht boxht/2 fill lightgrey
+  down; box same with .t at bottom of last box; box same
+}
+boxht = .2; boxwid = .3; circlerad = .3; dx = 0.05; fill = 0xffe0e0
+down; box; box; box; box ht 3*boxht "." "." "."
+L: box; box; box invis wid 2*boxwid "hashtab:" with .e at 1st box .w
+right
+Start: box wid .5 with .sw at 1st box.ne + (.4,.2) "..."
+N1: box wid .2 "n1";  D1: box wid .3 "d1"
+N3: box wid .4 "n3";  D3: box wid .3 "d3"
+box wid .4 "..."
+N2: box wid .5 "n2";  D2: box wid .2 "d2"
+arrow right from 2nd box
+ndblock
+spline -> right .2 from 3rd last box then to N1.sw + (dx,0)
+spline -> right .3 from 2nd last box then to D1.sw + (dx,0)
+arrow right from last box
+ndblock
+spline -> right .2 from 3rd last box to N2.sw-(dx,.2) to N2.sw+(dx,0)
+spline -> right .3 from 2nd last box to D2.sw-(dx,.2) to D2.sw+(dx,0)
+arrow right 2*linewid from L
+ndblock
+spline -> right .2 from 3rd last box to N3.sw + (dx,0)
+spline -> right .3 from 2nd last box to D3.sw + (dx,0)
+circlerad = .3
+circle invis "ndblock" at last box.e + (1.2,.2)
+arrow dashed from last circle.w to 5/8<last circle.w,2nd last box> chop
+box invis wid 2*boxwid "ndtable:" with .e at Start.w`,
+
+      economy: `# The standard circular flow of the economy
+
+down
+
+boxrad = 0.1
+qtr = boxwid / 4
+trd = boxht / 4
+fill      = oklch(.95, 0,    0)
+blackish  = oklch(0.6, 0,    0)
+blueish   = oklch(.6,  .4,   200)
+greenish  = oklch(.6,  .4,   150)
+orangeish = oklch(0.9, 0.3,  72)
+reddish   = oklch(0.6, 0.35, 40)
+
+Col: [
+  box "Government"
+  move 70%
+  box "Households"
+  move same
+  box invis
+  move same
+  box "Firms"
+  move same
+  Row: box "Rest of" "World"
+]
+
+Row: [
+  right
+  Markets: box "Markets for" "goods and" "services"
+  move
+  box invis
+  move
+  Factor:  box "Factor" "markets"
+  move
+  FM:      box "Financial" "markets"
+] with .w at Col.w - (boxwid+movewid, 0)
+
+thickness = 0.1
+arrowht = .15
+arrowwid = .2
+linerad = .15
+fontscale = 0.7
+
+line -> color blueish from Col.Households.e + (0,trd) \\
+   right until even with Row.FM.n - (qtr,0) then to Row.FM.n - (qtr,0)
+"Private savings" with .s at last line.n + (0, .05)
+
+line -> color orangeish from Col.Firms.e + (0,trd) \\
+   right until even with Row.Factor.s then to Row.Factor.s
+box invis "Wages, profit," "interest" with .w at last line.w
+
+line <- color orangeish from Col.Firms.e - (0,trd) \\
+   right until even with Row.FM.s - (qtr,0) then to Row.FM.s - (qtr,0)
+box invis "Borrowing and stock" "issues by firms" with .se at last line.se - (0.1,0.05)
+
+line -> color orangeish from Col.Firms.w - (0,trd) \\
+   left until even with Row.Markets.s then to Row.Markets.s
+box invis "Investment" "spending" with .n at last line.s + (0.0,0.05)
+
+line <- color blackish from Col.Firms.w + (0,trd) \\
+   left until even with Row.Markets.s + (qtr, 0) then to Row.Markets.s + (qtr,0)
+box invis "GDP" at last line - (0.0,0.1)
+
+line <-> color reddish from Col.Row.w \\
+   left until even with Row.Markets.s - (qtr,0) then to Row.Markets.s - (qtr, 0)
+box invis "Imports/Exports" at last line.s - (0.0,0.1)
+
+line <-> color reddish from Col.Row.e \\
+   right until even with Row.FM.s + (qtr,0) then to Row.FM.s + (qtr, 0)
+box invis "Foreign lending/stock sales" at last line.s + (0.0,0.12)
+box invis "Foreign borrowing/stock purchases" at last line.s - (0.0,0.1)
+
+line <- color blueish from Col.Households.e - (0,trd) \\
+   right until even with Row.Factor.n then to Row.Factor.n
+box invis "Wages, profit," "interest" with .w at last line.w
+
+line -> color blueish from Col.Government.s + (qtr,0) to Col.Households.n + (qtr,0)
+box invis "Govt. transfers" with .w at last line.w + (0.05, 0.05)
+
+line <- color greenish from Col.Government.s - (qtr,0) to Col.Households.n - (qtr,0)
+box invis "Taxes" with .e at last line.w + (0.1, 0.05)
+
+line -> color blueish from Col.Households.w \\
+   left until even with Row.Markets + (qtr,0) then to Row.Markets.n + (qtr, 0)
+box invis "Consumer" "Spending" with .se at last line.c + (0.3, -.1)
+
+line -> color greenish from Col.Government.w \\
+   left until even with Row.Markets - (qtr,0) then down until even with Row.Markets.t
+box invis "Government purchases" "of goods and services" with .s at last line.t - (0, 0.05)
+
+line -> color greenish from Row.FM.n + (qtr,0) \\
+   up until even with Col.Government then left to Col.Government.e
+box invis "Government Borrowing" with .se at last line.n + (0.3, -.1)`,
+
+      snail: `spin = 3
+color_factor = 255/(spin*$pi)
+
+for i from spin*$pi to 1 step .1 do {
+  circle at (i*sin(i), i*cos(i)) \\
+         radius i \\
+         color oklch(0.4, 0.3, i*color_factor) \\
+         fill  oklch(0.6, 0.3, i*color_factor)
+}`,
+
+      spiro: `
+outer_radius = 10.5
+inner_radius = 4.8
+diff = outer_radius - inner_radius
+ratio = diff/inner_radius
+hue = 0
+
+offset_of_pen = .8*inner_radius # proportion of distance of pen from center of small disk
+
+move to (outer_radius, 0)
+
+for theta from 0 to 32*$pi step 0.1 do {
+    xp = diff * cos(theta) + offset_of_pen * cos(ratio * theta)
+    yp = diff * sin(theta) - offset_of_pen * sin(ratio * theta)
+
+    color = oklch(.7, .3, hue)
+    line thickness 0.1 to (xp, yp)
+    hue += 1
+}`,
+
+      gear: `
+define ps {  ($1 * sin($2), $1 * cos($2))  }
+
+teeth = 12
+inner_radius = 3
+outer_radius = 4
+
+# line thickness
+thickness = 0.07
+
+# angular width of one tooth
+tooth_width = 2*$pi / teeth
+
+# angular width of slope up, top land, slope down, bottom land
+# we start in the middle of the land to we don't get ugly
+# joins between teeth
+
+bottom_land_1 = .1 * tooth_width
+slope_up      = bottom_land_1 + .2 * tooth_width
+top_land      = slope_up + .3 * tooth_width
+slope_down    = top_land + .2 * tooth_width
+bottom_land_2 = slope_down + .2 * tooth_width
+
+theta = 0
+move to ps(inner_radius, theta)
+
+for _count from 1 to teeth do {
+  line to ps(inner_radius, theta + bottom_land_1) \
+  then to ps(outer_radius, theta + slope_up)      \
+  then to ps(outer_radius, theta + top_land)      \
+  then to ps(inner_radius, theta + slope_down)    \
+  then to ps(inner_radius, theta + bottom_land_2) \
+       rad 0.1
+  theta += tooth_width
+}
+
+
+      `
     };
 
     // Debounce function
@@ -433,8 +693,28 @@ box "Rounded" rad 0.15`
 
     const debouncedRender = debounce(render, 300);
 
+    // URL parameter helpers
+    function getExampleFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('example');
+    }
+
+    function setExampleInUrl(name) {
+      const url = new URL(window.location);
+      if (name) {
+        url.searchParams.set('example', name);
+      } else {
+        url.searchParams.delete('example');
+      }
+      history.replaceState(null, '', url);
+    }
+
     // Event handlers
     editor.addEventListener('input', () => {
+      // Clear example from URL when editor is modified
+      if (getExampleFromUrl()) {
+        setExampleInUrl(null);
+      }
       if (autoRenderCheckbox.checked) {
         debouncedRender();
       }
@@ -444,6 +724,7 @@ box "Rounded" rad 0.15`
 
     clearBtn.addEventListener('click', () => {
       editor.value = '';
+      setExampleInUrl(null);
       render();
     });
 
@@ -451,6 +732,7 @@ box "Rounded" rad 0.15`
       const key = e.target.value;
       if (key && examples[key]) {
         editor.value = examples[key];
+        setExampleInUrl(key);
         render();
       }
       e.target.value = ''; // Reset selector
@@ -467,6 +749,15 @@ box "Rounded" rad 0.15`
 
     // Load saved content or use default
     function init() {
+      // Check URL for example parameter first
+      const urlExample = getExampleFromUrl();
+      if (urlExample && examples[urlExample]) {
+        editor.value = examples[urlExample];
+        render();
+        return;
+      }
+
+      // Otherwise load from localStorage
       try {
         const saved = localStorage.getItem('picjs-source');
         if (saved) {

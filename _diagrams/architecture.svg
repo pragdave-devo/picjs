@@ -1,0 +1,44 @@
+<svg xmlns='http://www.w3.org/2000/svg' style='font-size:initial;' viewBox="0 0 596.52 368.63999999999993">
+<path d="M174.05999999999997,359.352L352.26,359.352L352.26,9.288L174.05999999999997,9.288Z"  style="fill:rgb(240,240,248);stroke-width:2.16;stroke:rgb(211,211,211);" />
+<path d="M416.15999999999997,366.48L594.3599999999999,366.48L594.3599999999999,2.159999999999986L416.15999999999997,2.159999999999986Z"  style="fill:rgb(240,248,240);stroke-width:2.16;stroke:rgb(211,211,211);" />
+<text x="263.15999999999997" y="40.32000000000001" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Internal Pipeline</text>
+<path d="M182.16,113.04L344.15999999999997,113.04L344.15999999999997,69.84L182.16,69.84Z"  style="fill:rgb(224,224,224);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="263.15999999999997" y="91.44" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Batch Writer</text>
+<polygon points="263.15999999999997,185.04 258.84,173.51999999999998 267.48,173.51999999999998" style="fill:rgb(0,0,0)"/>
+<path d="M263.15999999999997,113.04L263.15999999999997,179.27999999999997"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="263.15999999999997" y="137.33999999999997" text-anchor="middle" fill="rgb(0,0,0)" transform="rotate(90 263.15999999999997,149.04)" dominant-baseline="central">post</text>
+<text x="263.15999999999997" y="160.74" text-anchor="middle" fill="rgb(0,0,0)" transform="rotate(90 263.15999999999997,149.04)" dominant-baseline="central">commit</text>
+<path d="M182.16,228.24L344.15999999999997,228.24L344.15999999999997,185.04L182.16,185.04Z"  style="fill:rgb(224,224,224);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="263.15999999999997" y="206.64" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Trigger Evaluation</text>
+<polygon points="263.15999999999997,300.24 258.84,288.71999999999997 267.48,288.71999999999997" style="fill:rgb(0,0,0)"/>
+<path d="M263.15999999999997,228.23999999999995L263.15999999999997,294.48"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="263.15999999999997" y="252.53999999999996" text-anchor="middle" fill="rgb(0,0,0)" transform="rotate(90 263.15999999999997,264.23999999999995)" dominant-baseline="central">Trigger</text>
+<text x="263.15999999999997" y="275.93999999999994" text-anchor="middle" fill="rgb(0,0,0)" transform="rotate(90 263.15999999999997,264.23999999999995)" dominant-baseline="central">Fired</text>
+<path d="M182.16,343.43999999999994L344.15999999999997,343.43999999999994L344.15999999999997,300.23999999999995L182.16,300.23999999999995Z"  style="fill:rgb(224,224,224);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="263.15999999999997" y="321.8399999999999" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Trigger Bridge</text>
+<path d="M2.159999999999986,66.24L2.159999999999986,116.64000000000001A54 10.799999999999999 0 0 0 110.15999999999998 116.64000000000001L110.15999999999998,66.24A54 10.799999999999999 0 0 0 2.159999999999986 66.24A54 10.799999999999999 0 0 0 110.15999999999998 66.24"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="56.15999999999998" y="99.54" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Database</text>
+<path d="M424.26,61.91999999999997L586.26,61.91999999999997L586.26,18.719999999999985L424.26,18.719999999999985Z"  style="fill:rgb(224,224,224);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="505.26" y="40.31999999999997" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Get/Put Tuple</text>
+<polygon points="505.26,61.91999999999997 509.58,73.43999999999997 500.93999999999994,73.43999999999997" style="fill:rgb(0,0,0)"/>
+<polygon points="505.26,133.92 500.93999999999994,122.39999999999998 509.58,122.39999999999998" style="fill:rgb(0,0,0)"/>
+<path d="M505.26,67.67999999999996L505.26,128.16"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="505.26" y="86.21999999999997" text-anchor="middle" fill="rgb(0,0,0)" transform="rotate(90 505.26,97.91999999999997)" dominant-baseline="central">Validate</text>
+<path d="M424.26,177.11999999999998L586.26,177.11999999999998L586.26,133.92L424.26,133.92Z"  style="fill:rgb(224,224,224);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="505.26" y="155.51999999999998" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Schemas</text>
+<path d="M451.26,205.92L559.26,205.92L559.26,205.92L451.26,205.92Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);stroke-dasharray:2.16,7.2;" />
+<path d="M424.26,277.91999999999996L586.26,277.91999999999996L586.26,234.71999999999997L424.26,234.71999999999997Z"  style="fill:rgb(224,224,224);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="505.26" y="256.32" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Playbooks</text>
+<path d="M424.26,349.91999999999996L586.26,349.91999999999996L586.26,306.7199999999999L424.26,306.7199999999999Z"  style="fill:rgb(224,224,224);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="505.26" y="328.31999999999994" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Agents</text>
+<polygon points="110.15999999999998,91.44 121.67999999999999,87.12 121.67999999999999,95.76" style="fill:rgb(0,0,0)"/>
+<path d="M182.16,91.44L115.91999999999999,91.44"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<polygon points="344.15999999999997,91.44 351.546819244775,81.60090952145364 356.1949507045596,88.88407325245413" style="fill:rgb(0,0,0)"/>
+<path d="M424.26,40.31999999999997L349.01544248733364,88.34124569347694"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<polygon points="424.26,256.32 412.1931311150475,253.91927608555977 416.7470816331608,246.57685586613792" style="fill:rgb(0,0,0)"/>
+<polygon points="344.15999999999997,206.64 356.2268688849525,209.04072391444018 351.67291836683916,216.38314413386203" style="fill:rgb(0,0,0)"/>
+<path d="M419.3650531870521,253.28403298792443L349.05494681294783,209.67596701207555"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<polygon points="424.26,328.31999999999994 412.4291679165183,331.6970123204485 413.1258581373558,323.08514709065133" style="fill:rgb(0,0,0)"/>
+<polygon points="344.15999999999997,321.8399999999999 355.9908320834817,318.4629876795514 355.2941418626441,327.0748529093486" style="fill:rgb(0,0,0)"/>
+<path d="M418.51875651346853,327.8555398527749L349.9012434865314,322.304460147225"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+</svg>
