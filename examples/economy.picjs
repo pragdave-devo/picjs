@@ -1,14 +1,19 @@
+# The standard circular flow of the economy
+
 down
 
-fill = oklch(.95, 0, 0)
 boxrad = 0.1
 qtr = boxwid / 4
 trd = boxht / 4
-greenish = oklch(.6, .4, 150)
-blueish  = oklch(.6, .4, 200)
-orangeish = oklch(0.9, 0.3, 72)
-reddish = oklch(0.6, 0.35, 40)
-blackish = oklch(0.6, 0, 0)
+fill      = oklch(.95, 0,    0)
+blackish  = oklch(0.6, 0,    0)
+blueish   = oklch(.6,  .4,   200)
+greenish  = oklch(.6,  .4,   150)
+orangeish = oklch(0.9, 0.3,  72)
+reddish   = oklch(0.6, 0.35, 40)
+
+# The players. The layout is a 4x5 grid, but the only entries are in column 2 and row three. There's
+# a hole where they intersect.
 
 Col: [
   box "Government"
@@ -28,10 +33,13 @@ Row: [
   move
   box invis
   move
-  Factor: box "Factor" "markets"
+  Factor:  box "Factor" "markets"
   move
-  FM: box "Financial" "markets"
+  FM:      box "Financial" "markets"
 ] with .w at Col.w - (boxwid+movewid, 0)
+
+
+# Now the lines and their labels
 
 thickness =  0.1
 arrowht = .15
