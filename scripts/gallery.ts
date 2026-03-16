@@ -22,7 +22,7 @@ try {
 
 const EXAMPLES_DIR = 'examples';
 const OUTPUT_DIR = '_diagrams';
-const THUMB_SIZE = 128;
+const THUMB_SIZE = 160;
 const BASE_URL = 'https://pragdave-devo.github.io/picjs/?example=';
 
 // Ensure output directory exists
