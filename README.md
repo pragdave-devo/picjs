@@ -79,7 +79,7 @@ box at P wid P.wid + .2 ht max(S.ht,P.ht) + .2 fill lightgrey color none behind 
 * Give it a `picjs` file on stdin, or pass it the name of a file ending
   `.picjs` and it writes the generated SVG to stdout.
 
-* Pass it a Markdown file and it will process `\`\`\` picjs` blocks. An SVG
+* Pass it a Markdown file and it will process <code>```` picjs</code> blocks. An SVG
   will be generated in a subdirectory (`_diagrams` by default) and the
   Markdown will embed that image. The original `picjs` markup is left in the
   file, but placed into an HTML comment. The CLI tool will also process
