@@ -56,7 +56,7 @@ for (const file of files) {
   try {
     const resvg = new Resvg(result.svg, {
       fitTo: {
-        mode: 'width',
+        mode: 'height',
         value: THUMB_SIZE,
       },
       background: 'white',
