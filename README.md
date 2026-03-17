@@ -90,7 +90,7 @@ box at P wid P.wid + .2 ht max(S.ht,P.ht) + .2 fill lightgrey color none behind 
 
 1. Load the library
   ``` html
-  <script src="https://cdn.jsdelivr.net/npm/picjs@0.1.2/dist/picjs.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/picjs@latest/dist/picjs.umd.js"></script>
   ```
 
 2. Format  `picjs` code blocks in the page.
