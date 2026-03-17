@@ -1,6 +1,6 @@
 {
-  "name": "picjs",
-  "version": "0.1.3",
+  "name": "@strike48/picjs",
+  "version": "0.1.4",
   "description": "Native TypeScript implementation of PIC-like diagram language to SVG",
   "type": "module",
   "main": "./dist/picjs.umd.js",
@@ -25,12 +25,12 @@
     "build": "vite build && tsc --emitDeclarationOnly --outDir dist",
     "test": "node --import=tsx src/test.ts",
     "dev": "vite",
-    "cli": "node --import=tsx bin/picjs",
+    "cli": "node --import=tsx ./bin/picjs",
     "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pragdave/picjs.git"
+    "url": "https://github.com/pragdave-devo/picjs.git"
   },
   "keywords": [
     "diagram",
@@ -38,16 +38,17 @@
     "pic",
     "pikchr",
     "graphics",
+    "mermaid",
     "visualization"
   ],
-  "author": "Dave Thomas",
+  "author": "Dave Thomas <labs@strike48.com> (https://labs.strike48.com)",
   "devDependencies": {
     "tsx": "^4.7.0",
     "typescript": "^5.9.3",
     "vite": "^6.0.0"
   },
   "license": "MPL",
-  "dependencies": {
+  "optionalDependencies": {
     "@resvg/resvg-js": "^2.6.2"
   }
 }

@@ -72,7 +72,7 @@ box at P wid P.wid + .2 ht max(S.ht,P.ht) + .2 fill lightgrey color none behind 
 | | | |
 |--|--|--|
 [![architecture](_diagrams/architecture.png)](https://pragdave-devo.github.io/picjs/?example=architecture) | [![economy](_diagrams/economy.png)](https://pragdave-devo.github.io/picjs/?example=economy) | [![gear](_diagrams/gear.png)](https://pragdave-devo.github.io/picjs/?example=gear)
-[![kernighan-page-18](_diagrams/kernighan-page-18.png)](https://pragdave-devo.github.io/picjs/?example=kernighan-page-18) | [![snail](_diagrams/snail.png)](https://pragdave-devo.github.io/picjs/?example=snail) | [![spiro](_diagrams/spiro.png)](https://pragdave-devo.github.io/picjs/?example=spiro)
+[![kernighan-page-18](_diagrams/kernighan.png)](https://pragdave-devo.github.io/picjs/?example=kernighan-page-18) | [![snail](_diagrams/snail.png)](https://pragdave-devo.github.io/picjs/?example=snail) | [![spiro](_diagrams/spiro.png)](https://pragdave-devo.github.io/picjs/?example=spiro)
 
 ## CLI
 

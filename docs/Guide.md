@@ -12,10 +12,16 @@ This guide takes you from first diagram to advanced features. Each section build
 
 ### Browser Setup
 
-Add picjs to your HTML page. Once published to npm:
+Add picjs to your HTML page.
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/picjs@0.1.1/dist/picjs.umd.js"></script>
+```
+
+Or install as a package:
+
+```console
+$ npm i @strike48/picjs
 ```
 
 Or self-host by copying `picjs.umd.js` from the dist folder.

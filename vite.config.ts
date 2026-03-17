@@ -4,6 +4,7 @@ import { resolve } from 'path';
 export default defineConfig({
   root: 'docs',
   build: {
+    outDir: resolve(__dirname, 'dist'),
     lib: {
       entry: resolve(__dirname, 'src/picjs.ts'),
       name: 'picjs',
