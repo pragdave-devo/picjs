@@ -58,7 +58,7 @@ box at P wid P.wid + .2 ht max(S.ht,P.ht) + .2 fill lightgrey color none behind 
 * [Guide](https://pragdave-devo.github.io/picjs/Guide/)
 * [Reference](https://pragdave-devo.github.io/picjs/Reference/)
 
-### Extras
+## Extras
 
 * Syntax highlighting support (currently vim and VSC) under `editor-support/`
 * `SKILL.md` lets agents create diagrams
