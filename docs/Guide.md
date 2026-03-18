@@ -15,7 +15,7 @@ This guide takes you from first diagram to advanced features. Each section build
 Add picjs to your HTML page.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/picjs@0.1.1/dist/picjs.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@strike48/picjs@latest/dist/picjs.umd.js"></script>
 ```
 
 Or install as a package:
