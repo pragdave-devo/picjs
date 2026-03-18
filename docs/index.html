@@ -337,7 +337,7 @@
   </foomer>
 
   <script type="module">
-    import { picjs } from 'https://cdn.jsdelivr.net/npm/@strike48/picjs@latest/dist/picjs.umd.js';
+    import { picjs } from 'https://cdn.jsdelivr.net/npm/@strike48/picjs@latest/dist/picjs.js';
 
     // CodeMirror 6 imports
     import {EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter} from 'https://esm.sh/@codemirror/view@6';
@@ -809,7 +809,7 @@ for _count from 1 to teeth do {
       const source = editor.state.doc.toString();
       const startTime = performance.now();
 
-      const result = picjs.picjs(source);
+      const result = picjs(source);
 
       const elapsed = (performance.now() - startTime).toFixed(1);
 

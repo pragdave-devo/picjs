@@ -1,6 +1,6 @@
 {
   "name": "@strike48/picjs",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Native TypeScript implementation of PIC-like diagram language to SVG",
   "type": "module",
   "main": "./dist/picjs.umd.js",
