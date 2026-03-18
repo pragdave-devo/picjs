@@ -336,9 +336,9 @@
     picjs &mdash; constraint-based diagraming, embedded in your documents
   </foomer>
 
-  <script src="https://cdn.jsdelivr.net/npm/picjs@latest/dist/picjs.umd.js"></script>
-
   <script type="module">
+    import { picjs } from 'https://cdn.jsdelivr.net/npm/picjs@latest/dist/picjs.esm.js';
+
     // CodeMirror 6 imports
     import {EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter} from 'https://esm.sh/@codemirror/view@6';
     import {EditorState} from 'https://esm.sh/@codemirror/state@6';
@@ -779,11 +779,11 @@ theta = 0
 move to ps(inner_radius, theta)
 
 for _count from 1 to teeth do {
-  line to ps(inner_radius, theta + bottom_land_1) \
-  then to ps(outer_radius, theta + slope_up)      \
-  then to ps(outer_radius, theta + top_land)      \
-  then to ps(inner_radius, theta + slope_down)    \
-  then to ps(inner_radius, theta + bottom_land_2) \
+  line to ps(inner_radius, theta + bottom_land_1) \\
+  then to ps(outer_radius, theta + slope_up)      \\
+  then to ps(outer_radius, theta + top_land)      \\
+  then to ps(inner_radius, theta + slope_down)    \\
+  then to ps(inner_radius, theta + bottom_land_2) \\
        rad 0.1
   theta += tooth_width
 }
