@@ -158,11 +158,22 @@ export function pikTokenLength(token: PToken, bAllowCodeBlock: boolean): number 
     case ']': { token.eType = T_RB; return 1; }
     case ',': { token.eType = T_COMMA; return 1; }
     case ':': { token.eType = T_COLON; return 1; }
-    case '>': { token.eType = T_GT; return 1; }
+    case '>': {
+      if (n > 1 && z[1] === '=') {
+        token.eType = TokenType.T_GE;
+        return 2;
+      }
+      token.eType = T_GT;
+      return 1;
+    }
 
     case '=': {
       if (n > 1 && z[1] === '=') {
         token.eType = T_EQ;
+        return 2;
+      }
+      if (n > 1 && z[1] === '>') {
+        token.eType = TokenType.T_FATARROW;
         return 2;
       }
       token.eType = T_ASSIGN;
@@ -193,6 +204,9 @@ export function pikTokenLength(token: PToken, bAllowCodeBlock: boolean): number 
           token.eType = T_LARROW;
           return 2;
         }
+      } else if (n > 1 && z[1] === '=') {
+        token.eType = TokenType.T_LE;
+        return 2;
       } else {
         token.eType = T_LT;
         return 1;
@@ -222,6 +236,15 @@ export function pikTokenLength(token: PToken, bAllowCodeBlock: boolean): number 
       }
       token.eType = T_CODEBLOCK;
       return i;
+    }
+
+    case '!': {
+      if (n > 1 && z[1] === '=') {
+        token.eType = TokenType.T_NE;
+        return 2;
+      }
+      token.eType = T_ERROR;
+      return 1;
     }
 
     case '&': {

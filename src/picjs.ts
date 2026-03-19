@@ -19,6 +19,8 @@ import {
 } from './shapes.ts';
 import { pikAppendStyle, pikAppendTxt, pikRender } from './renderer.ts';
 import { pikParse } from './parser.ts';
+import { parseToAst } from './parser2.ts';
+import { evaluate, setParseToAstFn } from './evaluator.ts';
 
 // Lazy-init flag
 let _initialized = false;
@@ -53,6 +55,16 @@ function ensureInit(): void {
   setPikAppendStyleFn(pikAppendStyle);
   setPikAppendTxtFn(pikAppendTxt);
   setPikSizeToFitFn(pikSizeToFit);
+
+  // Wire evaluator's parseToAst reference (for string interpolation)
+  setParseToAstFn(parseToAst);
+}
+
+// Feature flag: set to true to use new AST-based parser+evaluator
+let useNewParser = true;
+
+export function setUseNewParser(flag: boolean): void {
+  useNewParser = flag;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,7 +99,15 @@ export function picjs(text: string, options?: PicjsOptions): PicjsResult {
   if (options?.plaintextErrors) mFlags |= PIKCHR_PLAINTEXT_ERRORS;
   p.mFlags = mFlags;
 
-  const pList = pikParse(p, text);
+  let pList: PList | null = null;
+  if (useNewParser) {
+    const ast = parseToAst(p, text);
+    if (p.nErr === 0) {
+      pList = evaluate(p, ast);
+    }
+  } else {
+    pList = pikParse(p, text);
+  }
 
   if (p.nErr === 0 && pList) {
     pikRender(p, pList);

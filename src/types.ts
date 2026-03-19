@@ -203,6 +203,18 @@ export enum TokenType {
   T_PARAMETER = 253,
   T_WHITESPACE = 254,
   T_ERROR = 255,
+
+  // New tokens for DSL overhaul (Phase 2+)
+  T_FN = 200,
+  T_CASE = 201,
+  T_FATARROW = 202,   // =>
+  T_YES = 203,
+  T_NO = 204,
+  T_NOT = 205,
+  T_OR = 206,
+  T_GE = 207,         // >=
+  T_LE = 208,         // <=
+  T_NE = 209,         // !=
 }
 
 // Position in 2D space
