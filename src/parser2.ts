@@ -1226,6 +1226,22 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
     return { exprKind: "boolean", tok, value: false };
   }
 
+  // List literal [expr, expr, ...]
+  if (t.eType === T_LB) {
+    const tok = ts.advance();
+    const items: AstExpr[] = [];
+    if (ts.peek().eType !== T_RB) {
+      items.push(parseExpr(p, ts));
+      while (p.nErr === 0 && ts.peek().eType === T_COMMA) {
+        ts.advance();
+        if (ts.peek().eType === T_RB) break; // trailing comma
+        items.push(parseExpr(p, ts));
+      }
+    }
+    ts.expect(T_RB, 'expected "]"');
+    return { exprKind: "list", items, tok };
+  }
+
   // NUMBER
   if (t.eType === T_NUMBER) {
     const num = ts.advance();

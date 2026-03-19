@@ -239,6 +239,8 @@ export type AstExpr =
   | AstExprProperty
   | AstExprPlaceXY
   | AstExprColorName
+  | AstExprList
+  | AstExprIndex
 
 export interface AstExprNumber {
   exprKind: "number";
@@ -333,6 +335,19 @@ export interface AstExprPlaceXY {
 
 export interface AstExprColorName {
   exprKind: "colorName";
+  tok: PToken;
+}
+
+export interface AstExprList {
+  exprKind: "list";
+  items: AstExpr[];
+  tok: PToken;
+}
+
+export interface AstExprIndex {
+  exprKind: "index";
+  object: AstExpr;
+  index: number;
   tok: PToken;
 }
 

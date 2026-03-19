@@ -622,8 +622,10 @@ function evalExpr(p: Pik, expr: AstExpr): PNum {
       return 0;
     }
 
+    case "list":
+    case "index":
     case "builtinCall":
-      // Phase 2+ feature
+      // Phase 2+ feature — returns 0 in numeric context
       return 0;
   }
 
