@@ -20,6 +20,7 @@ export type AstStmt =
   | AstForRange
   | AstForIn
   | AstFnCall
+  | AstCase
   | AstPrint
   | AstAssert
   | AstEmpty
@@ -103,6 +104,13 @@ export interface AstAssert {
   left: AstExpr | AstPosition;
   right: AstExpr | AstPosition | null;
   eqTok: PToken;
+}
+
+export interface AstCase {
+  kind: "case";
+  expr: AstExpr;
+  arms: { pattern: AstExpr; body: AstStmt[] }[];
+  tok: PToken;
 }
 
 export interface AstFnCall {

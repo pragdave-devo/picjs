@@ -25,11 +25,11 @@ import {
 } from './layout.ts';
 
 import { Environment } from './environment.ts';
-import { mkNum, mkBool, mkFn, mkList, toNumber, type PicValue } from './values.ts';
+import { mkNum, mkStr, mkBool, mkFn, mkList, toNumber, valuesEqual, type PicValue } from './values.ts';
 
 import type {
   AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall,
-  AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection,
+  AstCase, AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection,
   AstAttr, AstAttrNumeric, AstAttrColor, AstAttrDash, AstAttrBool,
   AstAttrText, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
   AstAttrBehind, AstAttrFit, AstAttrEvenWith, AstAttrFlag,
@@ -173,6 +173,10 @@ function evalStmt(p: Pik, stmt: AstStmt): void {
 
     case "fncall":
       evalFnCallStmt(p, stmt);
+      break;
+
+    case "case":
+      evalCaseStmt(p, stmt);
       break;
 
     case "print":
@@ -499,6 +503,24 @@ function evalForIn(p: Pik, stmt: AstForIn): void {
 }
 
 // ============================================================
+// Case evaluation
+// ============================================================
+
+function evalCaseStmt(p: Pik, stmt: AstCase): void {
+  const val = evalRichExpr(p, stmt.expr);
+
+  for (const arm of stmt.arms) {
+    if (p.nErr) return;
+    const patVal = evalRichExpr(p, arm.pattern);
+    if (valuesEqual(val, patVal)) {
+      evaluate(p, arm.body);
+      return;
+    }
+  }
+  // No match — do nothing
+}
+
+// ============================================================
 // Print evaluation
 // ============================================================
 
@@ -686,6 +708,8 @@ function evalRichExpr(p: Pik, expr: AstExpr): PicValue {
       });
     case "boolean":
       return mkBool(expr.value);
+    case "string":
+      return mkStr(expr.value);
     case "list":
       return mkList(expr.items.map(item => evalRichExpr(p, item)));
     case "varRef": {

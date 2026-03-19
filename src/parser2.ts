@@ -14,7 +14,7 @@ import { TokenStream } from './tokenizer.ts';
 import { pikAddMacro } from './layout.ts';
 
 import type {
-  AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall,
+  AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall, AstCase,
   AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection, AstEmpty,
   AstAttr, AstAttrNumeric, AstAttrColor, AstAttrDash, AstAttrBool,
   AstAttrText, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
@@ -51,7 +51,7 @@ const {
   T_FOR, T_DO, T_STEP,
   T_YES, T_NO, T_NOT, T_OR,
   T_GE, T_LE, T_NE,
-  T_FN,
+  T_FN, T_CASE, T_FATARROW,
 } = TokenType;
 
 // ============================================================
@@ -181,6 +181,11 @@ function parseStatement(p: Pik, ts: TokenStream): AstStmt | null {
   if (t.eType === T_FOR) {
     ts.advance();
     return parseForStmt(p, ts);
+  }
+
+  // case statement
+  if (t.eType === T_CASE) {
+    return parseCaseStmt(p, ts);
   }
 
   // $name(args) function call statement
@@ -759,6 +764,48 @@ function parseBodyText(p: Pik, bodyText: string): AstStmt[] {
   bodyStream.tokenize(bodyText);
   if (p.nErr) return [];
   return parseStatementList(p, bodyStream);
+}
+
+// ============================================================
+// Case statement: case expr { pattern => { body } ... }
+// ============================================================
+
+function parseCaseStmt(p: Pik, ts: TokenStream): AstCase | null {
+  const tok = ts.advance(); // consume T_CASE
+  const expr = parseExpr(p, ts);
+  if (p.nErr) return null;
+
+  const outerTok = ts.expect(T_CODEBLOCK, 'expected "{" after case expression');
+  if (p.nErr) return null;
+
+  // Parse the inside of the codeblock to get arms
+  const innerText = outerTok.z.substring(1, outerTok.n - 1);
+  const innerStream = new TokenStream(p);
+  innerStream.tokenize(innerText);
+  if (p.nErr) return null;
+
+  const arms: { pattern: AstExpr; body: AstStmt[] }[] = [];
+  while (p.nErr === 0 && !innerStream.atEnd()) {
+    // Skip newlines between arms
+    while (!innerStream.atEnd() && innerStream.peek().eType === T_EOL) innerStream.advance();
+    if (innerStream.atEnd()) break;
+
+    const pattern = parseExpr(p, innerStream);
+    if (p.nErr) return null;
+
+    innerStream.expect(T_FATARROW, 'expected "=>" after case pattern');
+    if (p.nErr) return null;
+
+    const bodyTok = innerStream.expect(T_CODEBLOCK, 'expected "{" for case arm body');
+    if (p.nErr) return null;
+
+    const bodyText = bodyTok.z.substring(1, bodyTok.n - 1);
+    const body = parseBodyText(p, bodyText);
+
+    arms.push({ pattern, body });
+  }
+
+  return { kind: "case", expr, arms, tok };
 }
 
 // ============================================================

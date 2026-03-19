@@ -378,6 +378,53 @@ test('string expression in assignment', () => {
   assert(!r.isError, `expected success: ${r.svg}`);
 });
 
+// Phase 2C: Case expressions
+test('case basic match', () => {
+  const r = picjs('$x = 1\ncase $x {\n  1 => { box "one" }\n  2 => { box "two" }\n}');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('one'), 'should contain "one"');
+});
+
+test('case second arm match', () => {
+  const r = picjs('$x = 2\ncase $x {\n  1 => { box "one" }\n  2 => { box "two" }\n}');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('two'), 'should contain "two"');
+});
+
+test('case no match', () => {
+  const r = picjs('$x = 3\ncase $x {\n  1 => { box "one" }\n  2 => { box "two" }\n}');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(!r.svg.includes('one'), 'should not contain "one"');
+  assert(!r.svg.includes('two'), 'should not contain "two"');
+});
+
+test('case with expression', () => {
+  const r = picjs('$x = 1 + 1\ncase $x {\n  1 => { box "one" }\n  2 => { box "two" }\n}');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('two'), 'should match 2');
+});
+
+test('case producing shapes', () => {
+  const r = picjs('$shape = 1\ncase $shape {\n  1 => { box "alpha"; arrow; box "beta" }\n  2 => { circle "gamma" }\n}');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('alpha'), 'should contain "alpha"');
+  assert(r.svg.includes('beta'), 'should contain "beta"');
+});
+
+test('case with string matching', () => {
+  const r = picjs('$s = "red"\ncase $s {\n  "blue" => { box "blue" }\n  "red" => { box "red" }\n}');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('red'), 'should contain "red"');
+});
+
+test('case in for loop', () => {
+  const r = picjs('for i from 1 to 3 do {\n  case i {\n    1 => { box "A" }\n    2 => { box "B" }\n    3 => { box "C" }\n  }\n}');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('A'), 'should contain "A"');
+  assert(r.svg.includes('B'), 'should contain "B"');
+  assert(r.svg.includes('C'), 'should contain "C"');
+});
+
 // Reset to old parser
 setUseNewParser(false);
 
