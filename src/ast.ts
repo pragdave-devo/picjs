@@ -98,9 +98,9 @@ export type AstPrintItem =
 
 export interface AstAssert {
   kind: "assert";
-  variant: "expr" | "position";
+  variant: "expr" | "position" | "bool";
   left: AstExpr | AstPosition;
-  right: AstExpr | AstPosition;
+  right: AstExpr | AstPosition | null;
   eqTok: PToken;
 }
 

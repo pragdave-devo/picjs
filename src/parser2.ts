@@ -49,6 +49,8 @@ const {
   T_WAY, T_X, T_Y, T_THIS,
   T_CODEBLOCK,
   T_FOR, T_DO, T_STEP,
+  T_YES, T_NO, T_NOT, T_OR,
+  T_GE, T_LE, T_NE,
 } = TokenType;
 
 // ============================================================
@@ -634,19 +636,20 @@ function parseAssertStmt(p: Pik, ts: TokenStream): AstAssert | null {
   ts.expect(T_LP, 'expected "(" after "assert"');
   if (p.nErr) return null;
 
-  // Try expr == expr first, fall back to position == position
+  // Try expression first (may include ==, >, < etc as comparison operators)
   const saved = ts.save();
   const savedErr = p.nErr;
   const savedOut = p.zOut;
 
-  const e1 = parseExpr(p, ts);
-  if (p.nErr === 0 && ts.peek().eType === T_EQ) {
-    const eqTok = ts.advance();
-    const e2 = parseExpr(p, ts);
-    if (p.nErr === 0) {
-      ts.expect(T_RP, 'expected ")"');
-      return { kind: "assert", variant: "expr", left: e1, right: e2, eqTok };
+  const expr = parseExpr(p, ts);
+  if (p.nErr === 0 && ts.peek().eType === T_RP) {
+    ts.advance(); // consume )
+    // If top-level is == comparison, decompose for backward-compatible pikAssert
+    if (expr.exprKind === "compare" && expr.op === "==") {
+      return { kind: "assert", variant: "expr", left: expr.left, right: expr.right, eqTok: expr.tok };
     }
+    // General boolean assert (truthy check)
+    return { kind: "assert", variant: "bool", left: expr, right: null as any, eqTok: expr.exprKind === "compare" ? (expr as any).tok : makeToken() };
   }
 
   // Fall back to position == position
@@ -781,11 +784,11 @@ function parsePosition(p: Pik, ts: TokenStream): AstPosition {
     ts.restore(saved);
   }
 
-  // Try expr first
+  // Try expr first (noBracketCompare: < and > are between-brackets here)
   const saved = ts.save();
   const savedErr = p.nErr;
   const savedOut = p.zOut;
-  const val = parseExpr(p, ts);
+  const val = parseExpr(p, ts, true);
 
   if (p.nErr) {
     // expr failed, try place
@@ -1098,8 +1101,63 @@ function parseNthValue(pNth: PToken): number {
 // Expression parsing
 // ============================================================
 
-function parseExpr(p: Pik, ts: TokenStream): AstExpr {
-  return parseAddExpr(p, ts);
+// noBracketCompare: when true, < and > are NOT comparison operators
+// (used in position context where they serve as between-brackets)
+function parseExpr(p: Pik, ts: TokenStream, noBracketCompare = false): AstExpr {
+  return parseOrExpr(p, ts, noBracketCompare);
+}
+
+function parseOrExpr(p: Pik, ts: TokenStream, nbc: boolean): AstExpr {
+  let left = parseAndExpr(p, ts, nbc);
+  while (p.nErr === 0 && ts.peek().eType === T_OR) {
+    const tok = ts.advance();
+    const right = parseAndExpr(p, ts, nbc);
+    left = { exprKind: "logical", op: "or", left, right, tok };
+  }
+  return left;
+}
+
+function parseAndExpr(p: Pik, ts: TokenStream, nbc: boolean): AstExpr {
+  let left = parseNotExpr(p, ts, nbc);
+  while (p.nErr === 0 && ts.peek().eType === T_AND) {
+    const tok = ts.advance();
+    const right = parseNotExpr(p, ts, nbc);
+    left = { exprKind: "logical", op: "and", left, right, tok };
+  }
+  return left;
+}
+
+function parseNotExpr(p: Pik, ts: TokenStream, nbc: boolean): AstExpr {
+  if (ts.peek().eType === T_NOT) {
+    const tok = ts.advance();
+    const operand = parseNotExpr(p, ts, nbc);
+    return { exprKind: "logical", op: "not", left: operand, right: null, tok };
+  }
+  return parseCompareExpr(p, ts, nbc);
+}
+
+function parseCompareExpr(p: Pik, ts: TokenStream, nbc: boolean): AstExpr {
+  const left = parseAddExpr(p, ts);
+  const t = ts.peek();
+  // ==, !=, >=, <= are always comparison operators
+  if (t.eType === T_EQ || t.eType === T_NE ||
+      t.eType === T_GE || t.eType === T_LE) {
+    const tok = ts.advance();
+    const right = parseAddExpr(p, ts);
+    const op = tok.eType === T_EQ ? "==" :
+               tok.eType === T_NE ? "!=" :
+               tok.eType === T_GE ? ">=" : "<=";
+    return { exprKind: "compare", op: op as any, left, right, tok };
+  }
+  // < and > are comparisons only when NOT in position context
+  // (in position context they are between-brackets: n<p1,p2>)
+  if (!nbc && (t.eType === T_GT || t.eType === T_LT)) {
+    const tok = ts.advance();
+    const right = parseAddExpr(p, ts);
+    const op = tok.eType === T_GT ? ">" : "<";
+    return { exprKind: "compare", op: op as any, left, right, tok };
+  }
+  return left;
 }
 
 function parseAddExpr(p: Pik, ts: TokenStream): AstExpr {
@@ -1157,6 +1215,16 @@ function parseUnaryExpr(p: Pik, ts: TokenStream): AstExpr {
 function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
   if (p.nErr) return mkNumExpr(makeToken(), 0);
   const t = ts.peek();
+
+  // YES / NO (boolean literals)
+  if (t.eType === T_YES) {
+    const tok = ts.advance();
+    return { exprKind: "boolean", tok, value: true };
+  }
+  if (t.eType === T_NO) {
+    const tok = ts.advance();
+    return { exprKind: "boolean", tok, value: false };
+  }
 
   // NUMBER
   if (t.eType === T_NUMBER) {
@@ -1377,7 +1445,8 @@ function isExprStart(t: PToken): boolean {
          t.eType === T_PLUS || t.eType === T_MINUS ||
          t.eType === T_FUNC1 || t.eType === T_FUNC2 || t.eType === T_FUNC3 || t.eType === T_DIST ||
          t.eType === T_PLACENAME || t.eType === T_NTH || t.eType === T_LAST ||
-         t.eType === T_THIS;
+         t.eType === T_THIS ||
+         t.eType === T_YES || t.eType === T_NO || t.eType === T_NOT;
 }
 
 function isAttributeStart(t: PToken): boolean {

@@ -194,6 +194,145 @@ if (fs.existsSync(examplesDir)) {
   }
 }
 
+// ============================================================
+// Phase 2A: New feature tests (new parser only)
+// ============================================================
+console.log('\nPhase 2A: New feature tests (new parser only)...\n');
+
+setUseNewParser(true);
+
+// Boolean literals
+test('yes literal equals 1', () => {
+  const r = picjs('assert(yes == 1)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('no literal equals 0', () => {
+  const r = picjs('assert(no == 0)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+// Comparison operators
+test('greater than true', () => {
+  const r = picjs('assert(2 > 1)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('greater than false', () => {
+  const r = picjs('assert(1 > 2)');
+  assert(r.isError, `expected failure but got success`);
+});
+
+test('less than', () => {
+  const r = picjs('assert(1 < 2)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('greater or equal', () => {
+  const r = picjs('assert(2 >= 2)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('less or equal', () => {
+  const r = picjs('assert(1 <= 2)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('not equal', () => {
+  const r = picjs('assert(1 != 2)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('not equal false', () => {
+  const r = picjs('assert(1 != 1)');
+  assert(r.isError, `expected failure but got success`);
+});
+
+test('comparison in expression', () => {
+  const r = picjs('val = 1 + (2 > 1)\nassert(val == 2)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+// Logical operators
+test('and true', () => {
+  const r = picjs('assert(1 and 1)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('and false', () => {
+  const r = picjs('assert(1 and 0)');
+  assert(r.isError, `expected failure but got success`);
+});
+
+test('or true', () => {
+  const r = picjs('assert(0 or 1)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('or false', () => {
+  const r = picjs('assert(0 or 0)');
+  assert(r.isError, `expected failure but got success`);
+});
+
+test('not true', () => {
+  const r = picjs('assert(not 0)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('not false', () => {
+  const r = picjs('assert(not 1)');
+  assert(r.isError, `expected failure but got success`);
+});
+
+test('not not double negation', () => {
+  const r = picjs('assert(not not 1)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('compound logical', () => {
+  const r = picjs('assert(1 > 0 and 2 > 1)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('or short-circuit', () => {
+  const r = picjs('assert(1 or 0)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('precedence: not binds tighter than and', () => {
+  // not 0 and 1 => (not 0) and 1 => 1 and 1 => 1
+  const r = picjs('assert(not 0 and 1)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('precedence: and binds tighter than or', () => {
+  // 0 and 1 or 1 => (0 and 1) or 1 => 0 or 1 => 1
+  const r = picjs('assert(0 and 1 or 1)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('comparison with arithmetic', () => {
+  const r = picjs('assert(1 + 1 == 2)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('boolean in variable', () => {
+  const r = picjs('flag = yes\nassert(flag == 1)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('between syntax still works', () => {
+  // Verify < > in position context are still between-brackets
+  const r = picjs('A: box\nB: box at 2,0\nC: box at 0.5 between A and B');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('angle bracket between syntax', () => {
+  // Verify n<p1,p2> between syntax works
+  const r = picjs('A: box\nB: box at 2,0\narrow from 1/2<A,B> to B');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
 // Reset to old parser
 setUseNewParser(false);
 

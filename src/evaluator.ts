@@ -509,6 +509,11 @@ function evalAssertStmt(p: Pik, stmt: AstAssert): void {
     const e1 = evalExpr(p, stmt.left as AstExpr);
     const e2 = evalExpr(p, stmt.right as AstExpr);
     pikAssert(p, e1, stmt.eqTok, e2);
+  } else if (stmt.variant === "bool") {
+    const val = evalExpr(p, stmt.left as AstExpr);
+    if (val === 0) {
+      pikError(p, stmt.eqTok, 'assertion failed');
+    }
   } else {
     const p1 = evalPosition(p, stmt.left as AstPosition);
     const p2 = evalPosition(p, stmt.right as AstPosition);
@@ -586,10 +591,39 @@ function evalExpr(p: Pik, expr: AstExpr): PNum {
     case "string":
       return 0;
 
-    case "compare":
-    case "logical":
+    case "compare": {
+      const cl = evalExpr(p, expr.left);
+      const cr = evalExpr(p, expr.right);
+      switch (expr.op) {
+        case "==": return cl === cr ? 1 : 0;
+        case "!=": return cl !== cr ? 1 : 0;
+        case ">":  return cl > cr ? 1 : 0;
+        case "<":  return cl < cr ? 1 : 0;
+        case ">=": return cl >= cr ? 1 : 0;
+        case "<=": return cl <= cr ? 1 : 0;
+      }
+      return 0;
+    }
+
+    case "logical": {
+      if (expr.op === "not") {
+        const val = evalExpr(p, expr.left);
+        return val === 0 ? 1 : 0;
+      }
+      const ll = evalExpr(p, expr.left);
+      if (expr.op === "and") {
+        if (ll === 0) return 0;
+        return evalExpr(p, expr.right!) !== 0 ? 1 : 0;
+      }
+      if (expr.op === "or") {
+        if (ll !== 0) return 1;
+        return evalExpr(p, expr.right!) !== 0 ? 1 : 0;
+      }
+      return 0;
+    }
+
     case "builtinCall":
-      // Phase 2+ features
+      // Phase 2+ feature
       return 0;
   }
 
