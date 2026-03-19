@@ -425,6 +425,44 @@ test('case in for loop', () => {
   assert(r.svg.includes('C'), 'should contain "C"');
 });
 
+// Containing attribute
+test('containing with $variable', () => {
+  const r = picjs('$a = "hello"\nbox containing $a');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('hello'), 'should contain "hello"');
+});
+
+test('con shorthand', () => {
+  const r = picjs('$a = "hello"\nbox con $a');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('hello'), 'should contain "hello"');
+});
+
+test('containing with literal string', () => {
+  const r = picjs('box containing "literal"');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('literal'), 'should contain "literal"');
+});
+
+test('containing with number', () => {
+  const r = picjs('$n = 42\nbox containing $n');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('42'), 'should contain "42"');
+});
+
+test('containing in function', () => {
+  const r = picjs('$labeled = fn($txt) { box containing $txt }\n$labeled("dynamic")');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('dynamic'), 'should contain "dynamic"');
+});
+
+test('string interpolation with $var', () => {
+  const r = picjs('$a = "world"\nbox "hello ${$a}"');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('hello'), 'should contain "hello"');
+  assert(r.svg.includes('world'), 'should contain "world"');
+});
+
 // Reset to old parser
 setUseNewParser(false);
 

@@ -25,13 +25,13 @@ import {
 } from './layout.ts';
 
 import { Environment } from './environment.ts';
-import { mkNum, mkStr, mkBool, mkFn, mkList, toNumber, valuesEqual, type PicValue } from './values.ts';
+import { mkNum, mkStr, mkBool, mkFn, mkList, toNumber, toString, valuesEqual, type PicValue } from './values.ts';
 
 import type {
   AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall,
   AstCase, AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection,
   AstAttr, AstAttrNumeric, AstAttrColor, AstAttrDash, AstAttrBool,
-  AstAttrText, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
+  AstAttrText, AstAttrContaining, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
   AstAttrBehind, AstAttrFit, AstAttrEvenWith, AstAttrFlag,
   AstRelExpr,
   AstExpr,
@@ -73,7 +73,7 @@ function expandStringInterpolation(p: Pik, token: PToken): PToken {
       const exprText = str.substring(i + 2, j - 1);
       const exprValue = evaluateInterpolationExpr(p, exprText, token);
       if (p.nErr) return token;
-      result += formatInterpolatedValue(exprValue);
+      result += exprValue;
       i = j;
     } else {
       result += str[i];
@@ -91,18 +91,34 @@ export function setParseToAstFn(fn: (p: Pik, input: string) => AstStmt[]): void 
   parseToAstFn = fn;
 }
 
-function evaluateInterpolationExpr(p: Pik, exprText: string, errToken: PToken): PNum {
-  if (p.nErr || !parseToAstFn) return 0;
+function evaluateInterpolationExpr(p: Pik, exprText: string, errToken: PToken): string {
+  if (p.nErr || !parseToAstFn) return '0';
+  // Parse as an assignment so we get an expression AST
   const stmts = parseToAstFn(p, `_interp_result = ${exprText}`);
-  if (p.nErr) return 0;
+  if (p.nErr || stmts.length === 0) return '0';
+  // Extract the expression from the assignment
+  const stmt = stmts[0];
+  if (stmt.kind === 'assign') {
+    const val = evalRichExpr(p, stmt.value);
+    return formatRichValue(val);
+  }
+  // Fallback: evaluate as statement and read numeric result
   for (const s of stmts) {
     evalStmt(p, s);
   }
   const val = pikValue(p, '_interp_result', 14);
-  return val.miss ? 0 : val.val;
+  return formatNumericValue(val.miss ? 0 : val.val);
 }
 
-function formatInterpolatedValue(value: PNum): string {
+function formatRichValue(value: PicValue): string {
+  switch (value.tag) {
+    case "string": return value.val;
+    case "boolean": return value.val ? "1" : "0";
+    default: return formatNumericValue(toNumber(value));
+  }
+}
+
+function formatNumericValue(value: PNum): string {
   if (Number.isNaN(value)) return 'NaN';
   if (!Number.isFinite(value)) return value > 0 ? 'Infinity' : '-Infinity';
   if (Number.isInteger(value) || Math.abs(value - Math.round(value)) < 1e-9) {
@@ -302,6 +318,15 @@ function evalAttr(p: Pik, attr: AstAttr, obj: PObj): void {
     case "text": {
       const expanded = expandStringInterpolation(p, attr.tok);
       pikAddTxt(p, expanded, attr.posFlags);
+      break;
+    }
+    case "containing": {
+      const val = evalRichExpr(p, attr.expr);
+      const str = toString(val);
+      // Create a synthetic string token: "str"
+      const quoted = `"${str}"`;
+      const tok: PToken = { z: quoted, n: quoted.length, eType: 0, eCode: 0, eEdge: 0 };
+      pikAddTxt(p, tok, attr.posFlags);
       break;
     }
     case "position":
@@ -584,8 +609,8 @@ function evalExpr(p: Pik, expr: AstExpr): PNum {
       if (vname[0] === '$') {
         const val = currentEnv.get(vname);
         if (val !== undefined) return toNumber(val);
-        // Fall back to old variable system (e.g., $pi)
       }
+      // Fall back to old variable system (builtins like $pi, old-style vars)
       return pikGetVar(p, expr.tok);
     }
 
@@ -713,7 +738,6 @@ function evalRichExpr(p: Pik, expr: AstExpr): PicValue {
     case "list":
       return mkList(expr.items.map(item => evalRichExpr(p, item)));
     case "varRef": {
-      // Look up rich value in Environment first
       const vname = expr.tok.z.substring(0, expr.tok.n);
       if (vname[0] === '$') {
         const val = currentEnv.get(vname);

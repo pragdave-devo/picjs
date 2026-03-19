@@ -134,6 +134,7 @@ export type AstAttr =
   | AstAttrDash
   | AstAttrBool
   | AstAttrText
+  | AstAttrContaining
   | AstAttrPosition
   | AstAttrDirection
   | AstAttrFlag
@@ -171,6 +172,13 @@ export interface AstAttrText {
   attrKind: "text";
   tok: PToken;         // T_STRING
   posFlags: number;   // text position flags
+}
+
+export interface AstAttrContaining {
+  attrKind: "containing";
+  expr: AstExpr;
+  posFlags: number;   // text position flags
+  tok: PToken;
 }
 
 export interface AstAttrPosition {

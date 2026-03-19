@@ -215,6 +215,7 @@ export enum TokenType {
   T_GE = 207,         // >=
   T_LE = 208,         // <=
   T_NE = 209,         // !=
+  T_CONTAINING = 210,
 }
 
 // Position in 2D space

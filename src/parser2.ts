@@ -17,7 +17,7 @@ import type {
   AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall, AstCase,
   AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection, AstEmpty,
   AstAttr, AstAttrNumeric, AstAttrColor, AstAttrDash, AstAttrBool,
-  AstAttrText, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
+  AstAttrText, AstAttrContaining, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
   AstAttrBehind, AstAttrFit, AstAttrEvenWith, AstAttrFlag,
   AstRelExpr,
   AstExpr, AstExprNumber, AstExprVarRef, AstExprBinOp, AstExprUnaryOp,
@@ -51,7 +51,7 @@ const {
   T_FOR, T_DO, T_STEP,
   T_YES, T_NO, T_NOT, T_OR,
   T_GE, T_LE, T_NE,
-  T_FN, T_CASE, T_FATARROW,
+  T_FN, T_CASE, T_FATARROW, T_CONTAINING,
 } = TokenType;
 
 // ============================================================
@@ -364,6 +364,14 @@ function parseAttribute(p: Pik, ts: TokenStream): AstAttr | null {
     const tok = ts.advance();
     const posFlags = parseTextposition(p, ts);
     return { attrKind: "text", tok, posFlags };
+  }
+
+  // CONTAINING expr textposition
+  if (t.eType === T_CONTAINING) {
+    const tok = ts.advance();
+    const expr = parseExpr(p, ts);
+    const posFlags = parseTextposition(p, ts);
+    return { attrKind: "containing", expr, posFlags, tok };
   }
 
   // FIT
@@ -1594,7 +1602,8 @@ function isAttributeStart(t: PToken): boolean {
          t.eType === T_LARROW || t.eType === T_RARROW || t.eType === T_LRARROW ||
          t.eType === T_INVIS || t.eType === T_THICK || t.eType === T_THIN ||
          t.eType === T_SOLID ||
-         t.eType === T_STRING;
+         t.eType === T_STRING ||
+         t.eType === T_CONTAINING;
 }
 
 function isObjectStart(t: PToken): boolean {

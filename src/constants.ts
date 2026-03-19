@@ -47,6 +47,8 @@ export const keywords: readonly PikWord[] = [
   { zWord: "chop",        nChar: 4,  eType: TokenType.T_CHOP,      eCode: 0,         eEdge: 0        },
   { zWord: "close",       nChar: 5,  eType: TokenType.T_CLOSE,     eCode: 0,         eEdge: 0        },
   { zWord: "color",       nChar: 5,  eType: TokenType.T_COLOR,     eCode: 0,         eEdge: 0        },
+  { zWord: "con",         nChar: 3,  eType: TokenType.T_CONTAINING, eCode: 0,        eEdge: 0        },
+  { zWord: "containing",  nChar: 10, eType: TokenType.T_CONTAINING, eCode: 0,        eEdge: 0        },
   { zWord: "cos",         nChar: 3,  eType: TokenType.T_FUNC1,     eCode: FN_COS,    eEdge: 0        },
   { zWord: "cw",          nChar: 2,  eType: TokenType.T_CW,        eCode: 0,         eEdge: 0        },
   { zWord: "d2r",         nChar: 3,  eType: TokenType.T_FUNC1,     eCode: FN_D2R,    eEdge: 0        },
