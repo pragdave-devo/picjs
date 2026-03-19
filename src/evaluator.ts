@@ -24,8 +24,11 @@ import {
   pikSetDirection, pikAddMacro,
 } from './layout.ts';
 
+import { Environment } from './environment.ts';
+import { mkNum, mkBool, mkFn, mkList, toNumber, type PicValue } from './values.ts';
+
 import type {
-  AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn,
+  AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall,
   AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection,
   AstAttr, AstAttrNumeric, AstAttrColor, AstAttrDash, AstAttrBool,
   AstAttrText, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
@@ -111,6 +114,16 @@ function formatInterpolatedValue(value: PNum): string {
 }
 
 // ============================================================
+// Environment for $-prefixed variables
+// ============================================================
+
+let currentEnv = new Environment();
+
+export function resetEvalState(): void {
+  currentEnv = new Environment();
+}
+
+// ============================================================
 // Main evaluation entry point
 // ============================================================
 
@@ -158,6 +171,10 @@ function evalStmt(p: Pik, stmt: AstStmt): void {
       evalForIn(p, stmt);
       break;
 
+    case "fncall":
+      evalFnCallStmt(p, stmt);
+      break;
+
     case "print":
       evalPrint(p, stmt);
       break;
@@ -176,8 +193,16 @@ function evalStmt(p: Pik, stmt: AstStmt): void {
 // ============================================================
 
 function evalAssign(p: Pik, stmt: AstAssign): void {
-  const val = evalExpr(p, stmt.value);
-  pikSetVar(p, stmt.name, val, stmt.op);
+  const name = stmt.name.z.substring(0, stmt.name.n);
+  if (name[0] === '$') {
+    // $-prefixed variable: store rich value in Environment
+    const val = evalRichExpr(p, stmt.value);
+    currentEnv.set(name, val);
+  } else {
+    // Old-style variable: store number in Pik
+    const val = evalExpr(p, stmt.value);
+    pikSetVar(p, stmt.name, val, stmt.op);
+  }
 }
 
 // ============================================================
@@ -532,8 +557,15 @@ function evalExpr(p: Pik, expr: AstExpr): PNum {
     case "number":
       return expr.value;
 
-    case "varRef":
+    case "varRef": {
+      const vname = expr.tok.z.substring(0, expr.tok.n);
+      if (vname[0] === '$') {
+        const val = currentEnv.get(vname);
+        if (val !== undefined) return toNumber(val);
+        // Fall back to old variable system (e.g., $pi)
+      }
       return pikGetVar(p, expr.tok);
+    }
 
     case "colorName":
       return pikLookupColor(p, expr.tok);
@@ -622,6 +654,13 @@ function evalExpr(p: Pik, expr: AstExpr): PNum {
       return 0;
     }
 
+    case "fn":
+      // fn expression in numeric context — returns 0
+      return 0;
+
+    case "userCall":
+      return evalUserCall(p, expr.func, expr.args, expr.tok);
+
     case "list":
     case "index":
     case "builtinCall":
@@ -630,6 +669,75 @@ function evalExpr(p: Pik, expr: AstExpr): PNum {
   }
 
   return 0;
+}
+
+// ============================================================
+// Rich expression evaluation (returns PicValue)
+// ============================================================
+
+function evalRichExpr(p: Pik, expr: AstExpr): PicValue {
+  if (p.nErr) return mkNum(0);
+  switch (expr.exprKind) {
+    case "fn":
+      return mkFn({
+        params: expr.params.map(t => t.z.substring(0, t.n)),
+        body: expr.body,
+        closure: currentEnv,
+      });
+    case "boolean":
+      return mkBool(expr.value);
+    case "list":
+      return mkList(expr.items.map(item => evalRichExpr(p, item)));
+    case "varRef": {
+      // Look up rich value in Environment first
+      const vname = expr.tok.z.substring(0, expr.tok.n);
+      if (vname[0] === '$') {
+        const val = currentEnv.get(vname);
+        if (val !== undefined) return val;
+      }
+      return mkNum(evalExpr(p, expr));
+    }
+    default:
+      return mkNum(evalExpr(p, expr));
+  }
+}
+
+// ============================================================
+// User function call
+// ============================================================
+
+function evalUserCall(p: Pik, funcExpr: AstExpr, args: AstExpr[], tok: PToken): PNum {
+  const funcVal = evalRichExpr(p, funcExpr);
+  if (funcVal.tag !== "function") {
+    pikError(p, tok, 'not a function');
+    return 0;
+  }
+  const fn = funcVal.val;
+
+  // Create child environment from closure
+  const callEnv = fn.closure ? fn.closure.child() : currentEnv.child();
+
+  // Bind parameters
+  for (let i = 0; i < fn.params.length; i++) {
+    const argVal = i < args.length ? evalRichExpr(p, args[i]) : mkNum(0);
+    callEnv.define(fn.params[i], argVal);
+  }
+
+  // Evaluate body in the new environment
+  const savedEnv = currentEnv;
+  currentEnv = callEnv;
+  evaluate(p, fn.body);
+  currentEnv = savedEnv;
+
+  return 0; // functions don't return values in numeric context yet
+}
+
+// ============================================================
+// Function call statement
+// ============================================================
+
+function evalFnCallStmt(p: Pik, stmt: AstFnCall): void {
+  evalUserCall(p, stmt.func, stmt.args, stmt.tok);
 }
 
 // ============================================================

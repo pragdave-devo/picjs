@@ -19,6 +19,7 @@ export type AstStmt =
   | AstSublist
   | AstForRange
   | AstForIn
+  | AstFnCall
   | AstPrint
   | AstAssert
   | AstEmpty
@@ -102,6 +103,13 @@ export interface AstAssert {
   left: AstExpr | AstPosition;
   right: AstExpr | AstPosition | null;
   eqTok: PToken;
+}
+
+export interface AstFnCall {
+  kind: "fncall";
+  func: AstExpr;
+  args: AstExpr[];
+  tok: PToken;
 }
 
 export interface AstEmpty {
@@ -241,6 +249,8 @@ export type AstExpr =
   | AstExprColorName
   | AstExprList
   | AstExprIndex
+  | AstExprFn
+  | AstExprUserCall
 
 export interface AstExprNumber {
   exprKind: "number";
@@ -348,6 +358,20 @@ export interface AstExprIndex {
   exprKind: "index";
   object: AstExpr;
   index: number;
+  tok: PToken;
+}
+
+export interface AstExprFn {
+  exprKind: "fn";
+  params: PToken[];
+  body: AstStmt[];
+  tok: PToken;
+}
+
+export interface AstExprUserCall {
+  exprKind: "userCall";
+  func: AstExpr;
+  args: AstExpr[];
   tok: PToken;
 }
 

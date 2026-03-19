@@ -20,7 +20,7 @@ import {
 import { pikAppendStyle, pikAppendTxt, pikRender } from './renderer.ts';
 import { pikParse } from './parser.ts';
 import { parseToAst } from './parser2.ts';
-import { evaluate, setParseToAstFn } from './evaluator.ts';
+import { evaluate, setParseToAstFn, resetEvalState } from './evaluator.ts';
 
 // Lazy-init flag
 let _initialized = false;
@@ -103,6 +103,7 @@ export function picjs(text: string, options?: PicjsOptions): PicjsResult {
   if (useNewParser) {
     const ast = parseToAst(p, text);
     if (p.nErr === 0) {
+      resetEvalState();
       pList = evaluate(p, ast);
     }
   } else {

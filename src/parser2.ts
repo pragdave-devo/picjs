@@ -14,7 +14,7 @@ import { TokenStream } from './tokenizer.ts';
 import { pikAddMacro } from './layout.ts';
 
 import type {
-  AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn,
+  AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall,
   AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection, AstEmpty,
   AstAttr, AstAttrNumeric, AstAttrColor, AstAttrDash, AstAttrBool,
   AstAttrText, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
@@ -51,6 +51,7 @@ const {
   T_FOR, T_DO, T_STEP,
   T_YES, T_NO, T_NOT, T_OR,
   T_GE, T_LE, T_NE,
+  T_FN,
 } = TokenType;
 
 // ============================================================
@@ -180,6 +181,14 @@ function parseStatement(p: Pik, ts: TokenStream): AstStmt | null {
   if (t.eType === T_FOR) {
     ts.advance();
     return parseForStmt(p, ts);
+  }
+
+  // $name(args) function call statement
+  if (t.eType === T_ID) {
+    const name = t.z.substring(0, t.n);
+    if (name[0] === '$' && ts.peekAhead(1).eType === T_LP) {
+      return parseFnCallStmt(p, ts);
+    }
   }
 
   // unnamed_statement (shape definition)
@@ -753,6 +762,25 @@ function parseBodyText(p: Pik, bodyText: string): AstStmt[] {
 }
 
 // ============================================================
+// Function call statement: $name(args)
+// ============================================================
+
+function parseFnCallStmt(p: Pik, ts: TokenStream): AstFnCall | null {
+  const id = ts.advance(); // consume $name
+  ts.advance(); // consume LP
+  const args: AstExpr[] = [];
+  if (ts.peek().eType !== T_RP) {
+    args.push(parseExpr(p, ts));
+    while (p.nErr === 0 && ts.peek().eType === T_COMMA) {
+      ts.advance();
+      args.push(parseExpr(p, ts));
+    }
+  }
+  ts.expect(T_RP, 'expected ")"');
+  return { kind: "fncall", func: { exprKind: "varRef", tok: id }, args, tok: id };
+}
+
+// ============================================================
 // Position
 // ============================================================
 
@@ -1226,6 +1254,12 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
     return { exprKind: "boolean", tok, value: false };
   }
 
+  // STRING literal (in expression context for function args, $-variables, etc.)
+  if (t.eType === T_STRING) {
+    const tok = ts.advance();
+    return { exprKind: "string", tok, value: tok.z.substring(1, tok.n - 1) };
+  }
+
   // List literal [expr, expr, ...]
   if (t.eType === T_LB) {
     const tok = ts.advance();
@@ -1248,9 +1282,44 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
     return { exprKind: "number", tok: num, value: pikAtof(num) };
   }
 
-  // ID (variable)
+  // fn(params) { body } — function expression
+  if (t.eType === T_FN) {
+    const tok = ts.advance();
+    ts.expect(T_LP, 'expected "(" after "fn"');
+    const params: PToken[] = [];
+    if (ts.peek().eType !== T_RP) {
+      params.push(ts.expect(T_ID, 'expected parameter name'));
+      while (p.nErr === 0 && ts.peek().eType === T_COMMA) {
+        ts.advance();
+        params.push(ts.expect(T_ID, 'expected parameter name'));
+      }
+    }
+    ts.expect(T_RP, 'expected ")"');
+    const bodyTok = ts.expect(T_CODEBLOCK, 'expected "{" for function body');
+    if (p.nErr) return mkNumExpr(makeToken(), 0);
+    const bodyText = bodyTok.z.substring(1, bodyTok.n - 1);
+    const body = parseBodyText(p, bodyText);
+    return { exprKind: "fn", params, body, tok };
+  }
+
+  // ID (variable or $name function call)
   if (t.eType === T_ID) {
     const id = ts.advance();
+    const name = id.z.substring(0, id.n);
+    // $name(args) is a function call in expression context
+    if (name[0] === '$' && ts.peek().eType === T_LP) {
+      ts.advance(); // consume LP
+      const args: AstExpr[] = [];
+      if (ts.peek().eType !== T_RP) {
+        args.push(parseExpr(p, ts));
+        while (p.nErr === 0 && ts.peek().eType === T_COMMA) {
+          ts.advance();
+          args.push(parseExpr(p, ts));
+        }
+      }
+      ts.expect(T_RP, 'expected ")"');
+      return { exprKind: "userCall", func: { exprKind: "varRef", tok: id }, args, tok: id };
+    }
     return { exprKind: "varRef", tok: id };
   }
 

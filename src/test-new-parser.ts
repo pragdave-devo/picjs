@@ -333,6 +333,51 @@ test('angle bracket between syntax', () => {
   assert(!r.isError, `expected success: ${r.svg}`);
 });
 
+// Phase 2B: Functions
+test('function producing shapes', () => {
+  const r = picjs('$pair = fn() { box "A"; arrow; box "B" }\n$pair()');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('A'), 'should contain A');
+  assert(r.svg.includes('B'), 'should contain B');
+});
+
+test('function with numeric params', () => {
+  const r = picjs('$sized = fn(bw, bh) { box width bw height bh }\n$sized(2, 1)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('$variable assignment and read', () => {
+  const r = picjs('$val = 42\nassert($val == 42)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('$pi backward compat', () => {
+  const r = picjs('assert($pi > 3)');
+  assert(!r.isError, `$pi should be accessible: ${r.svg}`);
+});
+
+test('function with color param', () => {
+  const r = picjs('$cbox = fn(clr) { box color clr }\n$cbox(0xff0000)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('nested function calls', () => {
+  const r = picjs('$a = fn() { box "alpha" }\n$b = fn() { $a(); arrow; box "beta" }\n$b()');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('alpha'), 'should contain "alpha"');
+  assert(r.svg.includes('beta'), 'should contain "beta"');
+});
+
+test('function called multiple times', () => {
+  const r = picjs('$bx = fn() { box "X" }\n$bx()\narrow\n$bx()');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('string expression in assignment', () => {
+  const r = picjs('$s = "hello"');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
 // Reset to old parser
 setUseNewParser(false);
 
