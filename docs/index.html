@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PicJS Pjjsslayground</title>
+  <title>picjs Playground</title>
   <style>
     :root {
       --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -18,6 +18,21 @@
       --error-bg: #fff5f5;
       --error-border: #ffcdd2;
       --error-text: #c62828;
+      --svg-filter: none;
+    }
+
+    html.dark {
+      --bg-page: #1a1a1a;
+      --bg-panel: #242424;
+      --bg-header: #2a2a2a;
+      --border-color: #3a3a3a;
+      --text-primary: #e0e0e0;
+      --text-secondary: #999999;
+      --accent: #5ca0e8;
+      --error-bg: #2a1a1a;
+      --error-border: #5a2a2a;
+      --error-text: #ef5350;
+      --svg-filter: invert(1) hue-rotate(180deg);
     }
 
     * {
@@ -182,6 +197,7 @@
     #result-container svg {
       max-width: 100%;
       height: auto;
+      filter: var(--svg-filter);
     }
 
     /* Error display */
@@ -228,6 +244,7 @@
 
     .header-links {
       display: flex;
+      align-items: center;
       gap: 16px;
       font-size: 0.9rem;
     }
@@ -239,6 +256,49 @@
 
     .header-links a:hover {
       text-decoration: underline;
+    }
+
+    /* Theme toggle */
+    #theme-toggle {
+      background: none;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      color: var(--text-primary);
+    }
+
+    #theme-toggle:hover {
+      background: var(--bg-header);
+    }
+
+    /* Dark mode: CodeMirror overrides */
+    html.dark #source-editor .cm-editor {
+      background: var(--bg-panel);
+    }
+
+    html.dark #source-editor .cm-gutters {
+      background: var(--bg-header);
+      border-color: var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    html.dark #source-editor .cm-activeLineGutter {
+      background: var(--bg-panel);
+    }
+
+    html.dark #source-editor .cm-activeLine {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    html.dark #source-editor .cm-selectionBackground {
+      background: rgba(90, 140, 200, 0.3) !important;
+    }
+
+    html.dark #example-selector {
+      color: var(--text-primary);
     }
 
     /* Responsive: stack vertically on mobile */
@@ -283,6 +343,7 @@
       <a href="Guide/">Guide</a>
       <a href="Reference/">Reference</a>
       <a href="https://github.com/pragdave-devo/picjs" target="_blank">GitHub</a>
+      <button id="theme-toggle" title="Toggle dark mode">&#9790;</button>
     </div>
   </header>
 
@@ -334,14 +395,14 @@
 
   <footer>
     picjs &mdash; constraint-based diagraming, embedded in your documents
-  </foomer>
+  </footer>
 
   <script type="module">
     import { picjs } from 'https://cdn.jsdelivr.net/npm/@strike48/picjs@latest/dist/picjs.js';
 
     // CodeMirror 6 imports
     import {EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter} from 'https://esm.sh/@codemirror/view@6';
-    import {EditorState} from 'https://esm.sh/@codemirror/state@6';
+    import {EditorState, Compartment} from 'https://esm.sh/@codemirror/state@6';
     import {StreamLanguage} from 'https://esm.sh/@codemirror/language@6';
     import {syntaxHighlighting, HighlightStyle} from 'https://esm.sh/@codemirror/language@6';
     import {tags} from 'https://esm.sh/@lezer/highlight@1';
@@ -457,6 +518,21 @@
       { tag: tags.special(tags.variableName), color: '#e36209' },
       { tag: tags.operator, color: '#d73a49' },
       { tag: tags.color, color: '#22863a' },
+    ]);
+
+    // Dark mode highlight style
+    const picjsDarkHighlightStyle = HighlightStyle.define([
+      { tag: tags.comment, color: '#8b949e' },
+      { tag: tags.string, color: '#a5d6ff' },
+      { tag: tags.number, color: '#79c0ff' },
+      { tag: tags.keyword, color: '#ff7b72' },
+      { tag: tags.definition(tags.variableName), color: '#d2a8ff' },
+      { tag: tags.function(tags.variableName), color: '#d2a8ff' },
+      { tag: tags.atom, color: '#79c0ff' },
+      { tag: tags.variableName, color: '#e6edf3' },
+      { tag: tags.special(tags.variableName), color: '#ffa657' },
+      { tag: tags.operator, color: '#ff7b72' },
+      { tag: tags.color, color: '#7ee787' },
     ]);
 
     // Default source code
@@ -846,7 +922,7 @@ for _count from 1 to teeth do {
       } else {
         url.searchParams.delete('example');
       }
-      history.replaceState(null, '', url);
+      window.history.replaceState(null, '', url);
     }
 
     // Helper to set editor content
@@ -913,6 +989,40 @@ for _count from 1 to teeth do {
       }
     });
 
+    // Theme management
+    const themeCompartment = new Compartment();
+
+    function isDark() {
+      return document.documentElement.classList.contains('dark');
+    }
+
+    function getHighlightExtension() {
+      return syntaxHighlighting(isDark() ? picjsDarkHighlightStyle : picjsHighlightStyle);
+    }
+
+    function applyTheme(dark) {
+      document.documentElement.classList.toggle('dark', dark);
+      try { localStorage.setItem('picjs-theme', dark ? 'dark' : 'light'); } catch(e) {}
+      if (editor) {
+        editor.dispatch({
+          effects: themeCompartment.reconfigure(getHighlightExtension())
+        });
+      }
+      const btn = document.getElementById('theme-toggle');
+      btn.textContent = dark ? '\u2600' : '\u263E';
+      btn.title = dark ? 'Switch to light mode' : 'Switch to dark mode';
+    }
+
+    // Initialize theme from stored preference or system preference
+    const storedTheme = (() => { try { return localStorage.getItem('picjs-theme'); } catch(e) { return null; } })();
+    if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      applyTheme(!isDark());
+    });
+
     // Initialize CodeMirror
     editor = new EditorView({
       doc: getInitialContent(),
@@ -924,12 +1034,15 @@ for _count from 1 to teeth do {
         keymap.of([...defaultKeymap, ...historyKeymap]),
         picjsKeymap,
         picjsLanguage,
-        syntaxHighlighting(picjsHighlightStyle),
+        themeCompartment.of(getHighlightExtension()),
         updateListener,
         EditorView.lineWrapping,
       ],
       parent: editorContainer,
     });
+
+    // Set initial toggle button state
+    applyTheme(isDark());
 
     // Initial render
     render();
