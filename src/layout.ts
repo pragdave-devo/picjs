@@ -748,7 +748,7 @@ export function pikFindNth(p: Pik, pBasis: PObj | null, pNth: PToken): PObj | nu
   let pClass: PClass | null;
   if (pNth.eType === TokenType.T_LAST) {
     pClass = null;
-  } else if (pNth.eType === TokenType.T_LB) {
+  } else if (pNth.eType === TokenType.T_LB || pNth.eType === TokenType.T_BLOCK) {
     pClass = sublistClass;
   } else {
     pClass = pikFindClass(pNth);

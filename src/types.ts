@@ -220,6 +220,7 @@ export enum TokenType {
   T_ELSE = 212,
   T_UNDERSCORE = 213, // _ (wildcard pattern)
   T_DOTDOT = 214,     // .. (range)
+  T_BLOCK = 215,      // block (alias for [] in object references)
 }
 
 // Position in 2D space

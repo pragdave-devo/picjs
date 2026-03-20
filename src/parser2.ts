@@ -52,7 +52,7 @@ const {
   T_YES, T_NO, T_NOT, T_OR,
   T_GE, T_LE, T_NE,
   T_FN, T_CASE, T_FATARROW, T_CONTAINING,
-  T_IF, T_ELSE, T_UNDERSCORE, T_DOTDOT,
+  T_IF, T_ELSE, T_UNDERSCORE, T_DOTDOT, T_BLOCK,
 } = TokenType;
 
 // ============================================================
@@ -1162,6 +1162,11 @@ function parseNthObject(p: Pik, ts: TokenStream): AstObject {
         lb.eCode = -n;
         return { objKind: "nth", nth, classTok: lb, inObject: parseOptionalInOf(p, ts) };
       }
+      if (ts.peek().eType === T_BLOCK) {
+        const blk = ts.advance();
+        blk.eCode = -n;
+        return { objKind: "nth", nth, classTok: blk, inObject: parseOptionalInOf(p, ts) };
+      }
       const tok = { ...nth };
       tok.eType = T_LAST;
       tok.eCode = -n;
@@ -1180,6 +1185,11 @@ function parseNthObject(p: Pik, ts: TokenStream): AstObject {
       lb.eCode = n;
       return { objKind: "nth", nth, classTok: lb, inObject: parseOptionalInOf(p, ts) };
     }
+    if (ts.peek().eType === T_BLOCK) {
+      const blk = ts.advance();
+      blk.eCode = n;
+      return { objKind: "nth", nth, classTok: blk, inObject: parseOptionalInOf(p, ts) };
+    }
 
     pikError(p, ts.peek(), 'expected class name after ordinal');
     return { objKind: "this", tok: nth };
@@ -1197,6 +1207,11 @@ function parseNthObject(p: Pik, ts: TokenStream): AstObject {
       ts.expect(T_RB, 'expected "]"');
       lb.eCode = -1;
       return { objKind: "nth", nth: last, classTok: lb, inObject: parseOptionalInOf(p, ts) };
+    }
+    if (ts.peek().eType === T_BLOCK) {
+      const blk = ts.advance();
+      blk.eCode = -1;
+      return { objKind: "nth", nth: last, classTok: blk, inObject: parseOptionalInOf(p, ts) };
     }
     last.eCode = -1;
     return { objKind: "nth", nth: last, classTok: last, inObject: parseOptionalInOf(p, ts) };

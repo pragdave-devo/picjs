@@ -141,6 +141,13 @@ Backend: [
 ]
 ```
 
+Reference sublists with `block` or `[]`:
+```picjs
+[ box "A"; box "B" ]
+arrow from last block.e    # or: last [].e
+box at 1st block.ne        # or: 1st [].ne
+```
+
 ## Shape Reference
 
 **Block shapes**: `box`, `circle`, `ellipse`, `oval`, `cylinder`, `diamond`, `file`, `dot`, `text`

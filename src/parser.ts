@@ -47,6 +47,7 @@ const {
   T_WAY, T_X, T_Y, T_THIS,
   T_CODEBLOCK,
   T_FOR, T_DO, T_STEP,
+  T_BLOCK,
 } = TokenType;
 
 // --------------------------------------------------------------------------
@@ -1050,6 +1051,11 @@ function parseNth(p: Pik, ts: TokenStream): PToken {
         lb.eCode = -n;
         return lb;
       }
+      if (ts.peek().eType === T_BLOCK) {
+        const blk = ts.advance();
+        blk.eCode = -n;
+        return blk;
+      }
       // NTH LAST with no classname — treat as "last" of any type
       const tok = { ...nth };
       tok.eType = T_LAST;
@@ -1069,6 +1075,11 @@ function parseNth(p: Pik, ts: TokenStream): PToken {
       lb.eCode = n;
       return lb;
     }
+    if (ts.peek().eType === T_BLOCK) {
+      const blk = ts.advance();
+      blk.eCode = n;
+      return blk;
+    }
 
     pikError(p, ts.peek(), 'expected class name after ordinal');
     return nth;
@@ -1086,6 +1097,11 @@ function parseNth(p: Pik, ts: TokenStream): PToken {
       ts.expect(T_RB, 'expected \"]\"');
       lb.eCode = -1;
       return lb;
+    }
+    if (ts.peek().eType === T_BLOCK) {
+      const blk = ts.advance();
+      blk.eCode = -1;
+      return blk;
     }
     // bare "last" — last object of any type
     last.eCode = -1;

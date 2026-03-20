@@ -438,6 +438,13 @@ A sublist acts as a single object with its own bounding box. Use it to:
 - Position groups relative to each other
 - Isolate local coordinate systems
 
+Reference sublists with `last []` or `last block`:
+```picjs example
+[ box "A"; box "B" ]
+arrow from last block.e
+box "C"
+```
+
 ### Variables
 
 Store values in variables (lowercase names or starting with `$` or `@`):

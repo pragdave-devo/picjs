@@ -465,8 +465,10 @@ object          = "this"
 
 nth_object      = NTH [ "last" ] CLASSNAME [ in_of object ]
                 | NTH [ "last" ] "[" "]" [ in_of object ]
+                | NTH [ "last" ] "block" [ in_of object ]    (* alias for [] *)
                 | "last" CLASSNAME [ in_of object ]
                 | "last" "[" "]" [ in_of object ]
+                | "last" "block" [ in_of object ]            (* alias for [] *)
                 | "first" CLASSNAME [ in_of object ]
                 ;
 
@@ -591,7 +593,7 @@ All reserved keywords recognized by the tokenizer:
 ```
 _         (wildcard/default pattern)
 above     and       arc       arrow     as        assert    at
-behind    below     between   big       bold      bottom    box
+behind    below     between   big       block     bold      bottom    box
 case      ccw       center    chop      circle    close     color
 con       containing          cos       cw        cylinder
 d2r       dashed    define    diameter  diamond   dist      do

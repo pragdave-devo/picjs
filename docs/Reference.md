@@ -668,7 +668,16 @@ previous                       # Same as last
 ORDINAL object-class           # Nth object of class
 ORDINAL last object-class      # Nth from last
 last []                        # Most recent sublist
+last block                     # Same (alias)
 ORDINAL []                     # Nth sublist
+ORDINAL block                  # Same (alias)
+```
+
+The `block` keyword is an alias for `[]` when referencing sublists:
+```
+[ box "A"; box "B" ]
+arrow from last block.e        # Same as: last [].e
+box at 1st block.ne            # Same as: 1st [].ne
 ```
 
 ---
@@ -999,6 +1008,7 @@ PLACENAME       = upper_letter { letter | digit | '_' } ;
 CLASSNAME       = "box" | "circle" | "ellipse" | "oval" | "cylinder"
                 | "diamond" | "file" | "dot" | "text"
                 | "line" | "arrow" | "spline" | "arc" | "move"
+                | "block"                              (* alias for [] *)
                 ;
 
 NTH             = integer ( "st" | "nd" | "rd" | "th" )

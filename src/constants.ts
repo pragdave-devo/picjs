@@ -38,6 +38,7 @@ export const keywords: readonly PikWord[] = [
   { zWord: "below",       nChar: 5,  eType: TokenType.T_BELOW,     eCode: 0,         eEdge: 0        },
   { zWord: "between",     nChar: 7,  eType: TokenType.T_BETWEEN,   eCode: 0,         eEdge: 0        },
   { zWord: "big",         nChar: 3,  eType: TokenType.T_BIG,       eCode: 0,         eEdge: 0        },
+  { zWord: "block",       nChar: 5,  eType: TokenType.T_BLOCK,     eCode: 0,         eEdge: 0        },
   { zWord: "bold",        nChar: 4,  eType: TokenType.T_BOLD,      eCode: 0,         eEdge: 0        },
   { zWord: "bot",         nChar: 3,  eType: TokenType.T_EDGEPT,    eCode: 0,         eEdge: CP_S     },
   { zWord: "bottom",      nChar: 6,  eType: TokenType.T_BOTTOM,    eCode: 0,         eEdge: CP_S     },
