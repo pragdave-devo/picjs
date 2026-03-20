@@ -21,7 +21,7 @@ const {
   T_GT, T_LT, T_EQ, T_ASSIGN, T_RARROW, T_LARROW, T_LRARROW,
   T_NUMBER, T_NTH, T_CLASSNAME, T_ID, T_PLACENAME, T_PARAMETER,
   T_CODEBLOCK, T_DOT_E, T_DOT_XY, T_DOT_L, T_DOT_U,
-  T_EDGEPT, T_START, T_END, T_X, T_Y, T_ISODATE,
+  T_EDGEPT, T_START, T_END, T_X, T_Y, T_ISODATE, T_DOTDOT,
 } = TokenType;
 
 function isUpper(c: string): boolean { return c >= 'A' && c <= 'Z'; }
@@ -277,6 +277,11 @@ export function pikTokenLength(token: PToken, bAllowCodeBlock: boolean): number 
 
       // Dot handling
       if (c === '.') {
+        // .. range operator
+        if (n > 1 && z[1] === '.') {
+          token.eType = T_DOTDOT;
+          return 2;
+        }
         if (n > 1 && isLower(z[1])) {
           // Dot followed by lowercase
           i = 2;
@@ -328,7 +333,8 @@ export function pikTokenLength(token: PToken, bAllowCodeBlock: boolean): number 
           i = 0;
           c = z[0];
         }
-        if (i < n && z[i] === '.') {
+        // Check for decimal point, but not if it's followed by another dot (range operator)
+        if (i < n && z[i] === '.' && !(i + 1 < n && z[i + 1] === '.')) {
           isInt = false;
           i++;
           while (i < n && z[i] >= '0' && z[i] <= '9') { i++; nDigit++; }

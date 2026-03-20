@@ -528,6 +528,206 @@ test('case default not taken when matched', () => {
   assert(!r.svg.includes('>other<'), 'should not contain "other"');
 });
 
+// List functions - Phase 1
+test('len of list', () => {
+  const r = picjs('$a = [1, 2, 3]\n$n = len($a)\nbox containing $n');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('3'), 'should contain "3"');
+});
+
+test('len of string', () => {
+  const r = picjs('$s = "hello"\n$n = len($s)\nbox containing $n');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('5'), 'should contain "5"');
+});
+
+test('head of list', () => {
+  const r = picjs('$a = ["first", "second"]\n$h = head($a)\nbox containing $h');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('first'), 'should contain "first"');
+});
+
+test('last of list', () => {
+  const r = picjs('$a = ["first", "second", "third"]\n$l = last($a)\nbox containing $l');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('third'), 'should contain "third"');
+});
+
+test('push to list', () => {
+  const r = picjs('$a = [1, 2]\n$b = push($a, 3)\nbox containing len($b)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('3'), 'should contain "3"');
+});
+
+test('push does not mutate original', () => {
+  const r = picjs('$a = [1, 2]\n$b = push($a, 3)\nbox containing len($a)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('2'), 'should contain "2" (original unchanged)');
+});
+
+test('pop from list', () => {
+  const r = picjs('$a = [1, 2, 3]\n$b = pop($a)\nbox containing len($b)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('2'), 'should contain "2"');
+});
+
+test('shift from list', () => {
+  const r = picjs('$a = ["a", "b", "c"]\n$b = shift($a)\n$first = head($b)\nbox containing $first');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('b'), 'should contain "b"');
+});
+
+test('unshift to list', () => {
+  const r = picjs('$a = [2, 3]\n$b = unshift($a, 1)\n$first = head($b)\nbox containing $first');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('1'), 'should contain "1"');
+});
+
+test('reverse list', () => {
+  const r = picjs('$a = ["a", "b", "c"]\n$b = reverse($a)\n$first = head($b)\nbox containing $first');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('c'), 'should contain "c"');
+});
+
+test('reverse string', () => {
+  const r = picjs('$s = "abc"\n$r = reverse($s)\nbox containing $r');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('cba'), 'should contain "cba"');
+});
+
+test('contains true', () => {
+  const r = picjs('$a = [1, 2, 3]\nif contains($a, 2) { box "found" }');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('found'), 'should contain "found"');
+});
+
+test('contains false', () => {
+  const r = picjs('$a = [1, 2, 3]\nif contains($a, 5) { box "found" } else { box "missing" }');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('missing'), 'should contain "missing"');
+});
+
+test('contains string in string', () => {
+  const r = picjs('$s = "hello world"\nif contains($s, "world") { box "found" }');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('found'), 'should contain "found"');
+});
+
+test('list functions chained', () => {
+  const r = picjs('$a = [1, 2, 3]\n$b = push(push($a, 4), 5)\nbox containing len($b)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('5'), 'should contain "5"');
+});
+
+// List Phase 2 - join, split, concatenation
+test('join list with separator', () => {
+  const r = picjs('$a = ["a", "b", "c"]\n$s = join($a, "-")\nbox containing $s');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('a-b-c'), 'should contain "a-b-c"');
+});
+
+test('join numbers', () => {
+  const r = picjs('$a = [1, 2, 3]\n$s = join($a, ",")\nbox containing $s');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('1,2,3'), 'should contain "1,2,3"');
+});
+
+test('split string', () => {
+  const r = picjs('$s = "a-b-c"\n$a = split($s, "-")\nbox containing len($a)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('3'), 'should contain "3"');
+});
+
+test('split and access', () => {
+  const r = picjs('$s = "hello world"\n$a = split($s, " ")\n$first = head($a)\nbox containing $first');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('hello'), 'should contain "hello"');
+});
+
+test('list concatenation with +', () => {
+  const r = picjs('$a = [1, 2]\n$b = [3, 4]\n$c = $a + $b\nbox containing len($c)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('4'), 'should contain "4"');
+});
+
+test('string concatenation with +', () => {
+  const r = picjs('$a = "hello"\n$b = "_world"\n$c = $a + $b\nbox containing $c');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('hello_world'), 'should contain "hello_world"');
+});
+
+test('string + number concatenation', () => {
+  const r = picjs('$a = "value:"\n$b = 42\n$c = $a + $b\nbox containing $c');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('value:42'), 'should contain "value:42"');
+});
+
+// List Phase 3 - range expressions
+test('numeric range ascending', () => {
+  const r = picjs('$a = [1..5]\nbox containing len($a)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('5'), 'should contain "5"');
+});
+
+test('numeric range descending', () => {
+  const r = picjs('$a = [5..1]\nbox containing len($a)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('5'), 'should contain "5"');
+});
+
+test('numeric range access', () => {
+  const r = picjs('$a = [10..15]\n$third = head(shift(shift($a)))\nbox containing $third');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('12'), 'should contain "12"');
+});
+
+test('single char string range', () => {
+  const r = picjs('$a = ["A".."E"]\nbox containing len($a)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('5'), 'should contain "5"');
+});
+
+test('single char string range access', () => {
+  const r = picjs('$a = ["A".."E"]\n$third = head(shift(shift($a)))\nbox containing $third');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('C'), 'should contain "C"');
+});
+
+test('string range descending', () => {
+  const r = picjs('$a = ["Z".."V"]\nbox containing len($a)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('5'), 'should contain "5"');
+});
+
+test('multi-char string range', () => {
+  const r = picjs('$a = ["A1".."A5"]\nbox containing len($a)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('5'), 'should contain "5"');
+});
+
+test('multi-char string range access', () => {
+  const r = picjs('$a = ["X1".."X3"]\n$second = head(shift($a))\nbox containing $second');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('X2'), 'should contain "X2"');
+});
+
+test('range in for loop', () => {
+  const r = picjs('for i in [1..3] do { box containing i }');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('1'), 'should contain "1"');
+  assert(r.svg.includes('2'), 'should contain "2"');
+  assert(r.svg.includes('3'), 'should contain "3"');
+});
+
+test('char range in for loop', () => {
+  // Note: string loop variables must use $-prefix for rich values
+  const r = picjs('for $ch in ["A".."C"] do { box containing $ch }');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('A'), 'should contain "A"');
+  assert(r.svg.includes('B'), 'should contain "B"');
+  assert(r.svg.includes('C'), 'should contain "C"');
+});
+
 // Reset to old parser
 setUseNewParser(false);
 

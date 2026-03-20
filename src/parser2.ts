@@ -52,7 +52,7 @@ const {
   T_YES, T_NO, T_NOT, T_OR,
   T_GE, T_LE, T_NE,
   T_FN, T_CASE, T_FATARROW, T_CONTAINING,
-  T_IF, T_ELSE, T_UNDERSCORE,
+  T_IF, T_ELSE, T_UNDERSCORE, T_DOTDOT,
 } = TokenType;
 
 // ============================================================
@@ -715,20 +715,21 @@ function parseForStmt(p: Pik, ts: TokenStream): AstForRange | AstForIn | null {
 }
 
 function parseForInStmt(p: Pik, ts: TokenStream, varTok: PToken): AstForIn | null {
-  ts.expect(T_LB, 'expected "[" after "in"');
+  // Parse the list expression (supports both [1, 2, 3] and [1..5] range syntax)
+  const listExpr = parseExpr(p, ts);
   if (p.nErr) return null;
 
-  const list: AstExpr[] = [];
-  let first = true;
-  while (p.nErr === 0) {
-    if (ts.peek().eType === T_RB) { ts.advance(); break; }
-    if (!first) {
-      ts.expect(T_COMMA, 'expected "," or "]"');
-      if (p.nErr) return null;
-    }
-    first = false;
-    list.push(parseExpr(p, ts));
-    if (p.nErr) return null;
+  // The list expression should be either a list literal or a range
+  // We'll expand it during evaluation
+  let list: AstExpr[];
+  if (listExpr.exprKind === 'list') {
+    list = listExpr.items;
+  } else if (listExpr.exprKind === 'range') {
+    // Wrap range in a list for uniform handling during evaluation
+    list = [listExpr];
+  } else {
+    // Allow variable reference to a list
+    list = [listExpr];
   }
 
   ts.expect(T_DO, 'expected "do" after list');
@@ -1355,17 +1356,28 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
     return { exprKind: "string", tok, value: tok.z.substring(1, tok.n - 1) };
   }
 
-  // List literal [expr, expr, ...]
+  // List literal [expr, expr, ...] or range [start..end]
   if (t.eType === T_LB) {
     const tok = ts.advance();
-    const items: AstExpr[] = [];
-    if (ts.peek().eType !== T_RB) {
+    if (ts.peek().eType === T_RB) {
+      ts.advance();
+      return { exprKind: "list", items: [], tok };
+    }
+    const first = parseExpr(p, ts);
+    if (p.nErr) return mkNumExpr(makeToken(), 0);
+    // Check for range syntax: [start..end]
+    if (ts.peek().eType === T_DOTDOT) {
+      ts.advance();
+      const end = parseExpr(p, ts);
+      ts.expect(T_RB, 'expected "]"');
+      return { exprKind: "range", start: first, end, tok };
+    }
+    // Regular list
+    const items: AstExpr[] = [first];
+    while (p.nErr === 0 && ts.peek().eType === T_COMMA) {
+      ts.advance();
+      if (ts.peek().eType === T_RB) break; // trailing comma
       items.push(parseExpr(p, ts));
-      while (p.nErr === 0 && ts.peek().eType === T_COMMA) {
-        ts.advance();
-        if (ts.peek().eType === T_RB) break; // trailing comma
-        items.push(parseExpr(p, ts));
-      }
     }
     ts.expect(T_RB, 'expected "]"');
     return { exprKind: "list", items, tok };
@@ -1395,6 +1407,31 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
     const bodyText = bodyTok.z.substring(1, bodyTok.n - 1);
     const body = parseBodyText(p, bodyText);
     return { exprKind: "fn", params, body, tok };
+  }
+
+  // Builtin list/string functions: len, head, last, push, pop, shift, unshift, reverse, contains
+  // Check for T_ID or T_LAST followed by (
+  if ((t.eType === T_ID || t.eType === T_LAST) && ts.peekAhead(1).eType === T_LP) {
+    const name = t.z.substring(0, t.n);
+    const builtinInfo = getBuiltinFuncInfo(name);
+    if (builtinInfo) {
+      const tok = ts.advance();
+      ts.advance(); // consume LP
+      const args: AstExpr[] = [];
+      if (ts.peek().eType !== T_RP) {
+        args.push(parseExpr(p, ts));
+        while (p.nErr === 0 && ts.peek().eType === T_COMMA) {
+          ts.advance();
+          args.push(parseExpr(p, ts));
+        }
+      }
+      ts.expect(T_RP, 'expected ")"');
+      if (args.length < builtinInfo.minArgs || args.length > builtinInfo.maxArgs) {
+        pikError(p, tok, `${name}() expects ${builtinInfo.minArgs === builtinInfo.maxArgs ? builtinInfo.minArgs : builtinInfo.minArgs + '-' + builtinInfo.maxArgs} argument(s)`);
+        return mkNumExpr(makeToken(), 0);
+      }
+      return { exprKind: "builtinCall", name, args, tok };
+    }
   }
 
   // ID (variable or $name function call)
@@ -1670,4 +1707,33 @@ function isBetweenStart(t: PToken, ts?: TokenStream): boolean {
 
 function isPostRelexprKeyword(t: PToken): boolean {
   return t.eType === T_HEADING || t.eType === T_EDGEPT;
+}
+
+// ============================================================
+// Builtin list/string functions
+// ============================================================
+
+interface BuiltinFuncInfo {
+  minArgs: number;
+  maxArgs: number;
+}
+
+const builtinFuncs: Record<string, BuiltinFuncInfo> = {
+  // 1-arg functions
+  'len':      { minArgs: 1, maxArgs: 1 },
+  'head':     { minArgs: 1, maxArgs: 1 },
+  'last':     { minArgs: 1, maxArgs: 1 },
+  'pop':      { minArgs: 1, maxArgs: 1 },
+  'shift':    { minArgs: 1, maxArgs: 1 },
+  'reverse':  { minArgs: 1, maxArgs: 1 },
+  // 2-arg functions
+  'push':     { minArgs: 2, maxArgs: 2 },
+  'unshift':  { minArgs: 2, maxArgs: 2 },
+  'contains': { minArgs: 2, maxArgs: 2 },
+  'join':     { minArgs: 2, maxArgs: 2 },
+  'split':    { minArgs: 2, maxArgs: 2 },
+};
+
+function getBuiltinFuncInfo(name: string): BuiltinFuncInfo | null {
+  return builtinFuncs[name] || null;
 }

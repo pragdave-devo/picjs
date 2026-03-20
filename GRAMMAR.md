@@ -380,7 +380,8 @@ primary         = NUMBER
                 | "fn" "(" [ param_list ] ")" codeblock
                 | builtin_func "(" expr { "," expr } ")"
                 | "dist" "(" position "," position ")"
-                | "[" [ expr { "," expr } [ "," ] ] "]"
+                | "[" [ expr { "," expr } [ "," ] ] "]"   (* list literal *)
+                | "[" expr ".." expr "]"                   (* range: [1..5], ["A".."Z"] *)
                 | "(" expr ")"
                 | "(" ( "fill" | "color" | "thickness" ) ")"
                 | object "." ( "x" | "y" )

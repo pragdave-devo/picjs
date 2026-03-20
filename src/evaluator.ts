@@ -522,11 +522,33 @@ function evalForIn(p: Pik, stmt: AstForIn): void {
   const opToken = makeToken('=', 1, TokenType.T_ASSIGN);
   opToken.eCode = TokenType.T_ASSIGN;
 
+  // Build the list to iterate over
+  let items: PicValue[] = [];
   for (const item of stmt.list) {
+    const val = evalRichExpr(p, item);
+    if (p.nErr) return;
+    // If the item evaluates to a list (e.g., range or list variable), flatten it
+    if (val.tag === 'list') {
+      items = items.concat(val.val);
+    } else {
+      items.push(val);
+    }
+  }
+
+  // Check if loop variable is $-prefixed (uses environment for rich values)
+  const varName = stmt.varTok.z.substring(0, stmt.varTok.n);
+  const useEnv = varName[0] === '$';
+
+  // Iterate
+  for (const item of items) {
     if (!checkIterationLimit(p, stmt.varTok)) return;
     if (p.nErr) return;
-    const val = evalExpr(p, item);
-    pikSetVar(p, stmt.varTok, val, opToken);
+    if (useEnv) {
+      currentEnv.set(varName, item);
+    } else {
+      const val = toNumber(item);
+      pikSetVar(p, stmt.varTok, val, opToken);
+    }
     evaluate(p, stmt.body);
   }
 }
@@ -643,10 +665,24 @@ function evalExpr(p: Pik, expr: AstExpr): PNum {
       return pikLookupColor(p, expr.tok);
 
     case "binOp": {
+      // For +, check if operands are lists or strings for concatenation
+      if (expr.op === "+") {
+        const leftVal = evalRichExpr(p, expr.left);
+        const rightVal = evalRichExpr(p, expr.right);
+        // List concatenation
+        if (leftVal.tag === 'list' && rightVal.tag === 'list') {
+          return toNumber(mkList([...leftVal.val, ...rightVal.val]));
+        }
+        // String concatenation
+        if (leftVal.tag === 'string' || rightVal.tag === 'string') {
+          return 0; // String result can't be represented as number
+        }
+        // Numeric addition
+        return toNumber(leftVal) + toNumber(rightVal);
+      }
       const left = evalExpr(p, expr.left);
       const right = evalExpr(p, expr.right);
       switch (expr.op) {
-        case "+": return left + right;
         case "-": return left - right;
         case "*": return left * right;
         case "/":
@@ -735,9 +771,13 @@ function evalExpr(p: Pik, expr: AstExpr): PNum {
 
     case "list":
     case "index":
-    case "builtinCall":
-      // Phase 2+ feature — returns 0 in numeric context
+      // List/index in numeric context — returns 0
       return 0;
+
+    case "builtinCall": {
+      const result = evalBuiltinCall(p, expr.name, expr.args, expr.tok);
+      return toNumber(result);
+    }
   }
 
   return 0;
@@ -770,8 +810,247 @@ function evalRichExpr(p: Pik, expr: AstExpr): PicValue {
       }
       return mkNum(evalExpr(p, expr));
     }
+    case "builtinCall":
+      return evalBuiltinCall(p, expr.name, expr.args, expr.tok);
+    case "range":
+      return evalRangeExpr(p, expr);
+    case "binOp": {
+      // Handle list/string concatenation with +
+      if (expr.op === "+") {
+        const leftVal = evalRichExpr(p, expr.left);
+        const rightVal = evalRichExpr(p, expr.right);
+        if (leftVal.tag === 'list' && rightVal.tag === 'list') {
+          return mkList([...leftVal.val, ...rightVal.val]);
+        }
+        if (leftVal.tag === 'string' || rightVal.tag === 'string') {
+          return mkStr(toString(leftVal) + toString(rightVal));
+        }
+        return mkNum(toNumber(leftVal) + toNumber(rightVal));
+      }
+      return mkNum(evalExpr(p, expr));
+    }
     default:
       return mkNum(evalExpr(p, expr));
+  }
+}
+
+// ============================================================
+// Range expression evaluation
+// ============================================================
+
+const MAX_RANGE_LENGTH = 40;
+
+function evalRangeExpr(p: Pik, expr: { start: any; end: any; tok: any }): PicValue {
+  const startVal = evalRichExpr(p, expr.start);
+  const endVal = evalRichExpr(p, expr.end);
+  if (p.nErr) return mkList([]);
+
+  // Numeric range
+  if (startVal.tag === 'number' && endVal.tag === 'number') {
+    const start = Math.round(startVal.val);
+    const end = Math.round(endVal.val);
+    const step = start <= end ? 1 : -1;
+    const count = Math.abs(end - start) + 1;
+    if (count > MAX_RANGE_LENGTH) {
+      pikError(p, expr.tok, `range exceeds maximum of ${MAX_RANGE_LENGTH} elements`);
+      return mkList([]);
+    }
+    const result: PicValue[] = [];
+    for (let i = start; step > 0 ? i <= end : i >= end; i += step) {
+      result.push(mkNum(i));
+    }
+    return mkList(result);
+  }
+
+  // String range
+  if (startVal.tag === 'string' && endVal.tag === 'string') {
+    const startStr = startVal.val;
+    const endStr = endVal.val;
+
+    // Single character range
+    if (startStr.length === 1 && endStr.length === 1) {
+      const startCode = startStr.charCodeAt(0);
+      const endCode = endStr.charCodeAt(0);
+      const step = startCode <= endCode ? 1 : -1;
+      const count = Math.abs(endCode - startCode) + 1;
+      if (count > MAX_RANGE_LENGTH) {
+        pikError(p, expr.tok, `range exceeds maximum of ${MAX_RANGE_LENGTH} elements`);
+        return mkList([]);
+      }
+      const result: PicValue[] = [];
+      for (let c = startCode; step > 0 ? c <= endCode : c >= endCode; c += step) {
+        result.push(mkStr(String.fromCharCode(c)));
+      }
+      return mkList(result);
+    }
+
+    // Multi-char string range: prefix must match, vary last char
+    if (startStr.length === endStr.length && startStr.length > 1) {
+      const prefix = startStr.slice(0, -1);
+      const endPrefix = endStr.slice(0, -1);
+      if (prefix === endPrefix) {
+        const startCode = startStr.charCodeAt(startStr.length - 1);
+        const endCode = endStr.charCodeAt(endStr.length - 1);
+        const step = startCode <= endCode ? 1 : -1;
+        const count = Math.abs(endCode - startCode) + 1;
+        if (count > MAX_RANGE_LENGTH) {
+          pikError(p, expr.tok, `range exceeds maximum of ${MAX_RANGE_LENGTH} elements`);
+          return mkList([]);
+        }
+        const result: PicValue[] = [];
+        for (let c = startCode; step > 0 ? c <= endCode : c >= endCode; c += step) {
+          result.push(mkStr(prefix + String.fromCharCode(c)));
+        }
+        return mkList(result);
+      }
+    }
+
+    pikError(p, expr.tok, 'string range must be single chars or have matching prefix');
+    return mkList([]);
+  }
+
+  pikError(p, expr.tok, 'range requires two numbers or two strings');
+  return mkList([]);
+}
+
+// ============================================================
+// Builtin list/string function calls
+// ============================================================
+
+function evalBuiltinCall(p: Pik, name: string, args: AstExpr[], tok: PToken): PicValue {
+  const evaledArgs = args.map(a => evalRichExpr(p, a));
+  if (p.nErr) return mkNum(0);
+
+  switch (name) {
+    case 'len': {
+      const arg = evaledArgs[0];
+      if (arg.tag === 'list') return mkNum(arg.val.length);
+      if (arg.tag === 'string') return mkNum(arg.val.length);
+      pikError(p, tok, 'len() expects a list or string');
+      return mkNum(0);
+    }
+
+    case 'head': {
+      const arg = evaledArgs[0];
+      if (arg.tag === 'list') {
+        if (arg.val.length === 0) {
+          pikError(p, tok, 'head() called on empty list');
+          return mkNum(0);
+        }
+        return arg.val[0];
+      }
+      pikError(p, tok, 'head() expects a list');
+      return mkNum(0);
+    }
+
+    case 'last': {
+      const arg = evaledArgs[0];
+      if (arg.tag === 'list') {
+        if (arg.val.length === 0) {
+          pikError(p, tok, 'last() called on empty list');
+          return mkNum(0);
+        }
+        return arg.val[arg.val.length - 1];
+      }
+      pikError(p, tok, 'last() expects a list');
+      return mkNum(0);
+    }
+
+    case 'pop': {
+      const arg = evaledArgs[0];
+      if (arg.tag === 'list') {
+        if (arg.val.length === 0) return mkList([]);
+        return mkList(arg.val.slice(0, -1));
+      }
+      pikError(p, tok, 'pop() expects a list');
+      return mkList([]);
+    }
+
+    case 'shift': {
+      const arg = evaledArgs[0];
+      if (arg.tag === 'list') {
+        if (arg.val.length === 0) return mkList([]);
+        return mkList(arg.val.slice(1));
+      }
+      pikError(p, tok, 'shift() expects a list');
+      return mkList([]);
+    }
+
+    case 'reverse': {
+      const arg = evaledArgs[0];
+      if (arg.tag === 'list') {
+        return mkList([...arg.val].reverse());
+      }
+      if (arg.tag === 'string') {
+        return mkStr([...arg.val].reverse().join(''));
+      }
+      pikError(p, tok, 'reverse() expects a list or string');
+      return mkList([]);
+    }
+
+    case 'push': {
+      const list = evaledArgs[0];
+      const val = evaledArgs[1];
+      if (list.tag === 'list') {
+        return mkList([...list.val, val]);
+      }
+      pikError(p, tok, 'push() expects a list as first argument');
+      return mkList([]);
+    }
+
+    case 'unshift': {
+      const list = evaledArgs[0];
+      const val = evaledArgs[1];
+      if (list.tag === 'list') {
+        return mkList([val, ...list.val]);
+      }
+      pikError(p, tok, 'unshift() expects a list as first argument');
+      return mkList([]);
+    }
+
+    case 'contains': {
+      const list = evaledArgs[0];
+      const val = evaledArgs[1];
+      if (list.tag === 'list') {
+        for (const item of list.val) {
+          if (valuesEqual(item, val)) return mkBool(true);
+        }
+        return mkBool(false);
+      }
+      if (list.tag === 'string' && val.tag === 'string') {
+        return mkBool(list.val.includes(val.val));
+      }
+      pikError(p, tok, 'contains() expects a list or string as first argument');
+      return mkBool(false);
+    }
+
+    case 'join': {
+      const list = evaledArgs[0];
+      const sep = evaledArgs[1];
+      if (list.tag !== 'list') {
+        pikError(p, tok, 'join() expects a list as first argument');
+        return mkStr('');
+      }
+      const sepStr = sep.tag === 'string' ? sep.val : toString(sep);
+      const parts = list.val.map(v => toString(v));
+      return mkStr(parts.join(sepStr));
+    }
+
+    case 'split': {
+      const str = evaledArgs[0];
+      const sep = evaledArgs[1];
+      if (str.tag !== 'string') {
+        pikError(p, tok, 'split() expects a string as first argument');
+        return mkList([]);
+      }
+      const sepStr = sep.tag === 'string' ? sep.val : toString(sep);
+      const parts = str.val.split(sepStr);
+      return mkList(parts.map(s => mkStr(s)));
+    }
+
+    default:
+      pikError(p, tok, `unknown builtin function: ${name}`);
+      return mkNum(0);
   }
 }
 

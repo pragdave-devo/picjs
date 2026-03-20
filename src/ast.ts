@@ -276,6 +276,7 @@ export type AstExpr =
   | AstExprIndex
   | AstExprFn
   | AstExprUserCall
+  | AstExprRange
 
 export interface AstExprNumber {
   exprKind: "number";
@@ -383,6 +384,13 @@ export interface AstExprIndex {
   exprKind: "index";
   object: AstExpr;
   index: number;
+  tok: PToken;
+}
+
+export interface AstExprRange {
+  exprKind: "range";
+  start: AstExpr;
+  end: AstExpr;
   tok: PToken;
 }
 

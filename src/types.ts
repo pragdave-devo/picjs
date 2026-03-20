@@ -219,6 +219,7 @@ export enum TokenType {
   T_IF = 211,
   T_ELSE = 212,
   T_UNDERSCORE = 213, // _ (wildcard pattern)
+  T_DOTDOT = 214,     // .. (range)
 }
 
 // Position in 2D space

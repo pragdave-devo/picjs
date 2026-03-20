@@ -274,9 +274,50 @@ Source → Tokenizer → Parser2 (AST) → Evaluator → PObj list → Layout �
 
 ---
 
+### Phase 2E: List Operations
+
+**Basic list functions** (all return new lists, never mutate):
+```
+len($list)        # length of list or string
+head($list)       # first element
+last($list)       # last element
+push($list, $v)   # append element
+pop($list)        # remove last element
+shift($list)      # remove first element
+unshift($list, $v) # prepend element
+reverse($list)    # reverse list or string
+contains($list, $v) # membership test (returns boolean)
+```
+
+**String/list conversion:**
+```
+join($list, $sep)  # join list elements with separator
+split($str, $sep)  # split string into list
+```
+
+**Concatenation with `+`:**
+```
+$a = [1, 2] + [3, 4]    # [1, 2, 3, 4]
+$s = "hello" + "_world" # "hello_world"
+```
+
+**Range expressions:**
+```
+[1..5]          # [1, 2, 3, 4, 5]
+[5..1]          # [5, 4, 3, 2, 1] (descending)
+["A".."E"]      # ["A", "B", "C", "D", "E"]
+["X1".."X5"]    # ["X1", "X2", "X3", "X4", "X5"] (multi-char, vary last)
+```
+
+**Range in for loops:**
+```
+for i in [1..5] do { box containing i }
+for $ch in ["A".."C"] do { box containing $ch }  # string values need $-prefix
+```
+
 ## Test Coverage
 
-- 129 tests passing (64 backward-compat + 65 new feature tests)
+- 161 tests passing (64 backward-compat + 97 new feature tests)
 - Test file: `src/test-new-parser.ts`
 - All original examples still render identically
 
