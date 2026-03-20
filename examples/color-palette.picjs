@@ -1,0 +1,38 @@
+# Color Palette Generator
+# Demonstrates: lists, for-in loops, range syntax
+
+# Warm colors row
+"Warm" rjust
+move right 0.3
+for $c in ["Coral", "Tomato", "Orange", "Gold", "Yellow"] do {
+  box fill $c width 0.6 height 0.5
+  move right 0.1
+}
+
+# Cool colors row
+move to 0, -0.8
+"Cool" rjust
+move right 0.3
+for $c in ["SkyBlue", "DodgerBlue", "SlateBlue", "Purple", "Orchid"] do {
+  box fill $c width 0.6 height 0.5
+  move right 0.1
+}
+
+# Nature colors row
+move to 0, -1.6
+"Nature" rjust
+move right 0.3
+for $c in ["ForestGreen", "LimeGreen", "Olive", "Sienna", "Peru"] do {
+  box fill $c width 0.6 height 0.5
+  move right 0.1
+}
+
+# Grayscale using numeric range
+move to 0, -2.4
+"Grays" rjust
+move right 0.3
+for i in [1..6] do {
+  $gray = i * 40
+  box fill rgb($gray, $gray, $gray) width 0.6 height 0.5
+  move right 0.1
+}

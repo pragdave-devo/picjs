@@ -1,0 +1,35 @@
+# CI/CD Pipeline
+# Demonstrates: macros, grouping, labels
+
+define stage {
+  [ $1 $2; "$3" small below ]
+}
+
+# Main pipeline stages
+right
+Source: stage(file width 0.4 height 0.5, fill LightBlue, "Source")
+arrow thick color Green
+Build: stage(box width 0.5 height 0.4 rad 0.05, fill LightYellow, "Build")
+arrow thick color Green
+Test: stage(diamond width 0.5 height 0.5, fill LightCyan, "Test")
+arrow thick color Green
+Stage: stage(cylinder width 0.5 height 0.4, fill LightGreen, "Stage")
+arrow thick dashed color Gray
+Prod: stage(cylinder width 0.5 height 0.4, fill Coral, "Prod")
+arrow thick dashed color Gray
+Monitor: stage(circle rad 0.25, fill Plum, "Monitor")
+
+# Parallel test tracks from Test stage
+arrow from Test.s down 0.5 then right 0.2
+Unit: stage(box width 0.4 height 0.35, fill White, "Unit")
+
+arrow from Test.s down 1.0 then right 0.2
+Integ: stage(box width 0.4 height 0.35, fill White, "Integration")
+
+arrow from Test.s down 1.5 then right 0.2
+E2E: stage(box width 0.4 height 0.35, fill White, "E2E")
+
+# Rejoin arrows to Stage
+arrow from Unit.e right then to Stage.sw color Green
+arrow from Integ.e right then to Stage.w color Green
+arrow from E2E.e right then to Stage.nw color Green

@@ -1,0 +1,57 @@
+# Periodic Table Snippet (First 18 Elements)
+# Demonstrates: case expressions, functions
+
+$element = fn($sym, $type) {
+  case $type {
+    "nonmetal" => { box con $sym fill LightGreen width 0.5 height 0.5 }
+    "noble" => { box con $sym fill LightCyan width 0.5 height 0.5 }
+    "alkali" => { box con $sym fill LightCoral width 0.5 height 0.5 }
+    "alkaline" => { box con $sym fill LightYellow width 0.5 height 0.5 }
+    "metalloid" => { box con $sym fill Wheat width 0.5 height 0.5 }
+    else => { box con $sym fill LightGray width 0.5 height 0.5 }
+  }
+}
+
+# Row 1
+right
+$element("H", "nonmetal")
+move right 4.5
+$element("He", "noble")
+
+# Row 2
+move to 0, -0.6
+$element("Li", "alkali")
+$element("Be", "alkaline")
+move right 3
+$element("B", "metalloid")
+$element("C", "nonmetal")
+$element("N", "nonmetal")
+$element("O", "nonmetal")
+$element("F", "nonmetal")
+$element("Ne", "noble")
+
+# Row 3
+move to 0, -1.2
+$element("Na", "alkali")
+$element("Mg", "alkaline")
+move right 3
+$element("Al", "metal")
+$element("Si", "metalloid")
+$element("P", "nonmetal")
+$element("S", "nonmetal")
+$element("Cl", "nonmetal")
+$element("Ar", "noble")
+
+# Legend
+move to 4, -2.2
+text "Legend:" bold
+move down 0.4
+right
+box width 0.3 height 0.3 fill LightCoral
+" Alkali" ljust
+move right 0.2
+box width 0.3 height 0.3 fill LightGreen
+" Nonmetal" ljust
+move right 0.3
+box width 0.3 height 0.3 fill LightCyan
+" Noble Gas" ljust

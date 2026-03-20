@@ -1,0 +1,30 @@
+# Traffic Light States
+# Demonstrates: case expressions, for-in loops
+
+# Helper to draw a light housing
+define housing {
+  box width 0.6 height 1.8 rad 0.1 fill DarkSlateGray
+}
+
+# Stop light
+housing
+circle rad 0.2 fill Red at last box.n - (0, 0.3)
+circle rad 0.2 fill DarkOliveGreen at last box.c
+circle rad 0.2 fill DarkGreen at last box.s + (0, 0.3)
+"STOP" below at last box.s - (0, 0.15)
+
+# Caution light
+move right 0.8
+housing
+circle rad 0.2 fill DarkRed at last box.n - (0, 0.3)
+circle rad 0.2 fill Yellow at last box.c
+circle rad 0.2 fill DarkGreen at last box.s + (0, 0.3)
+"CAUTION" below at last box.s - (0, 0.15)
+
+# Go light
+move right 0.8
+housing
+circle rad 0.2 fill DarkRed at last box.n - (0, 0.3)
+circle rad 0.2 fill DarkOliveGreen at last box.c
+circle rad 0.2 fill LimeGreen at last box.s + (0, 0.3)
+"GO" below at last box.s - (0, 0.15)
