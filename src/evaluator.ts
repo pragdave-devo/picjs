@@ -25,7 +25,7 @@ import {
 } from './layout.ts';
 
 import { Environment } from './environment.ts';
-import { mkNum, mkStr, mkBool, mkFn, mkList, toNumber, toString, toBoolean, valuesEqual, type PicValue, type PicFunction } from './values.ts';
+import { mkNum, mkStr, mkBool, mkFn, mkList, mkObj, mkNull, toNumber, toString, toBoolean, valuesEqual, type PicValue, type PicFunction } from './values.ts';
 
 import type {
   AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall,
@@ -143,72 +143,65 @@ export function resetEvalState(): void {
 // Main evaluation entry point
 // ============================================================
 
-export function evaluate(p: Pik, stmts: AstStmt[]): PList | null {
+export function evaluate(p: Pik, stmts: AstStmt[]): PicValue {
+  let lastValue: PicValue = mkNull();
   for (const stmt of stmts) {
     if (p.nErr) break;
-    evalStmt(p, stmt);
+    lastValue = evalStmt(p, stmt);
   }
-  return p.list;
+  return lastValue;
 }
 
 // ============================================================
 // Statement evaluation
 // ============================================================
 
-function evalStmt(p: Pik, stmt: AstStmt): void {
-  if (p.nErr) return;
+function evalStmt(p: Pik, stmt: AstStmt): PicValue {
+  if (p.nErr) return mkNull();
 
   switch (stmt.kind) {
     case "direction":
       pikSetDirection(p, stmt.dir);
-      break;
+      return mkNull();
 
     case "assign":
-      evalAssign(p, stmt);
-      break;
+      return evalAssign(p, stmt);
 
     case "define":
       evalDefine(p, stmt);
-      break;
+      return mkNull();
 
     case "shape":
-      evalShape(p, stmt, null);
-      break;
+      return evalShape(p, stmt, null);
 
     case "label":
-      evalLabel(p, stmt);
-      break;
+      return evalLabel(p, stmt);
 
     case "for_range":
-      evalForRange(p, stmt);
-      break;
+      return evalForRange(p, stmt);
 
     case "for_in":
-      evalForIn(p, stmt);
-      break;
+      return evalForIn(p, stmt);
 
     case "fncall":
-      evalFnCallStmt(p, stmt);
-      break;
+      return evalFnCallStmt(p, stmt);
 
     case "case":
-      evalCaseStmt(p, stmt);
-      break;
+      return evalCaseStmt(p, stmt);
 
     case "if":
-      evalIfStmt(p, stmt);
-      break;
+      return evalIfStmt(p, stmt);
 
     case "print":
       evalPrint(p, stmt);
-      break;
+      return mkNull();
 
     case "assert":
       evalAssertStmt(p, stmt);
-      break;
+      return mkNull();
 
     case "empty":
-      break;
+      return mkNull();
   }
 }
 
@@ -216,16 +209,18 @@ function evalStmt(p: Pik, stmt: AstStmt): void {
 // Assignment
 // ============================================================
 
-function evalAssign(p: Pik, stmt: AstAssign): void {
+function evalAssign(p: Pik, stmt: AstAssign): PicValue {
   const name = stmt.name.z.substring(0, stmt.name.n);
   if (name[0] === '$') {
     // $-prefixed variable: store rich value in Environment
     const val = evalRichExpr(p, stmt.value);
     currentEnv.set(name, val);
+    return val;
   } else {
     // Old-style variable: store number in Pik
     const val = evalExpr(p, stmt.value);
     pikSetVar(p, stmt.name, val, stmt.op);
+    return mkNum(val);
   }
 }
 
@@ -241,8 +236,8 @@ function evalDefine(p: Pik, stmt: AstDefine): void {
 // Shape evaluation
 // ============================================================
 
-function evalShape(p: Pik, shape: AstShape, labelTok: PToken | null): void {
-  if (p.nErr) return;
+function evalShape(p: Pik, shape: AstShape, labelTok: PToken | null): PicValue {
+  if (p.nErr) return mkNull();
 
   let obj: PObj | null = null;
 
@@ -269,7 +264,7 @@ function evalShape(p: Pik, shape: AstShape, labelTok: PToken | null): void {
     obj = pikElemNew(p, null, null, null);
   }
 
-  if (p.nErr || !obj) return;
+  if (p.nErr || !obj) return mkNull();
 
   // Label
   if (labelTok) {
@@ -288,9 +283,10 @@ function evalShape(p: Pik, shape: AstShape, labelTok: PToken | null): void {
     evalAttr(p, attr, obj);
   }
 
-  if (p.nErr) return;
+  if (p.nErr) return mkNull();
   pikAfterAddingAttributes(p, obj);
   pikElistAppend(p, p.list, obj);
+  return mkObj(obj);
 }
 
 // ============================================================
@@ -450,9 +446,9 @@ function evalFlagAttr(p: Pik, attr: AstAttrFlag, obj: PObj): void {
 // Label evaluation
 // ============================================================
 
-function evalLabel(p: Pik, stmt: AstLabel): void {
+function evalLabel(p: Pik, stmt: AstLabel): PicValue {
   if (stmt.body.kind === "shape") {
-    evalShape(p, stmt.body, stmt.name);
+    return evalShape(p, stmt.body, stmt.name);
   } else {
     // label_position
     const pos = evalPosition(p, (stmt.body as AstLabelPosition).position);
@@ -462,7 +458,9 @@ function evalLabel(p: Pik, stmt: AstLabel): void {
       pikElemSetname(p, obj, stmt.name);
       pikAfterAddingAttributes(p, obj);
       pikElistAppend(p, p.list, obj);
+      return mkObj(obj);
     }
+    return mkNull();
   }
 }
 
@@ -481,7 +479,7 @@ function checkIterationLimit(p: Pik, tok: PToken): boolean {
   return true;
 }
 
-function evalForRange(p: Pik, stmt: AstForRange): void {
+function evalForRange(p: Pik, stmt: AstForRange): PicValue {
   loopIterationCount = 0;
 
   const startVal = evalExpr(p, stmt.start);
@@ -493,30 +491,32 @@ function evalForRange(p: Pik, stmt: AstForRange): void {
 
   if (stepVal === 0) {
     pikError(p, stmt.varTok, 'step value cannot be zero');
-    return;
+    return mkNull();
   }
 
   const opToken = makeToken('=', 1, TokenType.T_ASSIGN);
   opToken.eCode = TokenType.T_ASSIGN;
 
+  let lastValue: PicValue = mkNull();
   if (stepVal > 0) {
     for (let i = startVal; i <= endVal; i += stepVal) {
-      if (!checkIterationLimit(p, stmt.varTok)) return;
-      if (p.nErr) return;
+      if (!checkIterationLimit(p, stmt.varTok)) return mkNull();
+      if (p.nErr) return mkNull();
       pikSetVar(p, stmt.varTok, i, opToken);
-      evaluate(p, stmt.body);
+      lastValue = evaluate(p, stmt.body);
     }
   } else {
     for (let i = startVal; i >= endVal; i += stepVal) {
-      if (!checkIterationLimit(p, stmt.varTok)) return;
-      if (p.nErr) return;
+      if (!checkIterationLimit(p, stmt.varTok)) return mkNull();
+      if (p.nErr) return mkNull();
       pikSetVar(p, stmt.varTok, i, opToken);
-      evaluate(p, stmt.body);
+      lastValue = evaluate(p, stmt.body);
     }
   }
+  return lastValue;
 }
 
-function evalForIn(p: Pik, stmt: AstForIn): void {
+function evalForIn(p: Pik, stmt: AstForIn): PicValue {
   loopIterationCount = 0;
 
   const opToken = makeToken('=', 1, TokenType.T_ASSIGN);
@@ -526,7 +526,7 @@ function evalForIn(p: Pik, stmt: AstForIn): void {
   let items: PicValue[] = [];
   for (const item of stmt.list) {
     const val = evalRichExpr(p, item);
-    if (p.nErr) return;
+    if (p.nErr) return mkNull();
     // If the item evaluates to a list (e.g., range or list variable), flatten it
     if (val.tag === 'list') {
       items = items.concat(val.val);
@@ -540,56 +540,58 @@ function evalForIn(p: Pik, stmt: AstForIn): void {
   const useEnv = varName[0] === '$';
 
   // Iterate
+  let lastValue: PicValue = mkNull();
   for (const item of items) {
-    if (!checkIterationLimit(p, stmt.varTok)) return;
-    if (p.nErr) return;
+    if (!checkIterationLimit(p, stmt.varTok)) return mkNull();
+    if (p.nErr) return mkNull();
     if (useEnv) {
       currentEnv.set(varName, item);
     } else {
       const val = toNumber(item);
       pikSetVar(p, stmt.varTok, val, opToken);
     }
-    evaluate(p, stmt.body);
+    lastValue = evaluate(p, stmt.body);
   }
+  return lastValue;
 }
 
 // ============================================================
 // Case evaluation
 // ============================================================
 
-function evalCaseStmt(p: Pik, stmt: AstCase): void {
+function evalCaseStmt(p: Pik, stmt: AstCase): PicValue {
   const val = evalRichExpr(p, stmt.expr);
 
   for (const arm of stmt.arms) {
-    if (p.nErr) return;
+    if (p.nErr) return mkNull();
     // null pattern = default arm (matches anything)
     if (arm.pattern === null) {
-      evaluate(p, arm.body);
-      return;
+      return evaluate(p, arm.body);
     }
     const patVal = evalRichExpr(p, arm.pattern);
     if (valuesEqual(val, patVal)) {
-      evaluate(p, arm.body);
-      return;
+      return evaluate(p, arm.body);
     }
   }
-  // No match — do nothing
+  // No match — return null
+  return mkNull();
 }
 
 // ============================================================
 // If evaluation
 // ============================================================
 
-function evalIfStmt(p: Pik, stmt: AstIf): void {
+function evalIfStmt(p: Pik, stmt: AstIf): PicValue {
   const condVal = evalExpr(p, stmt.condition);
-  if (p.nErr) return;
+  if (p.nErr) return mkNull();
 
   // Truthy: non-zero number, or true boolean
   if (condVal !== 0) {
-    evaluate(p, stmt.thenBody);
+    return evaluate(p, stmt.thenBody);
   } else if (stmt.elseBody) {
-    evaluate(p, stmt.elseBody);
+    return evaluate(p, stmt.elseBody);
   }
+  return mkNull();
 }
 
 // ============================================================
@@ -812,6 +814,8 @@ function evalRichExpr(p: Pik, expr: AstExpr): PicValue {
     }
     case "builtinCall":
       return evalBuiltinCall(p, expr.name, expr.args, expr.tok);
+    case "userCall":
+      return evalUserCallRich(p, expr.func, expr.args, expr.tok);
     case "range":
       return evalRangeExpr(p, expr);
     case "binOp": {
@@ -1127,37 +1131,12 @@ function applyFunction(p: Pik, fn: PicFunction, args: PicValue[], tok: PToken): 
     callEnv.define(fn.params[i], argVal);
   }
 
-  // For map/filter, we need to capture the return value
-  // Currently, functions produce shapes but don't return values
-  // For now, we'll use the last evaluated expression's value
-  // This is a simplification - a proper implementation would need a return statement
-
-  // Actually, for map we need the function to return a value
-  // Let's check if the function body is a single expression
-  // and if so, evaluate it and return the result
-
+  // Evaluate body in the new environment and return last value
   const savedEnv = currentEnv;
   currentEnv = callEnv;
-
-  // If the body is a single statement that's an expression-like thing,
-  // evaluate and return its value. Otherwise, just evaluate for side effects.
-  let result: PicValue = mkNum(0);
-
-  if (fn.body.length === 1) {
-    const stmt = fn.body[0];
-    // Check if it's an assignment - if so, evaluate and return the assigned value
-    if (stmt.kind === 'assign') {
-      const val = evalRichExpr(p, stmt.value);
-      result = val;
-    } else {
-      // Just evaluate for side effects (shapes, etc.)
-      evaluate(p, fn.body);
-    }
-  } else {
-    evaluate(p, fn.body);
-  }
-
+  const result = evaluate(p, fn.body);
   currentEnv = savedEnv;
+
   return result;
 }
 
@@ -1165,11 +1144,11 @@ function applyFunction(p: Pik, fn: PicFunction, args: PicValue[], tok: PToken): 
 // User function call
 // ============================================================
 
-function evalUserCall(p: Pik, funcExpr: AstExpr, args: AstExpr[], tok: PToken): PNum {
+function evalUserCallRich(p: Pik, funcExpr: AstExpr, args: AstExpr[], tok: PToken): PicValue {
   const funcVal = evalRichExpr(p, funcExpr);
   if (funcVal.tag !== "function") {
     pikError(p, tok, 'not a function');
-    return 0;
+    return mkNull();
   }
   const fn = funcVal.val;
 
@@ -1185,18 +1164,23 @@ function evalUserCall(p: Pik, funcExpr: AstExpr, args: AstExpr[], tok: PToken): 
   // Evaluate body in the new environment
   const savedEnv = currentEnv;
   currentEnv = callEnv;
-  evaluate(p, fn.body);
+  const result = evaluate(p, fn.body);
   currentEnv = savedEnv;
 
-  return 0; // functions don't return values in numeric context yet
+  return result;
+}
+
+function evalUserCall(p: Pik, funcExpr: AstExpr, args: AstExpr[], tok: PToken): PNum {
+  const result = evalUserCallRich(p, funcExpr, args, tok);
+  return toNumber(result);
 }
 
 // ============================================================
 // Function call statement
 // ============================================================
 
-function evalFnCallStmt(p: Pik, stmt: AstFnCall): void {
-  evalUserCall(p, stmt.func, stmt.args, stmt.tok);
+function evalFnCallStmt(p: Pik, stmt: AstFnCall): PicValue {
+  return evalUserCallRich(p, stmt.func, stmt.args, stmt.tok);
 }
 
 // ============================================================

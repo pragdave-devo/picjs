@@ -104,7 +104,8 @@ export function picjs(text: string, options?: PicjsOptions): PicjsResult {
     const ast = parseToAst(p, text);
     if (p.nErr === 0) {
       resetEvalState();
-      pList = evaluate(p, ast);
+      evaluate(p, ast);
+      pList = p.list;
     }
   } else {
     pList = pikParse(p, text);

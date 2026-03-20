@@ -1,32 +1,27 @@
 # Alphabet Grid (6 columns)
-# Demonstrates: string ranges, for-in loops, if/else
-
+# Demonstrates: string ranges, for-in loops, if/e
 # Row 1: A-F
-right
-for $ch in ["A".."F"] do {
-  box con $ch fill LightBlue width 0.45 height 0.45
+
+$vowels = [ "A", "E", "I", "O", "U", "Y" ]
+
+$row = fn($start, $end, $fill) {
+[
+  right
+  for $ch in [$start..$end] do {
+    if contains($vowels, $ch) {
+      $actualFill = Thistle
+    } else {
+      $actualFill = $fill
+    }
+    box con $ch fill $actualFill width 0.45 height 0.45
+  }
+]
 }
 
-# Row 2: G-L
-move to 0, -0.55
-for $ch in ["G".."L"] do {
-  box con $ch fill LightYellow width 0.45 height 0.45
-}
+down
+$row("A", "F", "LightBlue")
+$row("G", "L", "LightYellow")
+$row("M", "R", "LightYellow")
+$row("S", "X", "LightYellow")
+$row("Y", "Z", "LightBlue")
 
-# Row 3: M-R
-move to 0, -1.1
-for $ch in ["M".."R"] do {
-  box con $ch fill LightBlue width 0.45 height 0.45
-}
-
-# Row 4: S-X
-move to 0, -1.65
-for $ch in ["S".."X"] do {
-  box con $ch fill LightYellow width 0.45 height 0.45
-}
-
-# Row 5: Y-Z
-move to 0, -2.2
-for $ch in ["Y".."Z"] do {
-  box con $ch fill LightBlue width 0.45 height 0.45
-}

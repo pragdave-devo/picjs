@@ -1,7 +1,7 @@
 // values.ts — Rich value type system for the new DSL evaluator
 // Part of the DSL overhaul (Phase 0)
 
-import type { PPoint, PClass } from './types.ts';
+import type { PPoint, PClass, PObj } from './types.ts';
 
 // The PicValue tagged union
 export type PicValue =
@@ -13,6 +13,7 @@ export type PicValue =
   | { tag: "list";       val: PicValue[] }
   | { tag: "function";   val: PicFunction }
   | { tag: "shapeclass"; val: PClass }
+  | { tag: "obj";        val: PObj }          // reference to a shape
   | { tag: "null" }
 
 export interface PicFunction {
@@ -34,6 +35,7 @@ export function mkColor(val: number): PicValue { return { tag: "color", val }; }
 export function mkList(val: PicValue[]): PicValue { return { tag: "list", val }; }
 export function mkFn(val: PicFunction): PicValue { return { tag: "function", val }; }
 export function mkShapeClass(val: PClass): PicValue { return { tag: "shapeclass", val }; }
+export function mkObj(val: PObj): PicValue { return { tag: "obj", val }; }
 export function mkNull(): PicValue { return { tag: "null" }; }
 
 // Coercion helpers
@@ -57,6 +59,7 @@ export function toString(v: PicValue): string {
     case "list":      return `[${v.val.map(toString).join(', ')}]`;
     case "function":  return `<fn(${v.val.params.join(', ')})>`;
     case "shapeclass": return v.val.zName;
+    case "obj":       return `<shape${v.val.type ? ':' + v.val.type.zName : ''}>`;
     case "null":      return "null";
   }
 }
