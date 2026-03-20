@@ -21,6 +21,7 @@ export type AstStmt =
   | AstForIn
   | AstFnCall
   | AstCase
+  | AstIf
   | AstPrint
   | AstAssert
   | AstEmpty
@@ -109,7 +110,15 @@ export interface AstAssert {
 export interface AstCase {
   kind: "case";
   expr: AstExpr;
-  arms: { pattern: AstExpr; body: AstStmt[] }[];
+  arms: { pattern: AstExpr | null; body: AstStmt[] }[];  // null pattern = default (_)
+  tok: PToken;
+}
+
+export interface AstIf {
+  kind: "if";
+  condition: AstExpr;
+  thenBody: AstStmt[];
+  elseBody: AstStmt[] | null;
   tok: PToken;
 }
 

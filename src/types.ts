@@ -216,6 +216,9 @@ export enum TokenType {
   T_LE = 208,         // <=
   T_NE = 209,         // !=
   T_CONTAINING = 210,
+  T_IF = 211,
+  T_ELSE = 212,
+  T_UNDERSCORE = 213, // _ (wildcard pattern)
 }
 
 // Position in 2D space

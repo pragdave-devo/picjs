@@ -14,7 +14,7 @@ import { TokenStream } from './tokenizer.ts';
 import { pikAddMacro } from './layout.ts';
 
 import type {
-  AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall, AstCase,
+  AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall, AstCase, AstIf,
   AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection, AstEmpty,
   AstAttr, AstAttrNumeric, AstAttrColor, AstAttrDash, AstAttrBool,
   AstAttrText, AstAttrContaining, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
@@ -52,6 +52,7 @@ const {
   T_YES, T_NO, T_NOT, T_OR,
   T_GE, T_LE, T_NE,
   T_FN, T_CASE, T_FATARROW, T_CONTAINING,
+  T_IF, T_ELSE, T_UNDERSCORE,
 } = TokenType;
 
 // ============================================================
@@ -186,6 +187,11 @@ function parseStatement(p: Pik, ts: TokenStream): AstStmt | null {
   // case statement
   if (t.eType === T_CASE) {
     return parseCaseStmt(p, ts);
+  }
+
+  // if statement
+  if (t.eType === T_IF) {
+    return parseIfStmt(p, ts);
   }
 
   // $name(args) function call statement
@@ -792,14 +798,21 @@ function parseCaseStmt(p: Pik, ts: TokenStream): AstCase | null {
   innerStream.tokenize(innerText);
   if (p.nErr) return null;
 
-  const arms: { pattern: AstExpr; body: AstStmt[] }[] = [];
+  const arms: { pattern: AstExpr | null; body: AstStmt[] }[] = [];
   while (p.nErr === 0 && !innerStream.atEnd()) {
     // Skip newlines between arms
     while (!innerStream.atEnd() && innerStream.peek().eType === T_EOL) innerStream.advance();
     if (innerStream.atEnd()) break;
 
-    const pattern = parseExpr(p, innerStream);
-    if (p.nErr) return null;
+    // Check for default pattern: _ or else
+    let pattern: AstExpr | null = null;
+    if (innerStream.peek().eType === T_UNDERSCORE || innerStream.peek().eType === T_ELSE) {
+      innerStream.advance(); // consume _ or else
+      pattern = null; // null signals default arm
+    } else {
+      pattern = parseExpr(p, innerStream);
+      if (p.nErr) return null;
+    }
 
     innerStream.expect(T_FATARROW, 'expected "=>" after case pattern');
     if (p.nErr) return null;
@@ -814,6 +827,33 @@ function parseCaseStmt(p: Pik, ts: TokenStream): AstCase | null {
   }
 
   return { kind: "case", expr, arms, tok };
+}
+
+// ============================================================
+// If statement: if expr { body } [else { body }]
+// ============================================================
+
+function parseIfStmt(p: Pik, ts: TokenStream): AstIf | null {
+  const tok = ts.advance(); // consume T_IF
+  const condition = parseExpr(p, ts);
+  if (p.nErr) return null;
+
+  const thenTok = ts.expect(T_CODEBLOCK, 'expected "{" after if condition');
+  if (p.nErr) return null;
+
+  const thenText = thenTok.z.substring(1, thenTok.n - 1);
+  const thenBody = parseBodyText(p, thenText);
+
+  let elseBody: AstStmt[] | null = null;
+  if (ts.peek().eType === T_ELSE) {
+    ts.advance(); // consume else
+    const elseTok = ts.expect(T_CODEBLOCK, 'expected "{" after else');
+    if (p.nErr) return null;
+    const elseText = elseTok.z.substring(1, elseTok.n - 1);
+    elseBody = parseBodyText(p, elseText);
+  }
+
+  return { kind: "if", condition, thenBody, elseBody, tok };
 }
 
 // ============================================================

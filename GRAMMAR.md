@@ -33,6 +33,7 @@ statement       = direction_stmt
                 | define_stmt
                 | for_stmt
                 | case_stmt
+                | if_stmt
                 | fncall_stmt
                 | shape_stmt
                 ;
@@ -120,7 +121,18 @@ expr_list       = expr { "," expr } ;
 ```ebnf
 case_stmt       = "case" expr "{" { case_arm } "}" ;
 
-case_arm        = expr "=>" codeblock ;
+case_arm        = pattern "=>" codeblock ;
+
+pattern         = expr                            (* match specific value *)
+                | "_"                             (* wildcard/default *)
+                | "else"                          (* alternative default syntax *)
+                ;
+```
+
+### If
+
+```ebnf
+if_stmt         = "if" expr codeblock [ "else" codeblock ] ;
 ```
 
 ### Function Call (statement)
@@ -576,17 +588,18 @@ $pi          $2pi
 All reserved keywords recognized by the tokenizer:
 
 ```
+_         (wildcard/default pattern)
 above     and       arc       arrow     as        assert    at
 behind    below     between   big       bold      bottom    box
 case      ccw       center    chop      circle    close     color
 con       containing          cos       cw        cylinder
 d2r       dashed    define    diameter  diamond   dist      do
 dot       dotted    down
-e         east      ellipse   end       even
+e         east      else      ellipse   end       even
 file      fill      first     fit       fn        for       from
 go
 heading   height    ht        hsl
-in        int       invis     italic
+if        in        int       invis     italic
 last      left      line      ljust
 max       min       mono      move
 n         ne        no        north     not       nw

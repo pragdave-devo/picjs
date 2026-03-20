@@ -150,6 +150,53 @@ for i in [1, 2, 3] do {
 }
 ```
 
+**Default arm with `_` or `else`**
+```
+case $value {
+  1 => { box "one" }
+  2 => { box "two" }
+  _ => { box "other" }      # default: matches anything
+}
+
+# Alternative syntax using else
+case $value {
+  1 => { box "one" }
+  else => { box "other" }   # same as _
+}
+```
+
+### Phase 2D: If/Else Statements
+
+**Basic if**
+```
+if $x > 3 { box "big" }
+```
+
+**If with else**
+```
+if $flag {
+  box "yes"
+} else {
+  box "no"
+}
+```
+
+**If with boolean expression**
+```
+$flag = yes
+if $flag { box "on" }
+
+$enabled = $count > 0 and $ready
+if $enabled { circle fill Green }
+```
+
+**If in loops**
+```
+for i from 1 to 5 do {
+  if i == 3 { box "three" }
+}
+```
+
 ### Containing/Con Attribute
 
 **Set shape text from expression**
@@ -229,7 +276,7 @@ Source → Tokenizer → Parser2 (AST) → Evaluator → PObj list → Layout �
 
 ## Test Coverage
 
-- 119 tests passing (64 backward-compat + 55 new feature tests)
+- 129 tests passing (64 backward-compat + 65 new feature tests)
 - Test file: `src/test-new-parser.ts`
 - All original examples still render identically
 

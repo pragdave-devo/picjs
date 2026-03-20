@@ -418,6 +418,16 @@ export function pikTokenLength(token: PToken, bAllowCodeBlock: boolean): number 
       if (c === '_' || c === '$' || c === '@') {
         i = 1;
         while (i < n && (isAlnum(z[i]) || z[i] === '_')) i++;
+        // Check for lone underscore keyword
+        if (c === '_' && i === 1) {
+          const pFound = findKeywordFn('_', 1);
+          if (pFound) {
+            token.eType = pFound.eType;
+            token.eCode = pFound.eCode;
+            token.eEdge = pFound.eEdge;
+            return i;
+          }
+        }
         token.eType = T_ID;
         return i;
       }

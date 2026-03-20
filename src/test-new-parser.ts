@@ -463,6 +463,71 @@ test('string interpolation with $var', () => {
   assert(r.svg.includes('world'), 'should contain "world"');
 });
 
+// If/else statements
+test('if true branch', () => {
+  const r = picjs('$x = 5\nif $x > 3 { box "yes" }');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('yes'), 'should contain "yes"');
+});
+
+test('if false branch', () => {
+  const r = picjs('$x = 2\nif $x > 3 { box "yes" }');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(!r.svg.includes('yes'), 'should not contain "yes"');
+});
+
+test('if-else true', () => {
+  const r = picjs('$x = 5\nif $x > 3 { box "yes" } else { box "no" }');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('yes'), 'should contain "yes"');
+  assert(!r.svg.includes('>no<'), 'should not contain "no"');
+});
+
+test('if-else false', () => {
+  const r = picjs('$x = 2\nif $x > 3 { box "yes" } else { box "no" }');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(!r.svg.includes('>yes<'), 'should not contain "yes"');
+  assert(r.svg.includes('no'), 'should contain "no"');
+});
+
+test('if with boolean', () => {
+  const r = picjs('$flag = yes\nif $flag { box "on" }');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('on'), 'should contain "on"');
+});
+
+test('if with boolean false', () => {
+  const r = picjs('$flag = no\nif $flag { box "on" } else { box "off" }');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('off'), 'should contain "off"');
+});
+
+test('if in loop', () => {
+  const r = picjs('for i from 1 to 3 do {\n  if i == 2 { box "two" }\n}');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('two'), 'should contain "two"');
+});
+
+// Case default arm
+test('case with underscore default', () => {
+  const r = picjs('$x = 99\ncase $x {\n  1 => { box "one" }\n  _ => { box "other" }\n}');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('other'), 'should contain "other"');
+});
+
+test('case with else default', () => {
+  const r = picjs('$x = 99\ncase $x {\n  1 => { box "one" }\n  else => { box "other" }\n}');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('other'), 'should contain "other"');
+});
+
+test('case default not taken when matched', () => {
+  const r = picjs('$x = 1\ncase $x {\n  1 => { box "one" }\n  _ => { box "other" }\n}');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('one'), 'should contain "one"');
+  assert(!r.svg.includes('>other<'), 'should not contain "other"');
+});
+
 // Reset to old parser
 setUseNewParser(false);
 

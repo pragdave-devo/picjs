@@ -29,7 +29,7 @@ import { mkNum, mkStr, mkBool, mkFn, mkList, toNumber, toString, valuesEqual, ty
 
 import type {
   AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall,
-  AstCase, AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection,
+  AstCase, AstIf, AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection,
   AstAttr, AstAttrNumeric, AstAttrColor, AstAttrDash, AstAttrBool,
   AstAttrText, AstAttrContaining, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
   AstAttrBehind, AstAttrFit, AstAttrEvenWith, AstAttrFlag,
@@ -193,6 +193,10 @@ function evalStmt(p: Pik, stmt: AstStmt): void {
 
     case "case":
       evalCaseStmt(p, stmt);
+      break;
+
+    case "if":
+      evalIfStmt(p, stmt);
       break;
 
     case "print":
@@ -536,6 +540,11 @@ function evalCaseStmt(p: Pik, stmt: AstCase): void {
 
   for (const arm of stmt.arms) {
     if (p.nErr) return;
+    // null pattern = default arm (matches anything)
+    if (arm.pattern === null) {
+      evaluate(p, arm.body);
+      return;
+    }
     const patVal = evalRichExpr(p, arm.pattern);
     if (valuesEqual(val, patVal)) {
       evaluate(p, arm.body);
@@ -543,6 +552,22 @@ function evalCaseStmt(p: Pik, stmt: AstCase): void {
     }
   }
   // No match — do nothing
+}
+
+// ============================================================
+// If evaluation
+// ============================================================
+
+function evalIfStmt(p: Pik, stmt: AstIf): void {
+  const condVal = evalExpr(p, stmt.condition);
+  if (p.nErr) return;
+
+  // Truthy: non-zero number, or true boolean
+  if (condVal !== 0) {
+    evaluate(p, stmt.thenBody);
+  } else if (stmt.elseBody) {
+    evaluate(p, stmt.elseBody);
+  }
 }
 
 // ============================================================

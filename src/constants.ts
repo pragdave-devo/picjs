@@ -26,6 +26,7 @@ export interface PikWord {
 // Sorted alphabetically for binary search.
 // ---------------------------------------------------------------------------
 export const keywords: readonly PikWord[] = [
+  { zWord: "_",           nChar: 1,  eType: TokenType.T_UNDERSCORE, eCode: 0,        eEdge: 0        },
   { zWord: "above",       nChar: 5,  eType: TokenType.T_ABOVE,     eCode: 0,         eEdge: 0        },
   { zWord: "abs",         nChar: 3,  eType: TokenType.T_FUNC1,     eCode: FN_ABS,    eEdge: 0        },
   { zWord: "aligned",     nChar: 7,  eType: TokenType.T_ALIGNED,   eCode: 0,         eEdge: 0        },
@@ -61,6 +62,7 @@ export const keywords: readonly PikWord[] = [
   { zWord: "down",        nChar: 4,  eType: TokenType.T_DOWN,      eCode: DIR_DOWN,  eEdge: 0        },
   { zWord: "e",           nChar: 1,  eType: TokenType.T_EDGEPT,    eCode: 0,         eEdge: CP_E     },
   { zWord: "east",        nChar: 4,  eType: TokenType.T_EDGEPT,    eCode: 0,         eEdge: CP_E     },
+  { zWord: "else",        nChar: 4,  eType: TokenType.T_ELSE,      eCode: 0,         eEdge: 0        },
   { zWord: "end",         nChar: 3,  eType: TokenType.T_END,       eCode: 0,         eEdge: CP_END   },
   { zWord: "even",        nChar: 4,  eType: TokenType.T_EVEN,      eCode: 0,         eEdge: 0        },
   { zWord: "fill",        nChar: 4,  eType: TokenType.T_FILL,      eCode: 0,         eEdge: 0        },
@@ -74,6 +76,7 @@ export const keywords: readonly PikWord[] = [
   { zWord: "height",      nChar: 6,  eType: TokenType.T_HEIGHT,    eCode: 0,         eEdge: 0        },
   { zWord: "hsl",         nChar: 3,  eType: TokenType.T_FUNC3,     eCode: FN_HSL,    eEdge: 0        },
   { zWord: "ht",          nChar: 2,  eType: TokenType.T_HEIGHT,    eCode: 0,         eEdge: 0        },
+  { zWord: "if",          nChar: 2,  eType: TokenType.T_IF,        eCode: 0,         eEdge: 0        },
   { zWord: "in",          nChar: 2,  eType: TokenType.T_IN,        eCode: 0,         eEdge: 0        },
   { zWord: "int",         nChar: 3,  eType: TokenType.T_FUNC1,     eCode: FN_INT,    eEdge: 0        },
   { zWord: "invis",       nChar: 5,  eType: TokenType.T_INVIS,     eCode: 0,         eEdge: 0        },
