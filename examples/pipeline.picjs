@@ -2,7 +2,7 @@
 # Demonstrates: macros, grouping, labels
 
 define stage {
-  [ $1 $2; "$3" small below ]
+  [ $1 $2; $3 small below ]
 }
 
 # Main pipeline stages
