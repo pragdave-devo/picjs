@@ -1732,6 +1732,10 @@ const builtinFuncs: Record<string, BuiltinFuncInfo> = {
   'contains': { minArgs: 2, maxArgs: 2 },
   'join':     { minArgs: 2, maxArgs: 2 },
   'split':    { minArgs: 2, maxArgs: 2 },
+  'map':      { minArgs: 2, maxArgs: 2 },
+  'filter':   { minArgs: 2, maxArgs: 2 },
+  // 1-arg (sort)
+  'sort':     { minArgs: 1, maxArgs: 1 },
 };
 
 function getBuiltinFuncInfo(name: string): BuiltinFuncInfo | null {

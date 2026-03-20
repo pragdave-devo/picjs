@@ -728,6 +728,37 @@ test('char range in for loop', () => {
   assert(r.svg.includes('C'), 'should contain "C"');
 });
 
+// List Phase 4 - map, filter, sort
+test('map doubles numbers', () => {
+  const r = picjs('$double = fn($x) { $result = $x * 2 }\n$a = [1, 2, 3]\n$b = map($a, $double)\nbox containing last($b)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('6'), 'should contain "6" (3*2)');
+});
+
+test('filter keeps evens', () => {
+  const r = picjs('$even = fn($x) { $result = ($x / 2) == int($x / 2) }\n$a = [1, 2, 3, 4, 5, 6]\n$b = filter($a, $even)\nbox containing len($b)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('3'), 'should contain "3" (2, 4, 6)');
+});
+
+test('sort numbers ascending', () => {
+  const r = picjs('$a = [3, 1, 4, 1, 5]\n$b = sort($a)\n$first = head($b)\nbox containing $first');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('1'), 'should contain "1"');
+});
+
+test('sort strings', () => {
+  const r = picjs('$a = ["c", "a", "b"]\n$b = sort($a)\n$first = head($b)\nbox containing $first');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('a'), 'should contain "a"');
+});
+
+test('sort does not mutate', () => {
+  const r = picjs('$a = [3, 1, 2]\n$b = sort($a)\n$first = head($a)\nbox containing $first');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('3'), 'should contain "3" (original unchanged)');
+});
+
 // Reset to old parser
 setUseNewParser(false);
 

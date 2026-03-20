@@ -25,7 +25,7 @@ import {
 } from './layout.ts';
 
 import { Environment } from './environment.ts';
-import { mkNum, mkStr, mkBool, mkFn, mkList, toNumber, toString, valuesEqual, type PicValue } from './values.ts';
+import { mkNum, mkStr, mkBool, mkFn, mkList, toNumber, toString, toBoolean, valuesEqual, type PicValue, type PicFunction } from './values.ts';
 
 import type {
   AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall,
@@ -1048,10 +1048,117 @@ function evalBuiltinCall(p: Pik, name: string, args: AstExpr[], tok: PToken): Pi
       return mkList(parts.map(s => mkStr(s)));
     }
 
+    case 'map': {
+      const list = evaledArgs[0];
+      const fn = evaledArgs[1];
+      if (list.tag !== 'list') {
+        pikError(p, tok, 'map() expects a list as first argument');
+        return mkList([]);
+      }
+      if (fn.tag !== 'function') {
+        pikError(p, tok, 'map() expects a function as second argument');
+        return mkList([]);
+      }
+      const result: PicValue[] = [];
+      for (const item of list.val) {
+        const mapped = applyFunction(p, fn.val, [item], tok);
+        if (p.nErr) return mkList([]);
+        result.push(mapped);
+      }
+      return mkList(result);
+    }
+
+    case 'filter': {
+      const list = evaledArgs[0];
+      const fn = evaledArgs[1];
+      if (list.tag !== 'list') {
+        pikError(p, tok, 'filter() expects a list as first argument');
+        return mkList([]);
+      }
+      if (fn.tag !== 'function') {
+        pikError(p, tok, 'filter() expects a function as second argument');
+        return mkList([]);
+      }
+      const result: PicValue[] = [];
+      for (const item of list.val) {
+        const keep = applyFunction(p, fn.val, [item], tok);
+        if (p.nErr) return mkList([]);
+        if (toBoolean(keep)) {
+          result.push(item);
+        }
+      }
+      return mkList(result);
+    }
+
+    case 'sort': {
+      const list = evaledArgs[0];
+      if (list.tag !== 'list') {
+        pikError(p, tok, 'sort() expects a list');
+        return mkList([]);
+      }
+      const sorted = [...list.val].sort((a, b) => {
+        // Sort by numeric value if both are numbers
+        if (a.tag === 'number' && b.tag === 'number') {
+          return a.val - b.val;
+        }
+        // Otherwise sort by string representation
+        return toString(a).localeCompare(toString(b));
+      });
+      return mkList(sorted);
+    }
+
     default:
       pikError(p, tok, `unknown builtin function: ${name}`);
       return mkNum(0);
   }
+}
+
+// ============================================================
+// Apply function helper (for map/filter)
+// ============================================================
+
+function applyFunction(p: Pik, fn: PicFunction, args: PicValue[], tok: PToken): PicValue {
+  // Create child environment from closure
+  const callEnv = fn.closure ? fn.closure.child() : currentEnv.child();
+
+  // Bind parameters
+  for (let i = 0; i < fn.params.length; i++) {
+    const argVal = i < args.length ? args[i] : mkNum(0);
+    callEnv.define(fn.params[i], argVal);
+  }
+
+  // For map/filter, we need to capture the return value
+  // Currently, functions produce shapes but don't return values
+  // For now, we'll use the last evaluated expression's value
+  // This is a simplification - a proper implementation would need a return statement
+
+  // Actually, for map we need the function to return a value
+  // Let's check if the function body is a single expression
+  // and if so, evaluate it and return the result
+
+  const savedEnv = currentEnv;
+  currentEnv = callEnv;
+
+  // If the body is a single statement that's an expression-like thing,
+  // evaluate and return its value. Otherwise, just evaluate for side effects.
+  let result: PicValue = mkNum(0);
+
+  if (fn.body.length === 1) {
+    const stmt = fn.body[0];
+    // Check if it's an assignment - if so, evaluate and return the assigned value
+    if (stmt.kind === 'assign') {
+      const val = evalRichExpr(p, stmt.value);
+      result = val;
+    } else {
+      // Just evaluate for side effects (shapes, etc.)
+      evaluate(p, fn.body);
+    }
+  } else {
+    evaluate(p, fn.body);
+  }
+
+  currentEnv = savedEnv;
+  return result;
 }
 
 // ============================================================

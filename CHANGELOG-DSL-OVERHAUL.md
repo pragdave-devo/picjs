@@ -315,9 +315,23 @@ for i in [1..5] do { box containing i }
 for $ch in ["A".."C"] do { box containing $ch }  # string values need $-prefix
 ```
 
+**Higher-order functions:**
+```
+# map: apply function to each element, return new list
+$double = fn($x) { $result = $x * 2 }
+$doubled = map([1, 2, 3], $double)  # [2, 4, 6]
+
+# filter: keep elements where function returns truthy
+$even = fn($x) { $result = ($x / 2) == int($x / 2) }
+$evens = filter([1, 2, 3, 4], $even)  # [2, 4]
+
+# sort: return sorted list (numbers by value, strings lexically)
+$sorted = sort([3, 1, 2])  # [1, 2, 3]
+```
+
 ## Test Coverage
 
-- 161 tests passing (64 backward-compat + 97 new feature tests)
+- 166 tests passing (64 backward-compat + 102 new feature tests)
 - Test file: `src/test-new-parser.ts`
 - All original examples still render identically
 
