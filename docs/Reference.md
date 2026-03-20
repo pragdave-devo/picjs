@@ -68,11 +68,21 @@ no          # False
 
 **Variables** (start with lowercase, `$`, or `@`): `width`, `$gap`, `@count`
 
-**Rich variables** (`$`-prefixed): Store strings, lists, functions, booleans
+**Rich variables** (`$`-prefixed): Store strings, lists, functions, booleans, colors
 ```
 $name = "Alice"
 $items = [1, 2, 3]
+$color = Red                   # color names resolve to integers
 $double = fn($x) { $result = $x * 2 }
+```
+
+Color names resolve to their integer RGB value, so they can be stored and passed as parameters:
+```
+$c = LightBlue
+box fill $c
+
+$make = fn($col) { box fill $col }
+$make(Red)
 ```
 
 ### Ordinals

@@ -12,6 +12,7 @@ import {
 
 import { TokenStream } from './tokenizer.ts';
 import { pikAddMacro } from './layout.ts';
+import { lookupColor } from './constants.ts';
 
 import type {
   AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall, AstCase, AstIf,
@@ -1468,6 +1469,21 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
       return { exprKind: "userCall", func: { exprKind: "varRef", tok: id }, args, tok: id };
     }
     return { exprKind: "varRef", tok: id };
+  }
+
+  // PLACENAME as color name (Red, Blue, LightGreen, etc.)
+  // Only if: (1) not followed by dot (object reference), (2) is a known color
+  if (t.eType === T_PLACENAME) {
+    const t2 = ts.peekAhead(1);
+    if (t2.eType !== T_DOT_E && t2.eType !== T_DOT_XY &&
+        t2.eType !== T_DOT_L && t2.eType !== T_DOT_U) {
+      // Check if it's actually a known color (lookupColor returns -99 if not found)
+      const colorVal = lookupColor(t.z.substring(0, t.n));
+      if (colorVal !== -99) {
+        const clr = ts.advance();
+        return { exprKind: "colorName", tok: clr };
+      }
+    }
   }
 
   // FUNC1

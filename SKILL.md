@@ -215,7 +215,15 @@ $name = "Alice"                # string
 $count = 42                    # number
 $flag = yes                    # boolean (yes/no)
 $items = [1, 2, 3]             # list
+$color = Red                   # color (integer RGB value)
 $double = fn($x) { $result = $x * 2 }  # function
+```
+
+Color names resolve to integers, so they can be passed to functions:
+```picjs
+$make = fn($col) { box fill $col }
+$make(Red)
+$make(LightBlue)
 ```
 
 ### Lists
