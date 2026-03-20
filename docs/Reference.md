@@ -55,11 +55,25 @@ With units:
 6pc         # Picas (1/6 inch)
 ```
 
+### Booleans
+
+```
+yes         # True
+no          # False
+```
+
 ### Identifiers
 
 **Labels** (start with uppercase): `Start`, `NodeA`, `My_Label`
 
 **Variables** (start with lowercase, `$`, or `@`): `width`, `$gap`, `@count`
+
+**Rich variables** (`$`-prefixed): Store strings, lists, functions, booleans
+```
+$name = "Alice"
+$items = [1, 2, 3]
+$double = fn($x) { $result = $x * 2 }
+```
 
 ### Ordinals
 
@@ -106,6 +120,9 @@ print expr                  # Debug output
 assert ( expr == expr )     # Assertion
 for VAR in [...] do { }     # List iteration
 for VAR from N to M do { }  # Numeric iteration
+case expr { arms }          # Pattern matching
+if expr { } [else { }]      # Conditional
+$func(args)                 # Function call
 ```
 
 ### Object Definition
@@ -230,6 +247,25 @@ big         # Larger text
 small       # Smaller text
 ```
 
+### Containing Attribute
+
+Set shape text from an expression:
+
+```
+$label = "Hello World"
+box containing $label
+box con $label           # Short form
+box con 42               # Numbers converted to string
+```
+
+Useful in functions:
+```
+$make_box = fn($text) {
+  box containing $text fill LightYellow
+}
+$make_box("Dynamic!")
+```
+
 ### Other Attributes
 
 ```
@@ -331,7 +367,7 @@ up                  # Flow up
 ### Arithmetic
 
 ```
-expr + expr         # Addition
+expr + expr         # Addition (also list/string concatenation)
 expr - expr         # Subtraction
 expr * expr         # Multiplication
 expr / expr         # Division
@@ -339,6 +375,38 @@ expr / expr         # Division
 + expr              # Identity
 ( expr )            # Grouping
 ```
+
+### Comparison Operators
+
+```
+expr == expr        # Equal
+expr != expr        # Not equal
+expr > expr         # Greater than
+expr < expr         # Less than
+expr >= expr        # Greater than or equal
+expr <= expr        # Less than or equal
+```
+
+Returns `yes` (true) or `no` (false).
+
+### Logical Operators
+
+```
+expr and expr       # Logical AND
+expr or expr        # Logical OR
+not expr            # Logical NOT
+```
+
+### Operator Precedence
+
+From lowest to highest:
+1. `or`
+2. `and`
+3. `not`
+4. `==`, `!=`, `>`, `<`, `>=`, `<=`
+5. `+`, `-`
+6. `*`, `/`
+7. Unary `-`, `+`
 
 ### Functions
 
@@ -367,11 +435,41 @@ hsl( h, s, l )                 # HSL color (h: 0-360, s/l: 0-100 or 0-1)
 oklch( l, c, h )               # OKLCH color (l: 0-100 or 0-1, c: 0-0.4, h: 0-360)
 ```
 
+**List operations** (all return new values, never mutate):
+```
+len( list )                    # Length of list or string
+head( list )                   # First element
+last( list )                   # Last element
+push( list, value )            # Append element, return new list
+pop( list )                    # Remove last, return new list
+shift( list )                  # Remove first, return new list
+unshift( list, value )         # Prepend element, return new list
+reverse( list )                # Reverse list or string
+contains( list, value )        # Test membership (returns yes/no)
+```
+
+**String/list conversion:**
+```
+join( list, separator )        # Join list elements with separator
+split( string, separator )     # Split string into list
+```
+
+**Higher-order functions:**
+```
+map( list, function )          # Apply function to each element
+filter( list, function )       # Keep elements where function returns truthy
+sort( list )                   # Return sorted list
+```
+
 Example:
 ```
-box color rgb(255, 128, 0)           # Orange
-box fill hsl(210, 80, 60)            # Blue
-box fill oklch(70, 0.15, 150)        # Muted green
+$double = fn($x) { $result = $x * 2 }
+$doubled = map([1, 2, 3], $double)  # [2, 4, 6]
+
+$even = fn($x) { $result = ($x / 2) == int($x / 2) }
+$evens = filter([1, 2, 3, 4], $even)  # [2, 4]
+
+$sorted = sort([3, 1, 2])  # [1, 2, 3]
 ```
 
 ### Object Properties
@@ -395,18 +493,59 @@ object.fill         # Fill color
 
 ---
 
-## Object References
+## Data Types
 
+### Lists
+
+**List literals:**
 ```
-LABEL                          # By label name
-object.LABEL                   # Nested label
-last                           # Most recent object
-last object-class              # Most recent of class
-previous                       # Same as last
-ORDINAL object-class           # Nth object of class
-ORDINAL last object-class      # Nth from last
-last []                        # Most recent sublist
-ORDINAL []                     # Nth sublist
+$colors = ["red", "blue", "green"]
+$nums = [1, 2, 3, 4, 5]
+$mixed = [1, "hello", yes]
+$empty = []
+```
+
+**List indexing** (0-based):
+```
+$first = $colors[0]      # "red"
+$second = $nums[1]       # 2
+```
+
+**Range expressions:**
+```
+[1..5]              # [1, 2, 3, 4, 5]
+[5..1]              # [5, 4, 3, 2, 1] (descending)
+["A".."E"]          # ["A", "B", "C", "D", "E"]
+["X1".."X5"]        # ["X1", "X2", "X3", "X4", "X5"]
+```
+
+**Concatenation:**
+```
+$a = [1, 2] + [3, 4]        # [1, 2, 3, 4]
+$s = "hello" + "_world"     # "hello_world"
+```
+
+### Functions
+
+**Definition:**
+```
+$greet = fn($name) {
+  box containing $name
+}
+```
+
+**Calling:**
+```
+$greet("Hello")              # Statement level
+$result = $double(5)         # Expression level
+```
+
+**Functions producing shapes:**
+```
+$labeled_box = fn($label, $col) {
+  box $label fill $col
+}
+$labeled_box("Title", LightBlue)
 ```
 
 ---
@@ -428,14 +567,25 @@ labeled_box("Hello", color blue)
 
 ### For Loops
 
-List iteration:
+**List iteration:**
 ```
 for VAR in [ item1, item2, item3 ] do {
   statements
 }
 ```
 
-Numeric range:
+**With range:**
+```
+for i in [1..5] do {
+  box containing i
+}
+
+for $ch in ["A".."C"] do {
+  box containing $ch
+}
+```
+
+**Numeric range:**
 ```
 for VAR from start to end do {
   statements
@@ -444,6 +594,81 @@ for VAR from start to end do {
 for VAR from start to end step increment do {
   statements
 }
+```
+
+### Case Expressions
+
+**Pattern matching:**
+```
+case $value {
+  1 => { box "one" }
+  2 => { box "two" }
+  3 => { box "three" }
+}
+```
+
+**String matching:**
+```
+case $color {
+  "red" => { box fill Red }
+  "blue" => { box fill Blue }
+  "green" => { box fill Green }
+}
+```
+
+**Default arm with `_` or `else`:**
+```
+case $value {
+  1 => { box "one" }
+  2 => { box "two" }
+  _ => { box "other" }
+}
+
+case $value {
+  1 => { box "one" }
+  else => { box "default" }
+}
+```
+
+### If/Else Statements
+
+**Basic if:**
+```
+if $x > 3 { box "big" }
+```
+
+**If with else:**
+```
+if $flag {
+  box "yes"
+} else {
+  box "no"
+}
+```
+
+**With boolean expressions:**
+```
+$flag = yes
+if $flag { box "on" }
+
+$enabled = $count > 0 and $ready
+if $enabled { circle fill Green }
+```
+
+---
+
+## Object References
+
+```
+LABEL                          # By label name
+object.LABEL                   # Nested label
+last                           # Most recent object
+last object-class              # Most recent of class
+previous                       # Same as last
+ORDINAL object-class           # Nth object of class
+ORDINAL last object-class      # Nth from last
+last []                        # Most recent sublist
+ORDINAL []                     # Nth sublist
 ```
 
 ---
@@ -561,3 +786,230 @@ The output SVG includes:
 - `width` and `height` attributes
 - `viewBox` for scaling
 - Inline styles (no external CSS required)
+
+---
+
+## Appendix: EBNF Grammar
+
+### Document Structure
+
+```ebnf
+document        = statement_list ;
+
+statement_list  = [ statement ] { NEWLINE statement } ;
+
+statement       = direction_stmt
+                | assignment_stmt
+                | label_stmt
+                | print_stmt
+                | assert_stmt
+                | define_stmt
+                | for_stmt
+                | case_stmt
+                | if_stmt
+                | fncall_stmt
+                | shape_stmt
+                ;
+```
+
+### Statements
+
+```ebnf
+direction_stmt  = direction ;
+
+direction       = "right" | "down" | "left" | "up" ;
+
+assignment_stmt = lvalue assign_op rvalue_expr ;
+
+lvalue          = IDENTIFIER
+                | "$" IDENTIFIER
+                | "fill" | "color" | "thickness"
+                ;
+
+assign_op       = "=" | "+=" | "-=" | "*=" | "/=" ;
+
+label_stmt      = PLACENAME ":" ( shape_stmt | position ) ;
+
+print_stmt      = "print" print_item { "," print_item } ;
+
+define_stmt     = "define" IDENTIFIER codeblock ;
+
+for_stmt        = "for" IDENTIFIER for_variant ;
+
+for_variant     = "from" expr "to" expr [ "step" expr ] "do" codeblock
+                | "in" expr "do" codeblock
+                ;
+
+case_stmt       = "case" expr "{" { case_arm } "}" ;
+
+case_arm        = pattern "=>" codeblock ;
+
+pattern         = expr
+                | "_"
+                | "else"
+                ;
+
+if_stmt         = "if" expr codeblock [ "else" codeblock ] ;
+
+fncall_stmt     = "$" IDENTIFIER "(" [ expr { "," expr } ] ")" ;
+
+shape_stmt      = basetype [ rel_expr ] { attribute } ;
+
+basetype        = CLASSNAME
+                | STRING [ text_position ]
+                | "[" statement_list "]"
+                ;
+```
+
+### Expressions
+
+```ebnf
+expr            = or_expr ;
+
+or_expr         = and_expr { "or" and_expr } ;
+
+and_expr        = not_expr { "and" not_expr } ;
+
+not_expr        = "not" not_expr
+                | compare_expr
+                ;
+
+compare_expr    = add_expr [ compare_op add_expr ] ;
+
+compare_op      = "==" | "!=" | ">=" | "<="
+                | ">" | "<"
+                ;
+
+add_expr        = mul_expr { ( "+" | "-" ) mul_expr } ;
+
+mul_expr        = unary_expr { ( "*" | "/" ) unary_expr } ;
+
+unary_expr      = ( "-" | "+" ) unary_expr
+                | primary
+                ;
+
+primary         = NUMBER
+                | STRING
+                | "yes" | "no"
+                | IDENTIFIER
+                | "$" IDENTIFIER "(" [ expr { "," expr } ] ")"
+                | "fn" "(" [ param_list ] ")" codeblock
+                | builtin_func "(" expr { "," expr } ")"
+                | "[" [ expr { "," expr } ] "]"
+                | "[" expr ".." expr "]"
+                | "(" expr ")"
+                | object "." property_name
+                ;
+
+param_list      = IDENTIFIER { "," IDENTIFIER } ;
+
+builtin_func    = "abs" | "cos" | "sin" | "sqrt" | "int" | "d2r" | "r2d"
+                | "max" | "min" | "dist"
+                | "rgb" | "hsl" | "oklch"
+                | "len" | "head" | "last" | "push" | "pop"
+                | "shift" | "unshift" | "reverse" | "contains"
+                | "join" | "split" | "map" | "filter" | "sort"
+                ;
+```
+
+### Positions
+
+```ebnf
+position        = "(" position "," position ")"
+                | "(" position ")"
+                | expr "," expr
+                | expr dist_direction position
+                | expr between_syntax position "and" position
+                | expr "<" position "," position ">"
+                | place_position
+                ;
+
+dist_direction  = "above" | "below"
+                | "left" [ "of" ]
+                | "right" [ "of" ]
+                ;
+
+between_syntax  = "between"
+                | "way" "between"
+                | "of" [ "the" ] [ "way" ] "between"
+                ;
+
+place           = edge "of" object
+                | NTH "vertex" [ "of" ] object
+                | object [ "." edge ]
+                ;
+
+edge            = "center" | "top" | "bottom"
+                | "start" | "end"
+                | "left" | "right"
+                | EDGEPT
+                ;
+
+object          = "this"
+                | PLACENAME { "." PLACENAME }
+                | nth_object
+                ;
+```
+
+### Attributes
+
+```ebnf
+attribute       = numeric_attr
+                | dash_attr
+                | color_attr
+                | direction_attr
+                | position_attr
+                | with_attr
+                | same_attr
+                | text_attr
+                | containing_attr
+                | bool_attr
+                | flag_attr
+                | fit_attr
+                | behind_attr
+                ;
+
+numeric_attr    = numeric_prop rel_expr ;
+
+numeric_prop    = "height" | "ht" | "width" | "wid"
+                | "radius" | "rad" | "diameter" | "thickness"
+                ;
+
+dash_attr       = ( "dashed" | "dotted" ) [ expr ] ;
+
+color_attr      = ( "fill" | "color" ) rvalue_expr ;
+
+containing_attr = ( "containing" | "con" ) expr [ text_position ] ;
+
+bool_attr       = "cw" | "ccw"
+                | "<-" | "->" | "<->"
+                | "invis" | "thick" | "thin" | "solid"
+                ;
+```
+
+### Lexical Elements
+
+```ebnf
+NEWLINE         = '\n' | ';' ;
+
+IDENTIFIER      = ( letter | '_' ) { letter | digit | '_' } ;
+
+PLACENAME       = upper_letter { letter | digit | '_' } ;
+
+CLASSNAME       = "box" | "circle" | "ellipse" | "oval" | "cylinder"
+                | "diamond" | "file" | "dot" | "text"
+                | "line" | "arrow" | "spline" | "arc" | "move"
+                ;
+
+NTH             = integer ( "st" | "nd" | "rd" | "th" )
+                | "first"
+                ;
+
+NUMBER          = integer | float | hex_number ;
+
+STRING          = '"' { char | "${" expr "}" } '"' ;
+
+EDGEPT          = "n" | "ne" | "e" | "se" | "s" | "sw" | "w" | "nw" | "c"
+                | "north" | "east" | "south" | "west" | "bot"
+                ;
+```

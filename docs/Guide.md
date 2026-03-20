@@ -453,6 +453,38 @@ box "C"
 
 Assignment operators: `=`, `+=`, `-=`, `*=`, `/=`
 
+### Rich Variables
+
+Variables starting with `$` can store rich values:
+
+```picjs
+$name = "Alice"                # string
+$count = 42                    # number
+$flag = yes                    # boolean (yes/no)
+$items = [1, 2, 3]             # list
+$fn = fn($x) { $result = $x * 2 }  # function
+```
+
+### Lists
+
+Create lists with brackets:
+
+```picjs example
+for $color in ["Red", "Blue", "Green"] do {
+  box fill $color
+}
+```
+
+Range syntax generates sequences:
+
+```picjs example
+for i in [1..5] do {
+  circle rad (i * 0.05)
+}
+```
+
+String ranges work too: `["A".."E"]` produces `["A", "B", "C", "D", "E"]`
+
 #### Mathematical constants
 
 Use `$pi` and `$2pi` for trigonometric calculations:
@@ -511,7 +543,7 @@ The `$1`, `$2`, etc. are positional parameters.
 
 ### For Loops
 
-
+**Numeric range:**
 ```picjs example
 for i from 1 to 3 do {
   box "Box ${i}"
@@ -527,6 +559,72 @@ for i from 5 to 10 step 2 do {
   move
 }
 ```
+
+**List iteration:**
+```picjs example
+for $color in ["red", "blue", "green"] do {
+  box fill $color
+}
+```
+
+**Range syntax:**
+```picjs example
+for i in [1..5] do {
+  box containing i
+}
+```
+
+### If/Else
+
+Conditional logic:
+
+```picjs example
+$show = yes
+if $show {
+  box "visible"
+}
+```
+
+With else:
+
+```picjs example
+$big = yes
+if $big {
+  box "Large" width 2
+} else {
+  box "Small" width 0.5
+}
+```
+
+### Case Expressions
+
+Pattern matching for multiple conditions:
+
+```picjs example
+for i in [1, 2, 3] do {
+  case i {
+    1 => { circle fill Red }
+    2 => { box fill Blue }
+    _ => { diamond fill Green }
+  }
+}
+```
+
+### Functions
+
+Define reusable functions with `fn`:
+
+```picjs example
+$labeled = fn($text, $col) {
+  box $text fill $col fit
+}
+
+$labeled("Hello", LightBlue)
+arrow
+$labeled("World", LightGreen)
+```
+
+Functions can produce shapes and be called at statement level.
 
 ### Chop
 

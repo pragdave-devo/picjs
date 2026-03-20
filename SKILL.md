@@ -186,26 +186,162 @@ box "Italic" italic
 box "Code" mono
 ```
 
-## Variables and Loops
+### Dynamic Text
+```picjs
+$label = "Hello"
+box containing $label          # set text from variable
+box con $label                 # short form
+```
 
+## Variables and Data Types
+
+### Basic Variables
 ```picjs
 $gap = 0.3
 boxwid = 1.5
 fontscale = 1.2    # scale all text to 120%
+```
 
+### Rich Variables ($-prefixed)
+```picjs
+$name = "Alice"                # string
+$count = 42                    # number
+$flag = yes                    # boolean (yes/no)
+$items = [1, 2, 3]             # list
+$double = fn($x) { $result = $x * 2 }  # function
+```
+
+### Lists
+```picjs
+$colors = ["red", "blue", "green"]
+$nums = [1, 2, 3, 4, 5]
+$first = $colors[0]            # "red" (0-indexed)
+
+# Range syntax
+$range = [1..5]                # [1, 2, 3, 4, 5]
+$chars = ["A".."E"]            # ["A", "B", "C", "D", "E"]
+```
+
+## Control Flow
+
+### For Loops
+```picjs
 for i from 1 to 5 do {
   box "Item ${i}"
-  move right $gap
+  move right 0.3
+}
+
+for $color in ["red", "blue", "green"] do {
+  box fill $color
+}
+
+for i in [1..5] do {
+  box containing i
 }
 ```
 
-## Tips for Good Diagrams
+### If/Else
+```picjs
+$show = yes
+if $show { box "visible" }
 
-1. **Start with direction**: Set `down` or `right` at the beginning
-2. **Use `fit`**: Let boxes size to their content
-3. **Label key objects**: Makes connections easier
-4. **Use groups `[ ]`**: For logical components
-5. **Keep it simple**: picjs excels at clean, technical diagrams
+if $count > 3 {
+  box "big"
+} else {
+  box "small"
+}
+```
+
+### Case/Pattern Matching
+```picjs
+case $value {
+  1 => { box "one" }
+  2 => { box "two" }
+  _ => { box "other" }   # default
+}
+
+case $color {
+  "red" => { box fill Red }
+  "blue" => { box fill Blue }
+  else => { box fill Gray }
+}
+```
+
+## Functions
+
+### Define and Call
+```picjs
+$labeled_box = fn($text, $col) {
+  box $text fill $col fit
+}
+
+$labeled_box("Hello", LightBlue)
+$labeled_box("World", LightGreen)
+```
+
+### Functions with Shapes
+```picjs
+$icon = fn($type) {
+  case $type {
+    "db" => { cylinder }
+    "user" => { circle }
+    else => { box }
+  }
+}
+
+$icon("db")
+arrow
+$icon("user")
+```
+
+## List Operations
+
+All list operations return new values (never mutate):
+
+```picjs
+len($list)                 # length
+head($list)                # first element
+last($list)                # last element
+push($list, $val)          # append, return new list
+pop($list)                 # remove last, return new list
+shift($list)               # remove first, return new list
+unshift($list, $val)       # prepend, return new list
+reverse($list)             # reverse
+contains($list, $val)      # membership test (yes/no)
+join($list, ", ")          # join with separator
+split("a,b,c", ",")        # split string to list
+```
+
+### Higher-Order Functions
+```picjs
+$double = fn($x) { $result = $x * 2 }
+$doubled = map([1, 2, 3], $double)     # [2, 4, 6]
+
+$even = fn($x) { $result = ($x / 2) == int($x / 2) }
+$evens = filter([1, 2, 3, 4], $even)   # [2, 4]
+
+$sorted = sort([3, 1, 2])              # [1, 2, 3]
+```
+
+## Operators
+
+### Arithmetic
+```picjs
++ - * /                    # basic math
+$a + $b                    # also concatenates lists/strings
+```
+
+### Comparison
+```picjs
+== != > < >= <=            # returns yes/no
+```
+
+### Logical
+```picjs
+and or not                 # boolean logic
+$x > 0 and $x < 10
+not $flag
+```
 
 ## Mathematical Constants and Functions
 
@@ -214,7 +350,7 @@ $pi          # 3.14159...
 $2pi         # 6.28318...
 d2r(degrees) # convert degrees to radians
 r2d(radians) # convert radians to degrees
-sin(x), cos(x), sqrt(x), abs(x), min(a,b), max(a,b)
+sin(x), cos(x), sqrt(x), abs(x), min(a,b), max(a,b), int(x)
 ```
 
 ## Color Functions
@@ -224,3 +360,13 @@ rgb(255, 128, 0)      # RGB (0-255 each)
 hsl(210, 80, 60)      # HSL (h:0-360, s:0-100, l:0-100)
 oklch(70, 0.15, 150)  # OKLCH perceptual color
 ```
+
+## Tips for Good Diagrams
+
+1. **Start with direction**: Set `down` or `right` at the beginning
+2. **Use `fit`**: Let boxes size to their content
+3. **Label key objects**: Makes connections easier
+4. **Use groups `[ ]`**: For logical components
+5. **Use functions**: For repeated patterns
+6. **Use loops**: For generating series of shapes
+7. **Keep it simple**: picjs excels at clean, technical diagrams
