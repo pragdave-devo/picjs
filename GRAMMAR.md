@@ -392,13 +392,20 @@ primary         = NUMBER
 
 param_list      = IDENTIFIER { "," IDENTIFIER } ;
 
-builtin_func    = func1 | func2 | func3 ;
+builtin_func    = func1 | func2 | func3 | list_func ;
 
 func1           = "abs" | "cos" | "d2r" | "int" | "r2d" | "sin" | "sqrt" ;
 
 func2           = "max" | "min" ;
 
 func3           = "hsl" | "oklch" | "rgb" ;
+
+list_func       = "len" | "head" | "last" | "reverse"          (* 1 arg *)
+                | "push" | "pop" | "shift" | "unshift"         (* 1-2 args *)
+                | "contains" | "join" | "split"                 (* 2 args *)
+                | "map" | "filter"                              (* list, fn *)
+                | "sort"                                        (* 1 arg *)
+                ;
 
 property_name   = "height" | "ht" | "width" | "wid"
                 | "radius" | "rad" | "diameter" | "thickness"
@@ -648,4 +655,8 @@ yes
    and expression level.
 
 7. **String interpolation**: Strings support `${expr}` interpolation, where
-   `expr` is evaluated and its numeric result is inserted.
+   `expr` is evaluated and its result is inserted (numbers, strings, booleans).
+
+8. **List builtins**: Functions like `len`, `head`, `map`, `filter`, etc. are
+   not tokenizer keywords — they are recognized as identifiers followed by `(`
+   and dispatched as builtin calls during parsing.

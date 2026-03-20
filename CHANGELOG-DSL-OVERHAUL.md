@@ -78,7 +78,7 @@ $result = $double(5)     # expression level
 **Functions producing shapes**
 ```
 $labeled_box = fn(label, col) {
-  box $label fill col
+  box containing $label fill col
 }
 $labeled_box("Title", LightBlue)
 ```

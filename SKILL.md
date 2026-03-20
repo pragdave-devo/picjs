@@ -287,7 +287,7 @@ case $color {
 ### Define and Call
 ```picjs
 $labeled_box = fn($text, $col) {
-  box $text fill $col fit
+  box containing $text fill $col fit
 }
 
 $labeled_box("Hello", LightBlue)

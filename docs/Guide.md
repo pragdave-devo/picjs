@@ -623,7 +623,7 @@ Define reusable functions with `fn`:
 
 ```picjs example
 $labeled = fn($text, $col) {
-  box $text fill $col fit
+  box containing $text fill $col fit
 }
 
 $labeled("Hello", LightBlue)
