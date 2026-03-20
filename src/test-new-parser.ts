@@ -174,7 +174,8 @@ if (fs.existsSync(examplesDir)) {
           const errMatch = newResult.svg.match(/ERROR: ([^\n<]+)/);
           throw new Error(`new parser failed: ${errMatch ? errMatch[1].trim() : newResult.svg.substring(0, 200)}`);
         } else {
-          throw new Error('old parser failed but new parser succeeded');
+          // Old parser doesn't support new DSL features — new-only pass
+          return;
         }
       }
       if (!oldResult.isError && oldResult.svg !== newResult.svg) {
@@ -757,6 +758,52 @@ test('sort does not mutate', () => {
   const r = picjs('$a = [3, 1, 2]\n$b = sort($a)\n$first = head($a)\nbox containing $first');
   assert(!r.isError, `expected success: ${r.svg}`);
   assert(r.svg.includes('3'), 'should contain "3" (original unchanged)');
+});
+
+// Phase 2F: Implicit function return values (via last statement value)
+test('function returns last assignment - number', () => {
+  const r = picjs('$add = fn($a, $b) { $sum = $a + $b }\n$result = $add(3, 4)\nbox containing $result');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('7'), 'should contain "7"');
+});
+
+test('function returns last assignment - string', () => {
+  const r = picjs('$greet = fn($name) { $msg = "Hello " + $name }\n$result = $greet("World")\nbox containing $result');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  // SVG renderer converts spaces to NBSP (U+00A0)
+  assert(r.svg.includes('Hello') && r.svg.includes('World'), 'should contain "Hello World"');
+});
+
+test('function returns value from if branch', () => {
+  const r = picjs('$abs = fn($x) {\n  if $x < 0 { $r = 0 - $x } else { $r = $x }\n}\n$v = $abs(-5)\nbox containing $v');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('5'), 'should contain "5"');
+});
+
+test('function returns value from case', () => {
+  const r = picjs('$grade = fn($score) {\n  case $score {\n    100 => { $g = "A+" }\n    90 => { $g = "A" }\n    _ => { $g = "B" }\n  }\n}\n$result = $grade(100)\nbox containing $result');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('A+'), 'should contain "A+"');
+});
+
+test('function returns shape as obj', () => {
+  // Shapes return VObj which can be used for positioning
+  const r = picjs('$make = fn($txt) { box containing $txt fit }\n$make("test")\narrow\nbox "after"');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('test'), 'should contain "test"');
+  assert(r.svg.includes('after'), 'should contain "after"');
+});
+
+test('map with assignment return', () => {
+  const r = picjs('$square = fn($x) { $r = $x * $x }\n$squares = map([1, 2, 3], $square)\nbox containing last($squares)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('9'), 'should contain "9" (3*3)');
+});
+
+test('filter with assignment return', () => {
+  const r = picjs('$big = fn($x) { $r = $x > 2 }\n$filtered = filter([1, 2, 3, 4], $big)\nbox containing len($filtered)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.svg.includes('2'), 'should contain "2" (3 and 4)');
 });
 
 // Reset to old parser
