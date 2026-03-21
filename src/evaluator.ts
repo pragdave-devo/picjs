@@ -25,11 +25,12 @@ import {
 } from './layout.ts';
 
 import { Environment } from './environment.ts';
-import { mkNum, mkStr, mkBool, mkFn, mkList, mkObj, mkNull, toNumber, toString, toBoolean, valuesEqual, type PicValue, type PicFunction } from './values.ts';
+import { mkNum, mkStr, mkBool, mkFn, mkList, mkObj, mkAnim, mkNull, toNumber, toString, toBoolean, valuesEqual, type PicValue, type PicFunction } from './values.ts';
 
 import type {
   AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall,
   AstCase, AstIf, AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection,
+  AstAnimation, AstAlter,
   AstAttr, AstAttrNumeric, AstAttrColor, AstAttrDash, AstAttrBool,
   AstAttrText, AstAttrContaining, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
   AstAttrBehind, AstAttrFit, AstAttrEvenWith, AstAttrFlag,
@@ -38,6 +39,9 @@ import type {
   AstPosition,
   AstPlace, AstObject,
 } from './ast.ts';
+
+import type { AnimationDescriptor, AlterDescriptor, AlterableProperty } from './animation.ts';
+import { resolveAnimTiming } from './animation.ts';
 
 const {
   T_FILL, T_COLOR, T_THICKNESS,
@@ -143,7 +147,25 @@ export function resetEvalState(): void {
 // Main evaluation entry point
 // ============================================================
 
+// Animation registry
+let animationList: AnimationDescriptor[] = [];
+let animIdCounter = 0;
+
+export function resetAnimations(): void {
+  animationList = [];
+  animIdCounter = 0;
+}
+
+export function getAnimations(): AnimationDescriptor[] {
+  return animationList;
+}
+
+function generateAnimId(): string {
+  return `anim-${++animIdCounter}`;
+}
+
 export function evaluate(p: Pik, stmts: AstStmt[]): PicValue {
+  resetAnimations();
   let lastValue: PicValue = mkNull();
   for (const stmt of stmts) {
     if (p.nErr) break;
@@ -199,6 +221,9 @@ function evalStmt(p: Pik, stmt: AstStmt): PicValue {
     case "assert":
       evalAssertStmt(p, stmt);
       return mkNull();
+
+    case "animation":
+      return evalAnimationStmt(p, stmt);
 
     case "empty":
       return mkNull();
@@ -780,6 +805,11 @@ function evalExpr(p: Pik, expr: AstExpr): PNum {
       const result = evalBuiltinCall(p, expr.name, expr.args, expr.tok);
       return toNumber(result);
     }
+
+    case "dollarProp": {
+      // Evaluate via evalRichExpr and convert to number
+      return toNumber(evalRichExpr(p, expr));
+    }
   }
 
   return 0;
@@ -818,6 +848,28 @@ function evalRichExpr(p: Pik, expr: AstExpr): PicValue {
       return evalUserCallRich(p, expr.func, expr.args, expr.tok);
     case "range":
       return evalRangeExpr(p, expr);
+    case "dollarProp": {
+      const vname = expr.varTok.z.substring(0, expr.varTok.n);
+      const val = currentEnv.get(vname);
+      if (!val) {
+        pikError(p, expr.varTok, `undefined variable '${vname}'`);
+        return mkNum(0);
+      }
+      const propName = expr.propTok.z.substring(0, expr.propTok.n);
+      if (val.tag === 'animation') {
+        const timing = resolveAnimTiming(val.val);
+        switch (propName) {
+          case 'start':    return mkNum(timing.start);
+          case 'end':      return mkNum(timing.end);
+          case 'duration': return mkNum(val.val.duration);
+          default:
+            pikError(p, expr.propTok, `animation has no property '${propName}'`);
+            return mkNum(0);
+        }
+      }
+      pikError(p, expr.propTok, `cannot access property '${propName}' on ${val.tag} value`);
+      return mkNum(0);
+    }
     case "binOp": {
       // Handle list/string concatenation with +
       if (expr.op === "+") {
@@ -1292,5 +1344,137 @@ function resolveObject(p: Pik, astObj: AstObject): PObj | null {
       const nthTok = { ...astObj.classTok };
       return pikFindNth(p, basis, nthTok);
     }
+  }
+}
+
+// ============================================================
+// Animation evaluation
+// ============================================================
+
+function evalAnimationStmt(p: Pik, stmt: AstAnimation): PicValue {
+  if (p.nErr) return mkNull();
+
+  // Evaluate timing
+  const startTime = stmt.startExpr ? evalExpr(p, stmt.startExpr) : null;
+  const endTime = stmt.endExpr ? evalExpr(p, stmt.endExpr) : null;
+  const duration = stmt.durationExpr ? evalExpr(p, stmt.durationExpr) : 1.0;
+  const bounceStart = stmt.bounceStart ? evalExpr(p, stmt.bounceStart) : 0;
+  const bounceEnd = stmt.bounceEnd ? evalExpr(p, stmt.bounceEnd) : 0;
+
+  // Evaluate alter statements
+  const alterations: AlterDescriptor[] = [];
+  for (const alter of stmt.body) {
+    const desc = evalAlterStmt(p, alter);
+    if (desc) alterations.push(desc);
+  }
+
+  const id = stmt.id || generateAnimId();
+
+  const anim: AnimationDescriptor = {
+    id,
+    startTime,
+    endTime,
+    duration,
+    easeIn: stmt.easeIn || 'linear',
+    easeOut: stmt.easeOut || 'linear',
+    bounceStart,
+    bounceEnd,
+    alterations,
+  };
+
+  // Register in global animation list
+  animationList.push(anim);
+
+  // If assigned to a variable, store in environment
+  if (stmt.id) {
+    currentEnv.set(stmt.id, mkAnim(anim));
+  }
+
+  return mkAnim(anim);
+}
+
+function evalAlterStmt(p: Pik, alter: AstAlter): AlterDescriptor | null {
+  if (p.nErr) return null;
+
+  // Resolve the target object
+  const obj = resolveObject(p, alter.target.object);
+  if (!obj) {
+    pikError(p, alter.tok, 'alter target object not found');
+    return null;
+  }
+
+  // Assign an animId if not already set
+  if (!obj.animId) {
+    obj.animId = obj.zName || `${obj.type.zName}-${p.list ? p.list.a.indexOf(obj) + 1 : 0}`;
+  }
+
+  // Determine the property being altered
+  const propName = alter.property.z.substring(0, alter.property.n);
+  const property = mapToAlterableProperty(propName, alter.target.edge);
+
+  if (!property) {
+    pikError(p, alter.property, `cannot animate property '${propName}'`);
+    return null;
+  }
+
+  // Capture from-value (current state at t=0)
+  const fromValue = capturePropertyValue(obj, property);
+
+  // Evaluate to-value
+  const toRichValue = evalRichExpr(p, alter.toValue);
+  let toValue: number | string;
+  if (toRichValue.tag === 'color') {
+    toValue = toRichValue.val;
+  } else if (toRichValue.tag === 'position') {
+    // Position target — extract the relevant axis
+    if (property === 'cx') toValue = toRichValue.val.x;
+    else if (property === 'cy') toValue = toRichValue.val.y;
+    else toValue = toNumber(toRichValue);
+  } else {
+    toValue = toNumber(toRichValue);
+  }
+
+  return {
+    targetId: obj.animId,
+    property,
+    fromValue,
+    toValue,
+  };
+}
+
+function mapToAlterableProperty(name: string, edge: PToken | null): AlterableProperty | null {
+  // If an edge is provided, it's a position animation (maps to center)
+  if (edge) {
+    // Edge-based target: animate center position
+    // The runtime will handle mapping from edge to center
+    return 'cx'; // simplified — runtime handles both axes
+  }
+
+  switch (name) {
+    case 'c':     return 'cx';
+    case 'x':     return 'cx';
+    case 'y':     return 'cy';
+    case 'fill':  return 'fill';
+    case 'color': return 'color';
+    case 'opacity': return 'opacity';
+    case 'width': case 'wid': case 'w': return 'width';
+    case 'height': case 'ht': case 'h': return 'height';
+    case 'radius': case 'rad': return 'radius';
+    case 'thickness': case 'sw': return 'sw';
+    default: return null;
+  }
+}
+
+function capturePropertyValue(obj: PObj, prop: AlterableProperty): number | string {
+  switch (prop) {
+    case 'cx':     return obj.ptAt.x;
+    case 'cy':     return obj.ptAt.y;
+    case 'width':  return obj.w;
+    case 'height': return obj.h;
+    case 'radius': return obj.rad;
+    case 'fill':   return obj.fill;
+    case 'color':  return obj.color;
+    case 'opacity': return obj.opacity;
+    case 'sw':     return obj.sw;
   }
 }

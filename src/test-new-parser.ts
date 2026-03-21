@@ -806,6 +806,90 @@ test('filter with assignment return', () => {
   assert(r.svg.includes('2'), 'should contain "2" (3 and 4)');
 });
 
+// Phase 3A: Animation parsing
+console.log('\n--- Animation parsing ---');
+
+test('basic animation parses without error', () => {
+  const r = picjs('box "A"\nstarting 0 take 1 {\n  alter last box.fill to Red\n}');
+  assert(!r.isError, 'should not error: ' + r.svg);
+});
+
+test('animation with easing parses', () => {
+  const r = picjs('box "A"\nstarting 0 take 1 ease cubic {\n  alter last box.fill to Red\n}');
+  assert(!r.isError, 'should not error: ' + r.svg);
+});
+
+test('animation with ease in/out parses', () => {
+  const r = picjs('box "A"\nstarting 0 take 2 ease in quad ease out cubic {\n  alter last box.fill to Red\n}');
+  assert(!r.isError, 'should not error: ' + r.svg);
+});
+
+test('animation with bounce parses', () => {
+  const r = picjs('box "A"\nstarting 0 take 1 bounce 0.3 {\n  alter last box.fill to Red\n}');
+  assert(!r.isError, 'should not error: ' + r.svg);
+});
+
+test('animation assigned to variable parses', () => {
+  const r = picjs('box "A"\n$s1 = starting 0 take 1 {\n  alter last box.fill to Red\n}');
+  assert(!r.isError, 'should not error: ' + r.svg);
+});
+
+test('animation with ending keyword parses', () => {
+  const r = picjs('box "A"\nending 5 take 2 {\n  alter last box.fill to Red\n}');
+  assert(!r.isError, 'should not error: ' + r.svg);
+});
+
+test('animation with multiple alters parses', () => {
+  const r = picjs('box "A"\ncircle "B"\nstarting 0 take 1 {\n  alter last box.fill to Red\n  alter last circle.fill to Blue\n}');
+  assert(!r.isError, 'should not error: ' + r.svg);
+});
+
+// Animation evaluation tests
+console.log('\n--- Animation evaluation ---');
+
+import { getAnimations } from './evaluator.ts';
+
+test('animation creates descriptor with correct timing', () => {
+  picjs('box "A"\nstarting 2.5 take 1.5 {\n  alter last box.fill to Red\n}');
+  const anims = getAnimations();
+  assert(anims.length === 1, `expected 1 animation, got ${anims.length}`);
+  assert(anims[0].startTime === 2.5, `expected start=2.5, got ${anims[0].startTime}`);
+  assert(anims[0].duration === 1.5, `expected dur=1.5, got ${anims[0].duration}`);
+});
+
+test('animation captures easing', () => {
+  picjs('box "A"\nstarting 0 take 1 ease cubic {\n  alter last box.fill to Red\n}');
+  const anims = getAnimations();
+  assert(anims[0].easeIn === 'cubic', `expected easeIn=cubic, got ${anims[0].easeIn}`);
+  assert(anims[0].easeOut === 'cubic', `expected easeOut=cubic, got ${anims[0].easeOut}`);
+});
+
+test('animation creates alter descriptor', () => {
+  picjs('box "A"\nstarting 0 take 1 {\n  alter last box.fill to Red\n}');
+  const anims = getAnimations();
+  assert(anims[0].alterations.length === 1, 'expected 1 alteration');
+  assert(anims[0].alterations[0].property === 'fill', `expected fill, got ${anims[0].alterations[0].property}`);
+});
+
+test('$var.start property access works', () => {
+  const r = picjs('box "A"\n$s1 = starting 3 take 2 {\n  alter last box.fill to Red\n}\nprint $s1.start');
+  assert(!r.isError, 'should not error: ' + r.svg);
+});
+
+test('$var.end property access works', () => {
+  const r = picjs('box "A"\n$s1 = starting 3 take 2 {\n  alter last box.fill to Red\n}\nprint $s1.end');
+  assert(!r.isError, 'should not error: ' + r.svg);
+});
+
+test('chained animation timing via $var.end', () => {
+  const r = picjs('box "A"\ncircle "B"\n$s1 = starting 0 take 2 {\n  alter last box.fill to Red\n}\n$s2 = starting $s1.end + 1 take 3 {\n  alter last circle.fill to Blue\n}');
+  assert(!r.isError, 'should not error: ' + r.svg);
+  const anims = getAnimations();
+  assert(anims.length === 2, `expected 2 animations, got ${anims.length}`);
+  // $s1.end = 0 + 2 = 2, so $s2 start = 2 + 1 = 3
+  assert(anims[1].startTime === 3, `expected s2 start=3, got ${anims[1].startTime}`);
+});
+
 // Reset to old parser
 setUseNewParser(false);
 

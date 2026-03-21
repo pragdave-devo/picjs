@@ -2,6 +2,7 @@
 // Part of the DSL overhaul (Phase 0)
 
 import type { PPoint, PClass, PObj } from './types.ts';
+import type { AnimationDescriptor } from './animation.ts';
 
 // The PicValue tagged union
 export type PicValue =
@@ -14,6 +15,7 @@ export type PicValue =
   | { tag: "function";   val: PicFunction }
   | { tag: "shapeclass"; val: PClass }
   | { tag: "obj";        val: PObj }          // reference to a shape
+  | { tag: "animation";  val: AnimationDescriptor }  // animation descriptor
   | { tag: "null" }
 
 export interface PicFunction {
@@ -36,6 +38,7 @@ export function mkList(val: PicValue[]): PicValue { return { tag: "list", val };
 export function mkFn(val: PicFunction): PicValue { return { tag: "function", val }; }
 export function mkShapeClass(val: PClass): PicValue { return { tag: "shapeclass", val }; }
 export function mkObj(val: PObj): PicValue { return { tag: "obj", val }; }
+export function mkAnim(val: AnimationDescriptor): PicValue { return { tag: "animation", val }; }
 export function mkNull(): PicValue { return { tag: "null" }; }
 
 // Coercion helpers
@@ -60,6 +63,7 @@ export function toString(v: PicValue): string {
     case "function":  return `<fn(${v.val.params.join(', ')})>`;
     case "shapeclass": return v.val.zName;
     case "obj":       return `<shape${v.val.type ? ':' + v.val.type.zName : ''}>`;
+    case "animation": return `<animation:${v.val.id}>`;
     case "null":      return "null";
   }
 }

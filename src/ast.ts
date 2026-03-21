@@ -5,6 +5,7 @@
 // Expressions are unevaluated; the evaluator walks them to produce PicValues.
 
 import type { PToken } from './types.ts';
+import type { EasingFn } from './animation.ts';
 
 // ============================================================
 // Statements
@@ -24,6 +25,7 @@ export type AstStmt =
   | AstIf
   | AstPrint
   | AstAssert
+  | AstAnimation
   | AstEmpty
 
 export interface AstDirection {
@@ -131,6 +133,33 @@ export interface AstFnCall {
 
 export interface AstEmpty {
   kind: "empty";
+}
+
+export interface AstAnimation {
+  kind: "animation";
+  id: string | null;               // variable name if assigned ($scene1), or null
+  startExpr: AstExpr | null;      // starting <time>
+  endExpr: AstExpr | null;        // ending <time>
+  durationExpr: AstExpr | null;   // take <duration>
+  easeIn: EasingFn | null;
+  easeOut: EasingFn | null;
+  bounceStart: AstExpr | null;
+  bounceEnd: AstExpr | null;
+  body: AstAlter[];
+  tok: PToken;
+}
+
+export interface AstAlter {
+  target: AstAlterTarget;
+  property: PToken;               // the property or edge token
+  toValue: AstExpr;
+  tok: PToken;
+}
+
+export interface AstAlterTarget {
+  object: AstObject;
+  edge: PToken | null;            // compass point (maps to center animation)
+  axis: "x" | "y" | null;        // for .edge.x / .edge.y
 }
 
 // ============================================================
@@ -277,6 +306,7 @@ export type AstExpr =
   | AstExprFn
   | AstExprUserCall
   | AstExprRange
+  | AstExprDollarProp
 
 export interface AstExprNumber {
   exprKind: "number";
@@ -406,6 +436,12 @@ export interface AstExprUserCall {
   func: AstExpr;
   args: AstExpr[];
   tok: PToken;
+}
+
+export interface AstExprDollarProp {
+  exprKind: "dollarProp";
+  varTok: PToken;         // the $varName token
+  propTok: PToken;        // the property name (start, end, duration)
 }
 
 // ============================================================

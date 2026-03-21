@@ -35,6 +35,7 @@ statement       = direction_stmt
                 | case_stmt
                 | if_stmt
                 | fncall_stmt
+                | animation_stmt
                 | shape_stmt
                 ;
 ```
@@ -141,6 +142,41 @@ if_stmt         = "if" expr codeblock [ "else" codeblock ] ;
 fncall_stmt     = "$" IDENTIFIER "(" [ expr { "," expr } ] ")" ;
 ```
 
+### Animation
+
+```ebnf
+animation_stmt  = animation_header "{" { alter_stmt NEWLINE } "}" ;
+
+animation_header = { animation_clause } ;
+
+animation_clause = "starting" expr
+                 | "ending" expr
+                 | "take" expr
+                 | "ease" [ "in" | "out" ] easing_name
+                 | "bounce" [ "in" | "out" ] expr
+                 ;
+
+easing_name     = IDENTIFIER ;   (* linear, quad, cubic, exponential *)
+
+alter_stmt      = "alter" alter_target "to" expr ;
+
+alter_target    = object "." ( property_name | edge | "x" | "y" ) ;
+```
+
+Animations are first-class values. They can be assigned to `$`-prefixed
+variables and their attributes accessed via dot notation:
+
+```
+$scene1 = starting 3.4 take 1 ease cubic {
+  alter last box.c to last circle.n
+}
+$scene2 = starting $scene1.end + 2 take 4 {
+  alter Background.opacity to 1
+}
+```
+
+Accessible properties: `.start`, `.end`, `.duration`.
+
 ### Shape
 
 ```ebnf
@@ -197,6 +233,7 @@ numeric_prop    = "height" | "ht"
                 | "radius" | "rad"
                 | "diameter"
                 | "thickness"
+                | "opacity"
                 ;
 ```
 
@@ -599,13 +636,13 @@ All reserved keywords recognized by the tokenizer:
 
 ```
 _         (wildcard/default pattern)
-above     and       arc       arrow     as        assert    at
-behind    below     between   big       block     bold      bottom    box
+above     alter     and       arc       arrow     as        assert    at
+behind    below     between   big       block     bold      bottom    bounce  box
 case      ccw       center    chop      circle    close     color
 con       containing          cos       cw        cylinder
 d2r       dashed    define    diameter  diamond   dist      do
 dot       dotted    down
-e         east      else      ellipse   end       even
+e         ease      east      else      ellipse   end       ending    even
 file      fill      first     fit       fn        for       from
 go
 heading   height    ht        hsl
@@ -613,12 +650,12 @@ if        in        int       invis     italic
 last      left      line      ljust
 max       min       mono      move
 n         ne        no        north     not       nw
-of        oklch     or        oval
+of        oklch     opacity   or        oval
 print
 r2d       rad       radius    rgb       right     rjust
 s         same      se        sin       small     solid     south
-spline    sqrt      start     step      sw
-text      the       then      thick     thickness thin
+spline    sqrt      start     starting  step      sw
+take      text      the       then      thick     thickness thin
 this      to        top
 until     up
 vertex
@@ -660,3 +697,10 @@ yes
 8. **List builtins**: Functions like `len`, `head`, `map`, `filter`, etc. are
    not tokenizer keywords — they are recognized as identifiers followed by `(`
    and dispatched as builtin calls during parsing.
+
+9. **Animations**: Animation statements are first-class values. When assigned
+   to a `$`-prefixed variable, their `.start`, `.end`, and `.duration`
+   properties can be accessed. Easing names (`linear`, `quad`, `cubic`,
+   `exponential`) are parsed as identifiers, not keywords. The `ease` keyword
+   uses two-word form: `ease in linear`, `ease out cubic`, or `ease cubic`
+   (both in and out).

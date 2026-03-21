@@ -1,6 +1,8 @@
 // types.ts — Data structures for pikchr TypeScript port
 // Ported from pikchr.y lines 155-430
 
+import type { PosConstraint } from './animation.ts';
+
 export type PNum = number;
 
 // Compass points
@@ -221,6 +223,14 @@ export enum TokenType {
   T_UNDERSCORE = 213, // _ (wildcard pattern)
   T_DOTDOT = 214,     // .. (range)
   T_BLOCK = 215,      // block (alias for [] in object references)
+
+  // Animation tokens (Phase A)
+  T_STARTING = 216,
+  T_ENDING = 217,
+  T_TAKE = 218,
+  T_EASE = 219,
+  T_ALTER = 220,
+  T_BOUNCE = 221,
 }
 
 // Position in 2D space
@@ -326,6 +336,10 @@ export interface PObj {
   pFrom: PObj | null;
   pTo: PObj | null;
   bbox: PBox;
+  // Animation fields
+  opacity: PNum;
+  animId: string | null;
+  posConstraint: PosConstraint | null;
 }
 
 // List of graphics objects
@@ -454,6 +468,10 @@ export function createPObj(type: PClass): PObj {
     pFrom: null,
     pTo: null,
     bbox: { sw: { x: 1, y: 1 }, ne: { x: 0, y: 0 } },
+    // Animation fields
+    opacity: 1.0,
+    animId: null,
+    posConstraint: null,
   };
 }
 

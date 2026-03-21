@@ -17,17 +17,20 @@ import { lookupColor } from './constants.ts';
 import type {
   AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall, AstCase, AstIf,
   AstPrint, AstPrintItem, AstAssert, AstAssign, AstDefine, AstDirection, AstEmpty,
+  AstAnimation, AstAlter, AstAlterTarget,
   AstAttr, AstAttrNumeric, AstAttrColor, AstAttrDash, AstAttrBool,
   AstAttrText, AstAttrContaining, AstAttrPosition, AstAttrDirection, AstAttrWith, AstAttrSame,
   AstAttrBehind, AstAttrFit, AstAttrEvenWith, AstAttrFlag,
   AstRelExpr,
   AstExpr, AstExprNumber, AstExprVarRef, AstExprBinOp, AstExprUnaryOp,
   AstExprParen, AstExprFuncCall, AstExprDist, AstExprProperty, AstExprPlaceXY,
-  AstExprColorName,
+  AstExprColorName, AstExprDollarProp,
   AstPosition, AstPosAbsolute, AstPosPlace, AstPosRelative, AstPosBetween,
   AstPosDistDir, AstPosComposite, AstPosParen,
   AstPlace, AstObject, AstObjThis, AstObjNamed, AstObjNth,
 } from './ast.ts';
+
+import type { EasingFn } from './animation.ts';
 
 const {
   T_ID, T_ASSIGN, T_PLACENAME, T_CLASSNAME, T_STRING, T_NUMBER, T_NTH, T_EOL,
@@ -54,6 +57,7 @@ const {
   T_GE, T_LE, T_NE,
   T_FN, T_CASE, T_FATARROW, T_CONTAINING,
   T_IF, T_ELSE, T_UNDERSCORE, T_DOTDOT, T_BLOCK,
+  T_STARTING, T_ENDING, T_TAKE, T_EASE, T_ALTER, T_BOUNCE,
 } = TokenType;
 
 // ============================================================
@@ -111,12 +115,21 @@ function parseStatement(p: Pik, ts: TokenStream): AstStmt | null {
     return { kind: "direction", dir: dir.eCode, tok: dir };
   }
 
-  // assignment: lvalue ASSIGN rvalue_expr
+  // assignment: lvalue ASSIGN rvalue_expr (or animation)
   if (isLvalue(t.eType)) {
     const t2 = ts.peekAhead(1);
     if (t2.eType === T_ASSIGN) {
       const lv = ts.advance();
       const op = ts.advance();
+      // Check if RHS is an animation statement
+      if (isAnimationStart(ts.peek().eType)) {
+        const anim = parseAnimationStmt(p, ts);
+        if (anim && anim.kind === "animation") {
+          // Store variable name as the animation ID
+          anim.id = lv.z.substring(0, lv.n);
+        }
+        return anim;
+      }
       const rv = parseRvalueExpr(p, ts);
       return { kind: "assign", name: lv, op: op, value: rv };
     }
@@ -201,6 +214,11 @@ function parseStatement(p: Pik, ts: TokenStream): AstStmt | null {
     if (name[0] === '$' && ts.peekAhead(1).eType === T_LP) {
       return parseFnCallStmt(p, ts);
     }
+  }
+
+  // animation statement: starting/ending/take
+  if (isAnimationStart(t.eType)) {
+    return parseAnimationStmt(p, ts);
   }
 
   // unnamed_statement (shape definition)
@@ -1450,7 +1468,7 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
     }
   }
 
-  // ID (variable or $name function call)
+  // ID (variable or $name function call or $name.prop)
   if (t.eType === T_ID) {
     const id = ts.advance();
     const name = id.z.substring(0, id.n);
@@ -1467,6 +1485,12 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
       }
       ts.expect(T_RP, 'expected ")"');
       return { exprKind: "userCall", func: { exprKind: "varRef", tok: id }, args, tok: id };
+    }
+    // $name.prop — property access on $-var (e.g. $scene1.start, $scene1.end, $scene1.duration)
+    if (name[0] === '$' && isDollarPropAccess(ts.peek())) {
+      ts.advance(); // consume the dot token (T_DOT_E or T_DOT_L)
+      const propTok = ts.advance(); // consume the property name
+      return { exprKind: "dollarProp", varTok: id, propTok } as AstExprDollarProp;
     }
     return { exprKind: "varRef", tok: id };
   }
@@ -1771,4 +1795,214 @@ const builtinFuncs: Record<string, BuiltinFuncInfo> = {
 
 function getBuiltinFuncInfo(name: string): BuiltinFuncInfo | null {
   return builtinFuncs[name] || null;
+}
+
+// ============================================================
+// Animation helpers
+// ============================================================
+
+function isAnimationStart(eType: number): boolean {
+  return eType === T_STARTING || eType === T_ENDING || eType === T_TAKE;
+}
+
+function isDollarPropAccess(t: PToken): boolean {
+  // Check if the next token is a dot that leads to an animation property
+  // T_DOT_E covers .start and .end (they have eEdge), T_DOT_L covers .duration
+  if (t.eType === T_DOT_E || t.eType === T_DOT_L) return true;
+  return false;
+}
+
+const validEasingNames = new Set(['linear', 'quad', 'cubic', 'exponential']);
+
+function parseEasingName(p: Pik, ts: TokenStream): EasingFn {
+  const t = ts.peek();
+  if (t.eType === T_ID) {
+    const name = t.z.substring(0, t.n);
+    if (validEasingNames.has(name)) {
+      ts.advance();
+      return name as EasingFn;
+    }
+  }
+  pikError(p, t, 'expected easing function: linear, quad, cubic, or exponential');
+  return 'linear';
+}
+
+// ============================================================
+// Animation statement parsing
+// ============================================================
+
+function parseAnimationStmt(p: Pik, ts: TokenStream): AstAnimation | null {
+  if (p.nErr) return null;
+
+  const tok = ts.peek();
+  let startExpr: AstExpr | null = null;
+  let endExpr: AstExpr | null = null;
+  let durationExpr: AstExpr | null = null;
+  let easeIn: EasingFn | null = null;
+  let easeOut: EasingFn | null = null;
+  let bounceStart: AstExpr | null = null;
+  let bounceEnd: AstExpr | null = null;
+
+  // Parse animation header clauses (in any order)
+  while (p.nErr === 0 && !ts.atEnd()) {
+    const ct = ts.peek();
+
+    if (ct.eType === T_STARTING) {
+      ts.advance();
+      startExpr = parseExpr(p, ts);
+    } else if (ct.eType === T_ENDING) {
+      ts.advance();
+      endExpr = parseExpr(p, ts);
+    } else if (ct.eType === T_TAKE) {
+      ts.advance();
+      durationExpr = parseExpr(p, ts);
+    } else if (ct.eType === T_EASE) {
+      ts.advance();
+      // Check for "in" or "out" modifier
+      const next = ts.peek();
+      if (next.eType === T_IN) {
+        ts.advance();
+        easeIn = parseEasingName(p, ts);
+      } else if (isTokenWord(next, 'out')) {
+        ts.advance();
+        easeOut = parseEasingName(p, ts);
+      } else {
+        // ease <name> — applies to both in and out
+        const fn = parseEasingName(p, ts);
+        easeIn = fn;
+        easeOut = fn;
+      }
+    } else if (ct.eType === T_BOUNCE) {
+      ts.advance();
+      const next = ts.peek();
+      if (next.eType === T_IN) {
+        ts.advance();
+        bounceStart = parseExpr(p, ts);
+      } else if (isTokenWord(next, 'out')) {
+        ts.advance();
+        bounceEnd = parseExpr(p, ts);
+      } else {
+        // bounce <expr> — applies to both
+        const val = parseExpr(p, ts);
+        bounceStart = val;
+        bounceEnd = val;
+      }
+    } else if (ct.eType === T_CODEBLOCK) {
+      break;
+    } else {
+      break;
+    }
+  }
+
+  // Parse the body: { alter statements }
+  const bodyTok = ts.expect(T_CODEBLOCK, 'expected animation body {...}');
+  if (p.nErr) return null;
+
+  const body = parseAlterBlock(p, bodyTok);
+
+  return {
+    kind: "animation",
+    id: null,
+    startExpr,
+    endExpr,
+    durationExpr,
+    easeIn,
+    easeOut,
+    bounceStart,
+    bounceEnd,
+    body,
+    tok,
+  };
+}
+
+function isTokenWord(t: PToken, word: string): boolean {
+  return t.eType === T_ID && t.z.substring(0, t.n) === word;
+}
+
+function parseAlterBlock(p: Pik, blockTok: PToken): AstAlter[] {
+  // The codeblock token contains the text between { and }
+  // We need to re-tokenize and parse it
+  const inner = blockTok.z.substring(1, blockTok.n - 1); // strip { and }
+  const innerTs = new TokenStream(p);
+  innerTs.tokenize(inner);
+  if (p.nErr) return [];
+
+  const alters: AstAlter[] = [];
+  while (!innerTs.atEnd() && p.nErr === 0) {
+    while (innerTs.peek().eType === T_EOL && !innerTs.atEnd()) innerTs.advance();
+    if (innerTs.atEnd()) break;
+
+    const t = innerTs.peek();
+    if (t.eType === T_ALTER) {
+      innerTs.advance();
+      const alter = parseAlterStmt(p, innerTs, t);
+      if (alter) alters.push(alter);
+    } else {
+      pikError(p, t, 'expected "alter" statement inside animation body');
+      break;
+    }
+
+    // Consume trailing newlines/semicolons
+    while (innerTs.peek().eType === T_EOL && !innerTs.atEnd()) innerTs.advance();
+  }
+
+  return alters;
+}
+
+function parseAlterStmt(p: Pik, ts: TokenStream, alterTok: PToken): AstAlter | null {
+  if (p.nErr) return null;
+
+  // Parse the target: object.property or object.edge
+  const target = parseAlterTarget(p, ts);
+  if (!target || p.nErr) return null;
+
+  // Expect "to"
+  ts.expect(T_TO, 'expected "to" after alter target');
+  if (p.nErr) return null;
+
+  // Parse the target value
+  const toValue = parseExpr(p, ts);
+
+  // The property token is part of the target
+  return {
+    target: target.target,
+    property: target.propTok,
+    toValue,
+    tok: alterTok,
+  };
+}
+
+function parseAlterTarget(p: Pik, ts: TokenStream): { target: AstAlterTarget; propTok: PToken } | null {
+  // Parse object reference
+  const obj = parseObject(p, ts);
+  if (!obj || p.nErr) return null;
+
+  // Expect a dot
+  const dotTok = ts.peek();
+  if (dotTok.eType !== T_DOT_E && dotTok.eType !== T_DOT_L && dotTok.eType !== T_DOT_XY) {
+    pikError(p, dotTok, 'expected "." after object in alter target');
+    return null;
+  }
+  ts.advance(); // consume the dot
+
+  const propTok = ts.advance(); // the property/edge name
+
+  // Check if it's an edge with .x or .y
+  let axis: "x" | "y" | null = null;
+  let edge: PToken | null = null;
+
+  if (isEdge(propTok)) {
+    edge = propTok;
+    // Check for .x or .y after the edge
+    if (ts.peek().eType === T_DOT_XY) {
+      ts.advance(); // consume dot
+      const xyTok = ts.advance(); // consume x or y
+      axis = xyTok.z.substring(0, xyTok.n) as "x" | "y";
+    }
+  }
+
+  return {
+    target: { object: obj, edge, axis },
+    propTok,
+  };
 }
