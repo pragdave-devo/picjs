@@ -27,6 +27,8 @@ import {
   pikValue, pikValueInt, pikGetVar, pikLookupColor, pikTextLength,
 } from './constants.ts';
 
+import type { PosConstraint } from './animation.ts';
+
 // --- Forward-declared references to shapes ---
 // These are set by shapes.ts via setShapeClasses() to avoid circular imports.
 
@@ -311,6 +313,9 @@ export function pikSetNumprop(p: Pik, pId: PToken, pVal: PRel): void {
       if (!pikParamOk(p, pObj, pId, A_THICKNESS)) return;
       pObj.sw = pObj.sw * pVal.rRel + pVal.rAbs;
       break;
+    case TokenType.T_OPACITY:
+      pObj.opacity = pObj.opacity * pVal.rRel + pVal.rAbs;
+      break;
   }
   if (pObj.type.xNumProp) {
     pObj.type.xNumProp(p, pObj, pId);
@@ -553,6 +558,14 @@ export function pikSetFrom(p: Pik, pObj: PObj, pTk: PToken, pPt: PPoint): void {
   p.mTPath = 3;
   pObj.mProp |= A_FROM;
   pObj.pFrom = pikLastRefObject(p, pPt);
+  if (pObj.pFrom) {
+    pObj.posConstraint = {
+      kind: 'from_to',
+      sourceObj: pObj.pFrom,
+      sourceEdge: CP_C,
+      targetEdge: CP_C,
+    };
+  }
 }
 
 export function pikAddTo(p: Pik, pObj: PObj, pTk: PToken, pPt: PPoint): void {
@@ -572,6 +585,14 @@ export function pikAddTo(p: Pik, pObj: PObj, pTk: PToken, pPt: PPoint): void {
   p.aTPath[n] = pointCopy(pPt);
   p.mTPath = 3;
   pObj.pTo = pikLastRefObject(p, pPt);
+  if (pObj.pTo && !pObj.posConstraint) {
+    pObj.posConstraint = {
+      kind: 'from_to',
+      sourceObj: pObj.pTo,
+      sourceEdge: CP_C,
+      targetEdge: CP_C,
+    };
+  }
 }
 
 export function pikClosePath(p: Pik, pErr: PToken): void {
@@ -614,6 +635,13 @@ export function pikSetAt(p: Pik, pEdge: PToken | null, pAt: PPoint, pErrTok: PTo
     pObj.eWith = eDirToCp[dir];
   }
   pObj.with = pointCopy(pAt);
+  // Record constraint: position was explicitly set via "at"
+  pObj.posConstraint = {
+    kind: 'explicit_at',
+    sourceObj: null,
+    sourceEdge: CP_C,
+    targetEdge: pObj.eWith,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1122,6 +1150,15 @@ export function pikComputeLayoutSettings(p: Pik): void {
 export function pikAfterAddingAttributes(p: Pik, pObj: PObj): void {
   if (p.nErr) return;
 
+  // Auto-connect backfill: if this is a non-line shape and the previous
+  // object is a line with pFrom but no pTo, set pTo to this shape.
+  if (!pObj.type.isLine && p.list && p.list.n >= 1) {
+    const prev = p.list.a[p.list.n - 1];
+    if (prev.type.isLine && prev.pFrom && !prev.pTo) {
+      prev.pTo = pObj;
+    }
+  }
+
   // Position block objects
   if (!pObj.type.isLine) {
     // Auto-fit text
@@ -1189,6 +1226,20 @@ export function pikAfterAddingAttributes(p: Pik, pObj: PObj): void {
       pObj.aPath.push(pointCopy(p.aTPath[i]));
     }
 
+    // Auto-connect: if line/arrow has no explicit from/to, look for
+    // adjacent shapes in the object list (shape; arrow; shape pattern)
+    if (!pObj.pFrom && !pObj.pTo && p.list && p.list.n >= 1) {
+      const idx = p.list.n; // pObj hasn't been added to the list yet
+      if (idx >= 1) {
+        const prev = p.list.a[idx - 1];
+        if (!prev.type.isLine) {
+          pObj.pFrom = prev;
+        }
+      }
+      // pTo will be set when the next shape is added — we can't know it yet.
+      // Instead, we mark a flag so the next non-line object can backfill.
+    }
+
     // "chop" processing
     if (pObj.bChop && pObj.nPath >= 2) {
       const n = pObj.nPath;
@@ -1233,6 +1284,15 @@ export function pikAfterAddingAttributes(p: Pik, pObj: PObj): void {
     }
     bboxAddXY(pObj.bbox, pObj.ptAt.x - w2, pObj.ptAt.y - h2);
     bboxAddXY(pObj.bbox, pObj.ptAt.x + w2, pObj.ptAt.y + h2);
+  }
+  // Default constraint: if none was set, mark as sequential
+  if (!pObj.posConstraint) {
+    pObj.posConstraint = {
+      kind: 'sequential',
+      sourceObj: null,
+      sourceEdge: CP_C,
+      targetEdge: CP_C,
+    };
   }
   p.eDir = pObj.outDir;
 }

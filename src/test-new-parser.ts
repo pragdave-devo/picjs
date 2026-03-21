@@ -890,6 +890,68 @@ test('chained animation timing via $var.end', () => {
   assert(anims[1].startTime === 3, `expected s2 start=3, got ${anims[1].startTime}`);
 });
 
+console.log('\n--- Opacity & constraints ---');
+test('box with opacity renders style', () => {
+  const r = picjs('box opacity 0.5');
+  assert(!r.isError, 'should not error: ' + r.svg);
+  assert(r.svg.includes('opacity:0.5'), `expected opacity in SVG, got: ${r.svg}`);
+});
+
+test('box with opacity 1 does not render opacity style', () => {
+  const r = picjs('box');
+  assert(!r.isError, 'should not error: ' + r.svg);
+  assert(!r.svg.includes('opacity:'), 'default opacity should not appear in SVG');
+});
+
+test('box opacity 0 renders opacity:0', () => {
+  const r = picjs('box opacity 0');
+  assert(!r.isError, 'should not error: ' + r.svg);
+  assert(r.svg.includes('opacity:0'), `expected opacity:0, got: ${r.svg}`);
+});
+
+test('opacity works on circle', () => {
+  const r = picjs('circle opacity 0.3');
+  assert(!r.isError, 'should not error: ' + r.svg);
+  assert(r.svg.includes('opacity:0.3'), `expected opacity:0.3, got: ${r.svg}`);
+});
+
+console.log('\n--- Animation SVG output ---');
+test('animated SVG contains JSON data block', () => {
+  const r = picjs('box "A"\nstarting 0 take 1 {\n  alter last box.fill to Red\n}');
+  assert(!r.isError, 'should not error: ' + r.svg);
+  assert(r.isAnimated, 'should be animated');
+  assert(r.svg.includes('data-picjs-anim'), 'should contain animation data script');
+  assert(r.svg.includes('"animations"'), 'should contain animations key in JSON');
+});
+
+test('animated SVG wraps target in g with data-picjs-id', () => {
+  const r = picjs('box "A"\nstarting 0 take 1 {\n  alter last box.fill to Red\n}');
+  assert(!r.isError, 'should not error: ' + r.svg);
+  assert(r.svg.includes('data-picjs-id='), 'should contain data-picjs-id attribute');
+});
+
+test('non-animated SVG has no animation data', () => {
+  const r = picjs('box "Hello"');
+  assert(!r.isError, 'should not error');
+  assert(!r.isAnimated, 'should not be animated');
+  assert(!r.svg.includes('data-picjs-anim'), 'should not contain animation data');
+  assert(!r.svg.includes('data-picjs-id'), 'should not contain picjs-id');
+});
+
+test('isAnimated flag set correctly', () => {
+  const r1 = picjs('box');
+  assert(!r1.isAnimated, 'plain box should not be animated');
+  const r2 = picjs('box\nstarting 0 take 1 {\n  alter last box.fill to Blue\n}');
+  assert(r2.isAnimated, 'box with animation should be animated');
+});
+
+test('animated SVG contains runtime script', () => {
+  const r = picjs('box\nstarting 0 take 1 {\n  alter last box.fill to Red\n}');
+  assert(!r.isError, 'should not error');
+  // Check for the runtime's characteristic code
+  assert(r.svg.includes('requestAnimationFrame'), 'should contain animation runtime');
+});
+
 // Reset to old parser
 setUseNewParser(false);
 

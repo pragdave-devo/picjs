@@ -21,6 +21,10 @@ import {
   pikComputeLayoutSettings,
 } from './layout.ts';
 
+import { getAnimations } from './evaluator.ts';
+import type { AnimationDescriptor, ConnectorConstraint } from './animation.ts';
+import { ANIMATION_RUNTIME } from './animation-runtime.ts';
+
 // ---------------------------------------------------------------------------
 // HTML entity check
 // ---------------------------------------------------------------------------
@@ -124,6 +128,9 @@ export function pikAppendStyle(p: Pik, pObj: PObj, eFill: number): void {
       p.zOut += pikAppendDis(p, 'stroke-dasharray:', v, '');
       p.zOut += pikAppendDis(p, ',', v, ';');
     }
+  }
+  if (pObj.opacity >= 0 && pObj.opacity < 0.999) {
+    p.zOut += `opacity:${numToStr(pObj.opacity)};`;
   }
 }
 
@@ -436,11 +443,18 @@ export function pikElistRender(p: Pik, pList: PList): void {
         continue;
       }
       if (mDebug & 1) pikElemRender(p, pObj);
+      const hasAnimId = !!pObj.animId;
+      if (hasAnimId) {
+        p.zOut += `<g data-picjs-id="${pObj.animId}">`;
+      }
       if (pObj.type.xRender) {
         pObj.type.xRender(p, pObj);
       }
       if (pObj.pSublist) {
         pikElistRender(p, pObj.pSublist);
+      }
+      if (hasAnimId) {
+        p.zOut += '</g>\n';
       }
     }
   } while (bMoreToDo);
@@ -482,6 +496,39 @@ export function pikBboxAddElist(p: Pik, pList: PList, wArrow: PNum): void {
       }
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Build connector constraints from pFrom/pTo references
+// ---------------------------------------------------------------------------
+function buildConnectorConstraints(pList: PList): ConnectorConstraint[] {
+  const result: ConnectorConstraint[] = [];
+  for (let i = 0; i < pList.n; i++) {
+    const pObj = pList.a[i];
+    if (!pObj.type.isLine || !pObj.animId) continue;
+    if (pObj.pFrom && pObj.pFrom.animId) {
+      result.push({
+        lineId: pObj.animId,
+        endpoint: 'start',
+        targetId: pObj.pFrom.animId,
+        targetEdge: 0,
+        chopEnabled: pObj.bChop,
+      });
+    }
+    if (pObj.pTo && pObj.pTo.animId) {
+      result.push({
+        lineId: pObj.animId,
+        endpoint: 'end',
+        targetId: pObj.pTo.animId,
+        targetEdge: 0,
+        chopEnabled: pObj.bChop,
+      });
+    }
+    if (pObj.pSublist) {
+      result.push(...buildConnectorConstraints(pObj.pSublist));
+    }
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -546,6 +593,19 @@ export function pikRender(p: Pik, pList: PList | null): void {
     p.zOut += '>\n';
 
     pikElistRender(p, pList);
+
+    // Embed animation data if any animations exist
+    const animations = getAnimations();
+    if (animations.length > 0) {
+      const connectors = buildConnectorConstraints(pList);
+      const animData = {
+        animations,
+        connectors,
+      };
+      p.zOut += `<script type="application/json" data-picjs-anim>${JSON.stringify(animData)}</script>\n`;
+      p.zOut += `<script>${ANIMATION_RUNTIME}</script>\n`;
+    }
+
     p.zOut += '</svg>\n';
   } else {
     p.wSVG = -1;

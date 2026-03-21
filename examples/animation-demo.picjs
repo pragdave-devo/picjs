@@ -1,0 +1,16 @@
+A: box "Start" fill LightBlue
+arrow
+B: box "End" fill LightGreen
+
+$s1 = starting 0 take 2 ease cubic {
+  alter A.fill to Red
+}
+
+$s2 = starting $s1.end take 1.5 ease quad {
+  alter B.fill to Gold
+}
+
+starting $s2.end take 1 {
+  alter A.opacity to 0.3
+  alter B.opacity to 0.3
+}

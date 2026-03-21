@@ -58,6 +58,7 @@ const {
   T_FN, T_CASE, T_FATARROW, T_CONTAINING,
   T_IF, T_ELSE, T_UNDERSCORE, T_DOTDOT, T_BLOCK,
   T_STARTING, T_ENDING, T_TAKE, T_EASE, T_ALTER, T_BOUNCE,
+  T_OPACITY,
 } = TokenType;
 
 // ============================================================
@@ -1702,7 +1703,7 @@ function isTextAttr(eType: number): boolean {
 
 function isNumProperty(eType: number): boolean {
   return eType === T_HEIGHT || eType === T_WIDTH || eType === T_RADIUS ||
-         eType === T_DIAMETER || eType === T_THICKNESS;
+         eType === T_DIAMETER || eType === T_THICKNESS || eType === T_OPACITY;
 }
 
 function isEdge(t: PToken): boolean {

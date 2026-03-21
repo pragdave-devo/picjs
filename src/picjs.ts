@@ -20,7 +20,7 @@ import {
 import { pikAppendStyle, pikAppendTxt, pikRender } from './renderer.ts';
 import { pikParse } from './parser.ts';
 import { parseToAst } from './parser2.ts';
-import { evaluate, setParseToAstFn, resetEvalState } from './evaluator.ts';
+import { evaluate, setParseToAstFn, resetEvalState, resetAnimations, getAnimations } from './evaluator.ts';
 
 // Lazy-init flag
 let _initialized = false;
@@ -76,6 +76,7 @@ export interface PicjsResult {
   width: number;
   height: number;
   isError: boolean;
+  isAnimated: boolean;
 }
 
 export interface PicjsOptions {
@@ -90,6 +91,7 @@ export interface PicjsOptions {
 export function picjs(text: string, options?: PicjsOptions): PicjsResult {
   ensureInit();
 
+  resetAnimations();
   const p = createPik();
   p.sIn = { z: text, n: text.length, eType: 0, eCode: 0, eEdge: 0 };
   p.eDir = DIR_RIGHT;
@@ -119,11 +121,13 @@ export function picjs(text: string, options?: PicjsOptions): PicjsResult {
     p.zOut = '<!-- empty picjs diagram -->\n';
   }
 
+  const anims = getAnimations();
   return {
     svg: p.zOut,
     width: p.nErr ? -1 : p.wSVG,
     height: p.nErr ? -1 : p.hSVG,
     isError: p.nErr > 0,
+    isAnimated: anims.length > 0,
   };
 }
 

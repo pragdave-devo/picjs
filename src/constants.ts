@@ -102,6 +102,7 @@ export const keywords: readonly PikWord[] = [
   { zWord: "nw",          nChar: 2,  eType: TokenType.T_EDGEPT,    eCode: 0,         eEdge: CP_NW    },
   { zWord: "of",          nChar: 2,  eType: TokenType.T_OF,        eCode: 0,         eEdge: 0        },
   { zWord: "oklch",       nChar: 5,  eType: TokenType.T_FUNC3,     eCode: FN_OKLCH,  eEdge: 0        },
+  { zWord: "opacity",     nChar: 7,  eType: TokenType.T_OPACITY,   eCode: 0,         eEdge: 0        },
   { zWord: "or",          nChar: 2,  eType: TokenType.T_OR,        eCode: 0,         eEdge: 0        },
   { zWord: "pikchr_date", nChar: 11, eType: TokenType.T_ISODATE,   eCode: 0,         eEdge: 0        },
   { zWord: "previous",    nChar: 8,  eType: TokenType.T_LAST,      eCode: 0,         eEdge: 0        },

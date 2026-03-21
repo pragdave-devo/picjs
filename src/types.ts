@@ -231,6 +231,7 @@ export enum TokenType {
   T_EASE = 219,
   T_ALTER = 220,
   T_BOUNCE = 221,
+  T_OPACITY = 222,
 }
 
 // Position in 2D space
