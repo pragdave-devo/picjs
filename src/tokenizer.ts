@@ -866,12 +866,25 @@ export class TokenStream {
     if (start >= end) {
       return makeToken();
     }
-    // Reconstruct text from tokens
-    const parts: string[] = [];
+    // Reconstruct text from tokens, preserving adjacency for dot-qualified refs
+    let text = '';
     for (let i = start; i < end; i++) {
-      parts.push(this.tokens[i].z.substring(0, this.tokens[i].n));
+      const tok = this.tokens[i];
+      const tokText = tok.z.substring(0, tok.n);
+      if (i > start) {
+        // Don't add space around dot tokens (T_DOT_E, T_DOT_XY, T_DOT_L, T_DOT_U)
+        // so that DLOOP.s.y stays as DLOOP.s.y instead of DLOOP . s . y
+        const prevType = this.tokens[i - 1].eType;
+        const isDotAdj = prevType === T_DOT_E || prevType === T_DOT_XY ||
+                         prevType === T_DOT_L || prevType === T_DOT_U ||
+                         tok.eType === T_DOT_E || tok.eType === T_DOT_XY ||
+                         tok.eType === T_DOT_L || tok.eType === T_DOT_U;
+        if (!isDotAdj) {
+          text += ' ';
+        }
+      }
+      text += tokText;
     }
-    const text = parts.join(' ');
     return { z: text, n: text.length, eType: 0, eCode: 0, eEdge: 0 };
   }
 }

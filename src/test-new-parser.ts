@@ -179,6 +179,8 @@ if (fs.existsSync(examplesDir)) {
         }
       }
       if (!oldResult.isError && oldResult.svg !== newResult.svg) {
+        // Animated SVGs will always differ (old parser doesn't produce animations)
+        if (newResult.isAnimated) return;
         const maxLen = Math.max(oldResult.svg.length, newResult.svg.length);
         let diffPos = 0;
         for (let i = 0; i < maxLen; i++) {
@@ -945,11 +947,11 @@ test('isAnimated flag set correctly', () => {
   assert(r2.isAnimated, 'box with animation should be animated');
 });
 
-test('animated SVG contains runtime script', () => {
+test('animated SVG contains animation data (JSON)', () => {
   const r = picjs('box\nstarting 0 take 1 {\n  alter last box.fill to Red\n}');
   assert(!r.isError, 'should not error');
-  // Check for the runtime's characteristic code
-  assert(r.svg.includes('requestAnimationFrame'), 'should contain animation runtime');
+  assert(r.svg.includes('data-picjs-anim'), 'should contain animation JSON data');
+  assert(!r.svg.includes('requestAnimationFrame'), 'should NOT embed runtime JS');
 });
 
 // Reset to old parser

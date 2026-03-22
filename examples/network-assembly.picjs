@@ -1,0 +1,88 @@
+# Network Assembly — nodes drift into place, connections appear, then activate
+#
+# Demonstrates: position animation, opacity fades, color cascades,
+#               connector tracking, chained timing, multiple easings
+
+right
+
+# ── Hub (center) ──────────────────────────────────────────
+HUB: circle "HUB" rad 0.35 fill 0x34495E color white opacity 0.1 \
+  at (3, 0)
+
+# ── Satellite nodes — start scattered, dim ────────────────
+N1: box "Auth"  rad 0.08 ht 0.45 wid 0.8 fill 0xBDC3C7 color 0x666666 opacity 0.1 \
+  at (0.2, 1.8)
+N2: box "API"   rad 0.08 ht 0.45 wid 0.8 fill 0xBDC3C7 color 0x666666 opacity 0.1 \
+  at (5.8, 1.5)
+N3: box "DB"    rad 0.08 ht 0.45 wid 0.8 fill 0xBDC3C7 color 0x666666 opacity 0.1 \
+  at (0.5, -2.2)
+N4: box "Cache" rad 0.08 ht 0.45 wid 0.8 fill 0xBDC3C7 color 0x666666 opacity 0.1 \
+  at (5.5, -1.8)
+N5: box "Queue" rad 0.08 ht 0.45 wid 0.8 fill 0xBDC3C7 color 0x666666 opacity 0.1 \
+  at (6.2, 0.3)
+
+# ── Connections (start invisible) ─────────────────────────
+C1: arrow from N1.e to HUB.nw opacity 0
+C2: arrow from N2.w to HUB.ne opacity 0
+C3: arrow from N3.e to HUB.sw opacity 0
+C4: arrow from N4.w to HUB.se opacity 0
+C5: arrow from N5.w to HUB.e  opacity 0
+
+# ── Phase 1: Nodes fade in and drift to final positions ───
+$appear = starting 0.2 take 1.5 ease cubic {
+  alter HUB.opacity to 1
+  alter N1.opacity to 1
+  alter N2.opacity to 1
+  alter N3.opacity to 1
+  alter N4.opacity to 1
+  alter N5.opacity to 1
+}
+
+$drift = starting 0.2 take 2.0 ease cubic {
+  alter N1.c.x to 1.2
+  alter N1.c.y to 1.2
+  alter N2.c.x to 4.8
+  alter N2.c.y to 1.2
+  alter N3.c.x to 1.2
+  alter N3.c.y to -1.2
+  alter N4.c.x to 4.8
+  alter N4.c.y to -1.2
+  alter N5.c.x to 5.6
+  alter N5.c.y to 0
+}
+
+# ── Phase 2: Connections fade in ──────────────────────────
+$wires = starting $drift.end take 0.8 ease quad {
+  alter C1.opacity to 1
+  alter C2.opacity to 1
+  alter C3.opacity to 1
+  alter C4.opacity to 1
+  alter C5.opacity to 1
+}
+
+# ── Phase 3: Activation cascade — each node lights up ─────
+$a1 = starting $wires.end + 0.2 take 0.5 ease quad {
+  alter N1.fill to 0x3498DB
+  alter N1.color to white
+}
+$a2 = starting $a1.end take 0.5 ease quad {
+  alter N2.fill to 0x9B59B6
+  alter N2.color to white
+}
+$a3 = starting $a2.end take 0.5 ease quad {
+  alter N3.fill to 0xE67E22
+  alter N3.color to white
+}
+$a4 = starting $a3.end take 0.5 ease quad {
+  alter N4.fill to 0xE74C3C
+  alter N4.color to white
+}
+$a5 = starting $a4.end take 0.5 ease quad {
+  alter N5.fill to 0x1ABC9C
+  alter N5.color to white
+}
+
+# ── Phase 4: Hub goes green — system online ───────────────
+$online = starting $a5.end + 0.3 take 0.8 ease exponential {
+  alter HUB.fill to 0x27AE60
+}

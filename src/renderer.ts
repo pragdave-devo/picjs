@@ -23,7 +23,6 @@ import {
 
 import { getAnimations } from './evaluator.ts';
 import type { AnimationDescriptor, ConnectorConstraint } from './animation.ts';
-import { ANIMATION_RUNTIME } from './animation-runtime.ts';
 
 // ---------------------------------------------------------------------------
 // HTML entity check
@@ -501,6 +500,18 @@ export function pikBboxAddElist(p: Pik, pList: PList, wArrow: PNum): void {
 // ---------------------------------------------------------------------------
 // Build connector constraints from pFrom/pTo references
 // ---------------------------------------------------------------------------
+function assignConnectorAnimIds(pList: PList): void {
+  for (let i = 0; i < pList.n; i++) {
+    const pObj = pList.a[i];
+    if (pObj.type.isLine && !pObj.animId) {
+      if (pObj.pFrom?.animId || pObj.pTo?.animId) {
+        pObj.animId = `conn-${i + 1}`;
+      }
+    }
+    if (pObj.pSublist) assignConnectorAnimIds(pObj.pSublist);
+  }
+}
+
 function buildConnectorConstraints(pList: PList): ConnectorConstraint[] {
   const result: ConnectorConstraint[] = [];
   for (let i = 0; i < pList.n; i++) {
@@ -592,18 +603,41 @@ export function pikRender(p: Pik, pList: PList | null): void {
     p.zOut += pikAppendDis(p, ' ', h, '"');
     p.zOut += '>\n';
 
+    // Pre-pass: assign animIds to lines connecting animated shapes
+    // (must happen before render so they get <g data-picjs-id> wrappers)
+    assignConnectorAnimIds(pList);
+
     pikElistRender(p, pList);
 
     // Embed animation data if any animations exist
     const animations = getAnimations();
     if (animations.length > 0) {
       const connectors = buildConnectorConstraints(pList);
+      // Convert position values from PicJS coordinates to SVG coordinates
+      const svgAnimations = animations.map(anim => ({
+        ...anim,
+        alterations: anim.alterations.map(alt => {
+          if (alt.property === 'cx') {
+            return {
+              ...alt,
+              fromValue: (alt.fromValue as number - p.bbox.sw.x) * p.rScale,
+              toValue: (alt.toValue as number - p.bbox.sw.x) * p.rScale,
+            };
+          } else if (alt.property === 'cy') {
+            return {
+              ...alt,
+              fromValue: (p.bbox.ne.y - (alt.fromValue as number)) * p.rScale,
+              toValue: (p.bbox.ne.y - (alt.toValue as number)) * p.rScale,
+            };
+          }
+          return alt;
+        }),
+      }));
       const animData = {
-        animations,
+        animations: svgAnimations,
         connectors,
       };
       p.zOut += `<script type="application/json" data-picjs-anim>${JSON.stringify(animData)}</script>\n`;
-      p.zOut += `<script>${ANIMATION_RUNTIME}</script>\n`;
     }
 
     p.zOut += '</svg>\n';

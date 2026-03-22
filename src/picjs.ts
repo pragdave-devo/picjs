@@ -22,6 +22,12 @@ import { pikParse } from './parser.ts';
 import { parseToAst } from './parser2.ts';
 import { evaluate, setParseToAstFn, resetEvalState, resetAnimations, getAnimations } from './evaluator.ts';
 
+// Re-export animation modules for consumers
+export { createAnimator } from './animation-runtime.ts';
+export type { Animator } from './animation-runtime.ts';
+export { createControls } from './animation-controls.ts';
+export type { Controls } from './animation-controls.ts';
+
 // Lazy-init flag
 let _initialized = false;
 
@@ -135,8 +141,14 @@ export function picjs(text: string, options?: PicjsOptions): PicjsResult {
 // Mermaid-style code block processor
 // ---------------------------------------------------------------------------
 
+// Lazy import to avoid bundling animation code for non-animated diagrams.
+// These are loaded from the same package, so tree-shaking still works.
+import { createAnimator } from './animation-runtime.ts';
+import { createControls } from './animation-controls.ts';
+
 /**
  * Find all matching `<code>` elements and replace them with rendered SVG.
+ * Animated diagrams automatically get playback controls below the SVG.
  * Default selector: 'code.picjs, pre > code.language-picjs'
  */
 export function processCodeBlocks(selector?: string): void {
@@ -149,6 +161,18 @@ export function processCodeBlocks(selector?: string): void {
     const container = document.createElement('div');
     container.className = 'picjs-container';
     container.innerHTML = result.svg;
+
+    // Wire up animation if present
+    if (result.isAnimated) {
+      const svg = container.querySelector('svg');
+      if (svg) {
+        const animator = createAnimator(svg as SVGSVGElement);
+        if (animator) {
+          createControls(container, animator);
+        }
+      }
+    }
+
     const parent = el.parentElement;
     if (parent && parent.tagName === 'PRE') {
       parent.replaceWith(container);

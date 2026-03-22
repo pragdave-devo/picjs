@@ -1,53 +1,68 @@
-// animation-runtime.ts — Embedded JS runtime for PicJS animated SVGs
-// This file is compiled/minified and embedded as a <script> in animated SVGs.
-// It reads the JSON animation data from <script type="application/json" data-picjs-anim>
-// and drives playback via requestAnimationFrame.
+// animation-runtime.ts — Modular animation driver for PicJS SVGs
+//
+// Usage:
+//   import { createAnimator } from './animation-runtime';
+//   const animator = createAnimator(svgElement);
+//   if (animator) { animator.play(); }
 
-// The runtime is exported as a string constant for embedding.
+export interface Animator {
+  play(): void;
+  pause(): void;
+  toggle(): void;
+  seek(t: number): void;
+  rewind(): void;
+  getTime(): number;
+  getDuration(): number;
+  isPlaying(): boolean;
+  getSpeed(): number;
+  setSpeed(s: number): void;
+  onUpdate(cb: (time: number, duration: number, playing: boolean) => void): void;
+  destroy(): void;
+}
 
-export const ANIMATION_RUNTIME = `
-(function() {
-  var svg = document.currentScript.closest('svg');
-  if (!svg) return;
-  var dataEl = svg.querySelector('script[data-picjs-anim]');
-  if (!dataEl) return;
-  var data;
-  try { data = JSON.parse(dataEl.textContent); } catch(e) { return; }
-  var anims = data.animations || [];
-  var connectors = data.connectors || [];
-  if (anims.length === 0) return;
+interface AnimData {
+  animations: any[];
+  connectors: any[];
+}
+
+export function createAnimator(svg: SVGSVGElement): Animator | null {
+  const dataEl = svg.querySelector('script[data-picjs-anim]');
+  if (!dataEl) return null;
+  let data: AnimData;
+  try { data = JSON.parse(dataEl.textContent || ''); } catch { return null; }
+  const anims = data.animations || [];
+  const connectors = data.connectors || [];
+  if (anims.length === 0) return null;
 
   // Compute total duration
-  var totalDuration = 0;
-  anims.forEach(function(a) {
-    var end = (a.startTime != null ? a.startTime : 0) + a.duration;
-    if (a.endTime != null) end = a.endTime;
-    var bounceEnd = a.bounceEnd || 0;
+  let totalDuration = 0;
+  for (const a of anims) {
+    const end = (a.startTime ?? 0) + a.duration;
+    const bounceEnd = a.bounceEnd || 0;
     if (end + bounceEnd > totalDuration) totalDuration = end + bounceEnd;
-  });
+  }
   if (totalDuration <= 0) totalDuration = 1;
 
-  // Easing functions
-  function easeIn(t, fn) {
-    switch(fn) {
+  // --- Easing ---
+  function easeIn(t: number, fn: string): number {
+    switch (fn) {
       case 'quad': return t * t;
       case 'cubic': return t * t * t;
       case 'exponential': return t <= 0 ? 0 : Math.pow(2, 10 * (t - 1));
       default: return t;
     }
   }
-  function easeOut(t, fn) {
-    switch(fn) {
-      case 'quad': return 1 - (1-t)*(1-t);
-      case 'cubic': return 1 - Math.pow(1-t, 3);
+  function easeOut(t: number, fn: string): number {
+    switch (fn) {
+      case 'quad': return 1 - (1 - t) * (1 - t);
+      case 'cubic': return 1 - Math.pow(1 - t, 3);
       case 'exponential': return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
       default: return t;
     }
   }
-  function applyEasing(t, eIn, eOut) {
+  function applyEasing(t: number, eIn: string, eOut: string): number {
     if (eIn === 'linear' && eOut === 'linear') return t;
     if (eIn !== 'linear' && eOut !== 'linear') {
-      // Both: ease in first half, ease out second half
       if (t < 0.5) return easeIn(t * 2, eIn) * 0.5;
       return 0.5 + easeOut((t - 0.5) * 2, eOut) * 0.5;
     }
@@ -55,17 +70,18 @@ export const ANIMATION_RUNTIME = `
     return easeOut(t, eOut);
   }
 
-  // Color interpolation in HSL space
-  function intToRGB(v) {
-    var iv = Math.round(v);
+  // --- Color interpolation (HSL space) ---
+  function intToRGB(v: number): [number, number, number] {
+    const iv = Math.round(v);
     return [(iv >> 16) & 0xFF, (iv >> 8) & 0xFF, iv & 0xFF];
   }
-  function rgbToHSL(r, g, b) {
+  function rgbToHSL(r: number, g: number, b: number): [number, number, number] {
     r /= 255; g /= 255; b /= 255;
-    var max = Math.max(r, g, b), min = Math.min(r, g, b);
-    var h = 0, s = 0, l = (max + min) / 2;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
     if (max !== min) {
-      var d = max - min;
+      const d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
       if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
       else if (max === g) h = ((b - r) / d + 2) / 6;
@@ -73,150 +89,233 @@ export const ANIMATION_RUNTIME = `
     }
     return [h, s, l];
   }
-  function hslToRGB(h, s, l) {
-    if (s === 0) { var v = Math.round(l * 255); return [v, v, v]; }
-    function hue2rgb(p, q, t) {
+  function hslToRGB(h: number, s: number, l: number): [number, number, number] {
+    if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+    function hue2rgb(p: number, q: number, t: number) {
       if (t < 0) t += 1; if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
       return p;
     }
-    var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    var p = 2 * l - q;
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
     return [
-      Math.round(hue2rgb(p, q, h + 1/3) * 255),
+      Math.round(hue2rgb(p, q, h + 1 / 3) * 255),
       Math.round(hue2rgb(p, q, h) * 255),
-      Math.round(hue2rgb(p, q, h - 1/3) * 255)
+      Math.round(hue2rgb(p, q, h - 1 / 3) * 255)
     ];
   }
-  function lerpColor(from, to, t) {
-    var c1 = intToRGB(from), c2 = intToRGB(to);
-    var h1 = rgbToHSL(c1[0], c1[1], c1[2]);
-    var h2 = rgbToHSL(c2[0], c2[1], c2[2]);
-    // Shortest hue path
-    var dh = h2[0] - h1[0];
+  function lerpColor(from: number, to: number, t: number): string {
+    const c1 = intToRGB(from), c2 = intToRGB(to);
+    const h1 = rgbToHSL(c1[0], c1[1], c1[2]);
+    const h2 = rgbToHSL(c2[0], c2[1], c2[2]);
+    let dh = h2[0] - h1[0];
     if (dh > 0.5) dh -= 1;
     if (dh < -0.5) dh += 1;
-    var h = h1[0] + dh * t;
+    let h = h1[0] + dh * t;
     if (h < 0) h += 1; if (h > 1) h -= 1;
-    var s = h1[1] + (h2[1] - h1[1]) * t;
-    var l = h1[2] + (h2[2] - h1[2]) * t;
-    var rgb = hslToRGB(h, s, l);
-    return 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+    const s = h1[1] + (h2[1] - h1[1]) * t;
+    const l = h1[2] + (h2[2] - h1[2]) * t;
+    const rgb = hslToRGB(h, s, l);
+    return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
   }
-  function intToCSS(v) {
-    var rgb = intToRGB(v);
-    return 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+  function intToCSS(v: number): string {
+    const rgb = intToRGB(v);
+    return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
   }
 
-  // Lerp for numbers
-  function lerp(a, b, t) { return a + (b - a) * t; }
+  function lerp(a: number, b: number, t: number): number { return a + (b - a) * t; }
 
-  // Cache element lookups
-  var elemCache = {};
-  function getElem(id) {
-    if (!elemCache[id]) elemCache[id] = svg.querySelector('[data-picjs-id="' + id + '"]');
+  // --- Element cache ---
+  const elemCache: Record<string, Element | null> = {};
+  function getElem(id: string): Element | null {
+    if (!(id in elemCache)) elemCache[id] = svg.querySelector(`[data-picjs-id="${id}"]`);
     return elemCache[id];
   }
 
-  // Initial state capture (from values in the animation data)
-  var initialState = {};
+  // --- Position tracking ---
+  const posState: Record<string, { dx: number; dy: number }> = {};
 
-  // Apply a single alter at progress t
-  function applyAlter(alter, t) {
-    var el = getElem(alter.targetId);
+  function applyAlter(alter: any, t: number): void {
+    const el = getElem(alter.targetId) as HTMLElement | null;
     if (!el) return;
-    var prop = alter.property;
-    var from = alter.fromValue;
-    var to = alter.toValue;
+    const prop = alter.property;
+    const from = alter.fromValue;
+    const to = alter.toValue;
 
     if (prop === 'fill' || prop === 'color') {
-      // Color interpolation
-      var colorStr = t <= 0 ? intToCSS(from) : t >= 1 ? intToCSS(to) : lerpColor(from, to, t);
-      // Apply to all child elements with matching style
-      var styleProp = prop === 'fill' ? 'fill' : 'stroke';
-      var children = el.querySelectorAll('path, rect, circle, ellipse, polygon, line');
-      children.forEach(function(c) {
-        var style = c.getAttribute('style') || '';
-        style = style.replace(new RegExp(styleProp + ':[^;]+;?'), styleProp + ':' + colorStr + ';');
-        c.setAttribute('style', style);
-      });
+      const colorStr = t <= 0 ? intToCSS(from) : t >= 1 ? intToCSS(to) : lerpColor(from, to, t);
+      if (prop === 'fill') {
+        el.querySelectorAll('path, rect, circle, ellipse, polygon').forEach(c => {
+          let style = c.getAttribute('style') || '';
+          style = style.replace(/fill:[^;]+;?/, `fill:${colorStr};`);
+          c.setAttribute('style', style);
+        });
+      } else {
+        el.querySelectorAll('path, rect, circle, ellipse, polygon, line').forEach(c => {
+          let style = c.getAttribute('style') || '';
+          if (style.indexOf('stroke:') >= 0) {
+            style = style.replace(/stroke:[^;]+;?/, `stroke:${colorStr};`);
+          } else {
+            style += `stroke:${colorStr};`;
+          }
+          c.setAttribute('style', style);
+        });
+        el.querySelectorAll('text').forEach(c => c.setAttribute('fill', colorStr));
+      }
     } else if (prop === 'opacity') {
-      var val = lerp(from, to, t);
-      el.style.opacity = val;
+      const val = lerp(from, to, t);
+      el.style.opacity = String(val);
+      el.querySelectorAll('[style*="opacity"]').forEach(c => {
+        (c as HTMLElement).style.opacity = '';
+      });
     } else if (prop === 'cx' || prop === 'cy') {
-      // Position animation via transform translate
-      var key = alter.targetId;
-      if (!initialState[key]) initialState[key] = { dx: 0, dy: 0 };
-      if (prop === 'cx') initialState[key].dx = lerp(0, to - from, t);
-      else initialState[key].dy = lerp(0, to - from, t);
-      el.setAttribute('transform', 'translate(' + initialState[key].dx + ',' + initialState[key].dy + ')');
-    } else if (prop === 'width' || prop === 'height' || prop === 'radius' || prop === 'sw') {
-      // Dimension changes — scale the group
-      // For now, just apply as a transform scale factor
-      var val = lerp(from, to, t);
-      // Store for potential combined transforms
+      const key = alter.targetId;
+      if (!posState[key]) posState[key] = { dx: 0, dy: 0 };
+      if (prop === 'cx') posState[key].dx = lerp(0, to - from, t);
+      else posState[key].dy = lerp(0, to - from, t);
+      el.setAttribute('transform', `translate(${posState[key].dx},${posState[key].dy})`);
     }
   }
 
-  // Apply bounce effect
-  function applyBounce(alter, bounceTime, bounceDuration) {
+  function applyBounce(alter: any, bounceTime: number, bounceDuration: number): void {
     if (bounceDuration <= 0) return;
-    var el = getElem(alter.targetId);
+    const el = getElem(alter.targetId) as HTMLElement | null;
     if (!el) return;
-    var t = bounceTime / bounceDuration;
-    var decay = Math.cos(t * Math.PI * 3) * (1 - t) * 0.1; // Dampened oscillation
-    var prop = alter.property;
+    const t = bounceTime / bounceDuration;
+    const decay = Math.cos(t * Math.PI * 3) * (1 - t) * 0.1;
+    const prop = alter.property;
     if (prop === 'cx' || prop === 'cy') {
-      var key = alter.targetId;
-      if (!initialState[key]) initialState[key] = { dx: 0, dy: 0 };
-      var range = alter.toValue - alter.fromValue;
-      if (prop === 'cx') initialState[key].dx = range + decay * range;
-      else initialState[key].dy = range + decay * range;
-      el.setAttribute('transform', 'translate(' + initialState[key].dx + ',' + initialState[key].dy + ')');
+      const key = alter.targetId;
+      if (!posState[key]) posState[key] = { dx: 0, dy: 0 };
+      const range = alter.toValue - alter.fromValue;
+      if (prop === 'cx') posState[key].dx = range + decay * range;
+      else posState[key].dy = range + decay * range;
+      el.setAttribute('transform', `translate(${posState[key].dx},${posState[key].dy})`);
     }
   }
 
-  // Main render at time t (seconds)
-  function renderAtTime(t) {
-    // Reset position state
-    for (var k in initialState) initialState[k] = { dx: 0, dy: 0 };
+  // --- Connector tracking ---
+  const connCache: Record<string, any> = {};
 
-    anims.forEach(function(anim) {
-      var start = anim.startTime != null ? anim.startTime : (anim.endTime != null ? anim.endTime - anim.duration : 0);
-      var end = start + anim.duration;
+  function initConnectors(): void {
+    for (const c of connectors) {
+      const el = getElem(c.lineId);
+      if (!el || connCache[c.lineId]) continue;
+      const path = el.querySelector('path');
+      if (!path) continue;
+      const d = path.getAttribute('d') || '';
+      const nums = d.match(/-?[\d.]+/g);
+      if (!nums || nums.length < 4) continue;
+      const pts: number[][] = [];
+      for (let i = 0; i < nums.length; i += 2) pts.push([+nums[i], +nums[i + 1]]);
+      const poly = el.querySelector('polygon');
+      const cache: any = { path, pts, poly: null, polyPts: null, arrowAtEnd: true };
+      if (poly) {
+        const raw = poly.getAttribute('points') || '';
+        const pp = raw.trim().split(/\s+/).map(s => { const ab = s.split(','); return [+ab[0], +ab[1]]; });
+        cache.poly = poly;
+        cache.polyPts = pp;
+        const endPt = pts[pts.length - 1], startPt = pts[0];
+        let dEnd = 1e9, dStart = 1e9;
+        for (const p of pp) {
+          const de = (p[0] - endPt[0]) ** 2 + (p[1] - endPt[1]) ** 2;
+          const ds = (p[0] - startPt[0]) ** 2 + (p[1] - startPt[1]) ** 2;
+          if (de < dEnd) dEnd = de;
+          if (ds < dStart) dStart = ds;
+        }
+        cache.arrowAtEnd = dEnd <= dStart;
+      }
+      connCache[c.lineId] = cache;
+    }
+  }
 
-      anim.alterations.forEach(function(alter) {
+  function norm(x: number, y: number): [number, number] {
+    const l = Math.sqrt(x * x + y * y);
+    return l < 1e-10 ? [1, 0] : [x / l, y / l];
+  }
+
+  function updateConnectors(): void {
+    if (connectors.length === 0) return;
+    const deltas: Record<string, { start: any; end: any }> = {};
+    for (const c of connectors) {
+      if (!deltas[c.lineId]) deltas[c.lineId] = { start: null, end: null };
+      const st = posState[c.targetId];
+      deltas[c.lineId][c.endpoint as 'start' | 'end'] = st ? { dx: st.dx, dy: st.dy } : { dx: 0, dy: 0 };
+    }
+    for (const lineId of Object.keys(deltas)) {
+      const cache = connCache[lineId];
+      if (!cache) continue;
+      const sd = deltas[lineId].start || { dx: 0, dy: 0 };
+      const ed = deltas[lineId].end || { dx: 0, dy: 0 };
+      const pts: number[][] = cache.pts;
+      const n = pts.length;
+      const newPts = pts.map((pt: number[], i: number) => {
+        const t = n > 1 ? i / (n - 1) : 0;
+        return [pt[0] + lerp(sd.dx, ed.dx, t), pt[1] + lerp(sd.dy, ed.dy, t)];
+      });
+      let d = `M${newPts[0][0]},${newPts[0][1]}`;
+      for (let i = 1; i < n; i++) d += `L${newPts[i][0]},${newPts[i][1]}`;
+      cache.path.setAttribute('d', d);
+      if (cache.poly && cache.polyPts) {
+        const aDelta = cache.arrowAtEnd ? ed : sd;
+        const anchorEnd = cache.arrowAtEnd ? pts[n - 1] : pts[0];
+        const newAnchor = [anchorEnd[0] + aDelta.dx, anchorEnd[1] + aDelta.dy];
+        const oDir = norm(pts[n - 1][0] - pts[0][0], pts[n - 1][1] - pts[0][1]);
+        const nDir = norm(newPts[n - 1][0] - newPts[0][0], newPts[n - 1][1] - newPts[0][1]);
+        const cosA = oDir[0] * nDir[0] + oDir[1] * nDir[1];
+        const sinA = oDir[0] * nDir[1] - oDir[1] * nDir[0];
+        const origAnchor = anchorEnd;
+        const np = cache.polyPts.map((pt: number[]) => {
+          const rx = pt[0] - origAnchor[0], ry = pt[1] - origAnchor[1];
+          return [newAnchor[0] + rx * cosA - ry * sinA, newAnchor[1] + rx * sinA + ry * cosA];
+        });
+        cache.poly.setAttribute('points', np.map((p: number[]) => `${p[0]},${p[1]}`).join(' '));
+      }
+    }
+  }
+
+  // --- Render at time t ---
+  function renderAtTime(t: number): void {
+    for (const k in posState) posState[k] = { dx: 0, dy: 0 };
+
+    for (const anim of anims) {
+      const start = anim.startTime ?? (anim.endTime != null ? anim.endTime - anim.duration : 0);
+      const end = start + anim.duration;
+
+      for (const alter of anim.alterations) {
         if (t < start) {
-          // Before animation: show from value
           applyAlter(alter, 0);
-        } else if (t >= start && t <= end) {
-          // During animation
-          var progress = anim.duration > 0 ? (t - start) / anim.duration : 1;
-          progress = applyEasing(progress, anim.easeIn, anim.easeOut);
-          applyAlter(alter, progress);
-        } else if (t > end) {
-          // After animation: show to value
+        } else if (t <= end) {
+          const progress = anim.duration > 0 ? (t - start) / anim.duration : 1;
+          applyAlter(alter, applyEasing(progress, anim.easeIn, anim.easeOut));
+        } else {
           applyAlter(alter, 1);
-          // Apply bounce if specified
-          var bounceEnd = anim.bounceEnd || 0;
+          const bounceEnd = anim.bounceEnd || 0;
           if (bounceEnd > 0 && t <= end + bounceEnd) {
             applyBounce(alter, t - end, bounceEnd);
           }
         }
-      });
-    });
+      }
+    }
+    updateConnectors();
   }
 
-  // Playback state
-  var playing = false;
-  var currentTime = 0;
-  var speed = 1;
-  var startTimestamp = null;
-  var startOffset = 0;
+  // --- Playback state ---
+  let playing = false;
+  let currentTime = 0;
+  let speed = 1;
+  let startTimestamp: number | null = null;
+  let startOffset = 0;
+  let rafId: number | null = null;
+  const updateCallbacks: Array<(time: number, duration: number, playing: boolean) => void> = [];
 
-  function tick(timestamp) {
+  function notifyUpdate(): void {
+    for (const cb of updateCallbacks) cb(currentTime, totalDuration, playing);
+  }
+
+  function tick(timestamp: number): void {
     if (!playing) return;
     if (startTimestamp === null) startTimestamp = timestamp;
     currentTime = startOffset + (timestamp - startTimestamp) * 0.001 * speed;
@@ -225,117 +324,49 @@ export const ANIMATION_RUNTIME = `
       playing = false;
     }
     renderAtTime(currentTime);
-    updateControls();
-    if (playing) requestAnimationFrame(tick);
+    notifyUpdate();
+    if (playing) rafId = requestAnimationFrame(tick);
   }
 
-  function play() {
-    if (currentTime >= totalDuration) {
-      currentTime = 0;
-      startOffset = 0;
-    } else {
-      startOffset = currentTime;
-    }
-    playing = true;
-    startTimestamp = null;
-    requestAnimationFrame(tick);
-  }
-
-  function pause() {
-    playing = false;
-    startOffset = currentTime;
-  }
-
-  function seek(t) {
-    currentTime = Math.max(0, Math.min(t, totalDuration));
-    startOffset = currentTime;
-    startTimestamp = null;
-    renderAtTime(currentTime);
-    updateControls();
-  }
-
-  function setSpeed(s) { speed = s; startOffset = currentTime; startTimestamp = null; }
-
-  // Controls UI (created on demand)
-  var controlsEl = null;
-  var scrubber = null;
-  var timeDisplay = null;
-  var playBtn = null;
-
-  function formatTime(t) {
-    var s = Math.floor(t);
-    var ms = Math.floor((t - s) * 10);
-    return s + '.' + ms + 's';
-  }
-
-  function updateControls() {
-    if (!scrubber || !timeDisplay || !playBtn) return;
-    scrubber.value = (currentTime / totalDuration * 1000).toString();
-    timeDisplay.textContent = formatTime(currentTime) + ' / ' + formatTime(totalDuration);
-    playBtn.textContent = playing ? '\\u23F8' : '\\u25B6';
-  }
-
-  function createControls() {
-    var ns = 'http://www.w3.org/2000/svg';
-    var fo = document.createElementNS(ns, 'foreignObject');
-    var vb = svg.viewBox.baseVal;
-    var ctrlH = 30;
-    fo.setAttribute('x', vb.x.toString());
-    fo.setAttribute('y', (vb.y + vb.height).toString());
-    fo.setAttribute('width', vb.width.toString());
-    fo.setAttribute('height', ctrlH.toString());
-
-    // Expand viewBox to accommodate controls
-    svg.setAttribute('viewBox', vb.x + ' ' + vb.y + ' ' + vb.width + ' ' + (vb.height + ctrlH));
-
-    var div = document.createElement('div');
-    div.style.cssText = 'display:flex;align-items:center;gap:4px;padding:2px 4px;font:11px system-ui;background:#f5f5f5;border-top:1px solid #ddd;height:' + ctrlH + 'px;box-sizing:border-box;';
-
-    playBtn = document.createElement('button');
-    playBtn.textContent = '\\u25B6';
-    playBtn.style.cssText = 'border:none;background:none;font-size:14px;cursor:pointer;padding:0 4px;';
-    playBtn.onclick = function() { playing ? pause() : play(); updateControls(); };
-
-    var rewindBtn = document.createElement('button');
-    rewindBtn.textContent = '\\u23EE';
-    rewindBtn.style.cssText = 'border:none;background:none;font-size:14px;cursor:pointer;padding:0 4px;';
-    rewindBtn.onclick = function() { seek(0); };
-
-    scrubber = document.createElement('input');
-    scrubber.type = 'range';
-    scrubber.min = '0';
-    scrubber.max = '1000';
-    scrubber.value = '0';
-    scrubber.style.cssText = 'flex:1;height:12px;cursor:pointer;';
-    scrubber.oninput = function() { seek(parseFloat(scrubber.value) / 1000 * totalDuration); };
-
-    timeDisplay = document.createElement('span');
-    timeDisplay.style.cssText = 'min-width:80px;text-align:right;font-variant-numeric:tabular-nums;';
-
-    var speedSel = document.createElement('select');
-    speedSel.style.cssText = 'font-size:11px;border:1px solid #ccc;border-radius:2px;';
-    [0.5, 1, 2, 4].forEach(function(s) {
-      var opt = document.createElement('option');
-      opt.value = s.toString();
-      opt.textContent = s + 'x';
-      if (s === 1) opt.selected = true;
-      speedSel.appendChild(opt);
-    });
-    speedSel.onchange = function() { setSpeed(parseFloat(speedSel.value)); };
-
-    div.appendChild(playBtn);
-    div.appendChild(rewindBtn);
-    div.appendChild(scrubber);
-    div.appendChild(timeDisplay);
-    div.appendChild(speedSel);
-    fo.appendChild(div);
-    svg.appendChild(fo);
-    controlsEl = fo;
-    updateControls();
-  }
-
-  // Initialize
+  // --- Initialize ---
   renderAtTime(0);
-  createControls();
-})();
-`;
+  initConnectors();
+
+  // --- Public API ---
+  const animator: Animator = {
+    play() {
+      if (currentTime >= totalDuration) { currentTime = 0; startOffset = 0; }
+      else { startOffset = currentTime; }
+      playing = true;
+      startTimestamp = null;
+      rafId = requestAnimationFrame(tick);
+    },
+    pause() {
+      playing = false;
+      startOffset = currentTime;
+      if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
+    },
+    toggle() { playing ? animator.pause() : animator.play(); },
+    seek(t: number) {
+      currentTime = Math.max(0, Math.min(t, totalDuration));
+      startOffset = currentTime;
+      startTimestamp = null;
+      renderAtTime(currentTime);
+      notifyUpdate();
+    },
+    rewind() { animator.seek(0); },
+    getTime() { return currentTime; },
+    getDuration() { return totalDuration; },
+    isPlaying() { return playing; },
+    getSpeed() { return speed; },
+    setSpeed(s: number) { speed = s; startOffset = currentTime; startTimestamp = null; },
+    onUpdate(cb) { updateCallbacks.push(cb); },
+    destroy() {
+      playing = false;
+      if (rafId != null) cancelAnimationFrame(rafId);
+      updateCallbacks.length = 0;
+    },
+  };
+
+  return animator;
+}

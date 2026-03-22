@@ -408,16 +408,26 @@ function evalBoolAttr(p: Pik, attr: AstAttrBool, obj: PObj): void {
   }
 }
 
+function resolvePositionObject(p: Pik, pos: AstPosition): PObj | null {
+  if (pos.posKind === 'place') return resolveObject(p, pos.place.object);
+  if (pos.posKind === 'paren') return resolvePositionObject(p, pos.inner);
+  return null;
+}
+
 function evalPositionAttr(p: Pik, attr: AstAttrPosition, obj: PObj): void {
   switch (attr.variant) {
     case "from": {
+      const refObj = resolvePositionObject(p, attr.position);
       const pos = evalPosition(p, attr.position);
       pikSetFrom(p, obj, attr.tok, pos);
+      if (refObj && !obj.pFrom) obj.pFrom = refObj;
       break;
     }
     case "to": {
+      const refObj = resolvePositionObject(p, attr.position);
       const pos = evalPosition(p, attr.position);
       pikAddTo(p, obj, attr.tok, pos);
+      if (refObj && !obj.pTo) obj.pTo = refObj;
       break;
     }
     case "at": {
@@ -1313,6 +1323,8 @@ function evalPosition(p: Pik, pos: AstPosition): PPoint {
 
 function evalPlace(p: Pik, place: AstPlace): PPoint {
   const obj = resolveObject(p, place.object);
+  // Set lastRef so pikSetFrom/pikAddTo can establish pFrom/pTo references
+  if (obj) p.lastRef = obj;
   return pikPlaceOfElem(p, obj, place.edge);
 }
 
@@ -1410,7 +1422,7 @@ function evalAlterStmt(p: Pik, alter: AstAlter): AlterDescriptor | null {
 
   // Determine the property being altered
   const propName = alter.property.z.substring(0, alter.property.n);
-  const property = mapToAlterableProperty(propName, alter.target.edge);
+  const property = mapToAlterableProperty(propName, alter.target.edge, alter.target.axis);
 
   if (!property) {
     pikError(p, alter.property, `cannot animate property '${propName}'`);
@@ -1442,12 +1454,12 @@ function evalAlterStmt(p: Pik, alter: AstAlter): AlterDescriptor | null {
   };
 }
 
-function mapToAlterableProperty(name: string, edge: PToken | null): AlterableProperty | null {
-  // If an edge is provided, it's a position animation (maps to center)
+function mapToAlterableProperty(name: string, edge: PToken | null, axis: "x" | "y" | null = null): AlterableProperty | null {
+  // If an edge is provided, it's a position animation
   if (edge) {
-    // Edge-based target: animate center position
-    // The runtime will handle mapping from edge to center
-    return 'cx'; // simplified — runtime handles both axes
+    // With explicit axis (.c.x or .c.y), use that axis
+    if (axis === 'y') return 'cy';
+    return 'cx'; // default to cx for edge without axis
   }
 
   switch (name) {
