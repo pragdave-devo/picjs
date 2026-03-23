@@ -55,10 +55,11 @@ direction       = "right" | "down" | "left" | "up" ;
 ### Assignment
 
 ```ebnf
-assignment_stmt = lvalue assign_op rvalue_expr ;
+assignment_stmt = lvalue assign_op rvalue_expr
+                | lvalue "=" animation_stmt       (* animation assigned to $-var *)
+                ;
 
 lvalue          = IDENTIFIER
-                | "$" IDENTIFIER
                 | "fill" | "color" | "thickness"
                 ;
 
@@ -111,10 +112,8 @@ define_stmt     = "define" IDENTIFIER codeblock ;
 for_stmt        = "for" IDENTIFIER for_variant ;
 
 for_variant     = "from" expr "to" expr [ "step" expr ] "do" codeblock
-                | "in" "[" expr_list "]" "do" codeblock
+                | "in" expr "do" codeblock
                 ;
-
-expr_list       = expr { "," expr } ;
 ```
 
 ### Case
@@ -160,7 +159,8 @@ easing_name     = IDENTIFIER ;   (* linear, quad, cubic, exponential *)
 
 alter_stmt      = "alter" alter_target "to" expr ;
 
-alter_target    = object "." ( property_name | edge | "x" | "y" ) ;
+alter_target    = object "." ( property_name | "x" | "y"
+                             | edge [ "." ( "x" | "y" ) ] ) ;
 ```
 
 Animations are first-class values. They can be assigned to `$`-prefixed
@@ -252,18 +252,16 @@ color_attr      = ( "fill" | "color" ) rvalue_expr ;
 ### Direction Attributes (path movement)
 
 ```ebnf
-direction_attr  = [ "go" ] direction [ even_with ] [ rel_expr ]
+direction_attr  = [ "go" ] direction [ rel_expr ]
                 | "go" [ rel_expr ] "heading" expr
                 | "go" [ rel_expr ] EDGEPT
                 ;
-
-even_with       = [ "until" ] "even" "with" ;
 ```
 
 ### Even-With Attribute
 
 ```ebnf
-even_with_attr  = direction [ "until" ] "even" "with" position ;
+even_with_attr  = [ "go" ] direction [ "until" ] "even" "with" position ;
 ```
 
 ### Position Attributes
@@ -413,7 +411,9 @@ primary         = NUMBER
                 | STRING
                 | "yes" | "no"
                 | IDENTIFIER
+                | PLACENAME                                (* color name if known color *)
                 | "$" IDENTIFIER "(" [ expr { "," expr } ] ")"
+                | "$" IDENTIFIER "." IDENTIFIER            (* $-var property: $anim.start *)
                 | "fn" "(" [ param_list ] ")" codeblock
                 | builtin_func "(" expr { "," expr } ")"
                 | "dist" "(" position "," position ")"
@@ -437,15 +437,16 @@ func2           = "max" | "min" ;
 
 func3           = "hsl" | "oklch" | "rgb" ;
 
-list_func       = "len" | "head" | "last" | "reverse"          (* 1 arg *)
-                | "push" | "pop" | "shift" | "unshift"         (* 1-2 args *)
+list_func       = "len" | "head" | "last" | "reverse" | "sort" (* 1 arg *)
+                | "pop" | "shift"                               (* 1 arg, mutating *)
+                | "push" | "unshift"                            (* 2 args, mutating *)
                 | "contains" | "join" | "split"                 (* 2 args *)
                 | "map" | "filter"                              (* list, fn *)
-                | "sort"                                        (* 1 arg *)
                 ;
 
 property_name   = "height" | "ht" | "width" | "wid"
                 | "radius" | "rad" | "diameter" | "thickness"
+                | "opacity"
                 | "dashed" | "dotted"
                 | "fill" | "color"
                 ;
@@ -513,6 +514,7 @@ nth_object      = NTH [ "last" ] CLASSNAME [ in_of object ]
                 | "last" CLASSNAME [ in_of object ]
                 | "last" "[" "]" [ in_of object ]
                 | "last" "block" [ in_of object ]            (* alias for [] *)
+                | "last" [ in_of object ]                    (* last object of any type *)
                 | "first" CLASSNAME [ in_of object ]
                 ;
 
@@ -581,6 +583,7 @@ STRING          = '"' { char | "${" expr "}" } '"' ;
 
 COMMENT         = "#" { any } NEWLINE
                 | "//" { any } NEWLINE
+                | "/*" { any } "*/"                (* block comment *)
                 ;
 ```
 
@@ -601,10 +604,12 @@ pc    (picas, ÷6)
 
 ```
 =    +=   -=   *=   /=          assignment operators
-+    -    *    /    %           arithmetic operators
++    -    *    /                arithmetic operators
+%                               percent suffix (in rel_expr)
 ==   !=   >    <    >=   <=    comparison operators
 and  or   not                   logical operators
 ->   <-   <->                   arrow markers
+..                              range operator (in list literals)
 =>                              fat arrow (case arms)
 (    )    [    ]    {    }      grouping
 ,    :    .                     punctuation
@@ -636,9 +641,11 @@ All reserved keywords recognized by the tokenizer:
 
 ```
 _         (wildcard/default pattern)
-above     alter     and       arc       arrow     as        assert    at
-behind    below     between   big       block     bold      bottom    bounce  box
-case      ccw       center    chop      circle    close     color
+above     abs       aligned   alter     and       arc       arrow     as
+assert    at
+behind    below     between   big       block     bold      bot       bottom
+bounce    box
+c         case      ccw       center    chop      circle    close     color
 con       containing          cos       cw        cylinder
 d2r       dashed    define    diameter  diamond   dist      do
 dot       dotted    down
@@ -655,12 +662,22 @@ print
 r2d       rad       radius    rgb       right     rjust
 s         same      se        sin       small     solid     south
 spline    sqrt      start     starting  step      sw
-take      text      the       then      thick     thickness thin
+t         take      text      the       then      thick     thickness thin
 this      to        top
 until     up
 vertex
 w         way       west      width     wid       with
-yes
+x         y         yes
+```
+
+**Keyword aliases** (alternative spellings recognized by the tokenizer):
+
+```
+bot         → south edge (same as s)
+invisible   → same as invis
+monospace   → same as mono
+previous    → same as last
+t           → north edge (same as top)
 ```
 
 ---
@@ -673,9 +690,9 @@ yes
    (`n<p1,p2>`), not comparison operators. In expression context they are
    comparisons.
 
-3. **Color names**: Uppercase `PLACENAME` tokens in `rvalue_expr` context are
-   first tried as color names (e.g., `Red`, `LightBlue`). If not a known color,
-   they are treated as object references.
+3. **Color names**: Uppercase `PLACENAME` tokens are tried as color names in both
+   `rvalue_expr` and general expression contexts (e.g., `Red`, `LightBlue`).
+   If not a known color, they are treated as object references.
 
 4. **Macros**: `define name { body }` registers a macro. When `name` appears
    in subsequent code, it is expanded to `body` during tokenization (before
@@ -696,11 +713,17 @@ yes
 
 8. **List builtins**: Functions like `len`, `head`, `map`, `filter`, etc. are
    not tokenizer keywords — they are recognized as identifiers followed by `(`
-   and dispatched as builtin calls during parsing.
+   and dispatched as builtin calls during parsing. Note: `last` is both a
+   keyword (for object references) and a builtin function (for lists); the
+   parser distinguishes them by whether `(` follows.
 
 9. **Animations**: Animation statements are first-class values. When assigned
    to a `$`-prefixed variable, their `.start`, `.end`, and `.duration`
    properties can be accessed. Easing names (`linear`, `quad`, `cubic`,
    `exponential`) are parsed as identifiers, not keywords. The `ease` keyword
    uses two-word form: `ease in linear`, `ease out cubic`, or `ease cubic`
-   (both in and out).
+   (both in and out). Note: `"out"` is not a keyword — it is matched as a
+   contextual identifier in `ease` and `bounce` clauses.
+
+10. **`pikchr_date`**: The keyword `pikchr_date` is converted to the string
+    `"pikchr"` during tokenization (compatibility with pikchr).
