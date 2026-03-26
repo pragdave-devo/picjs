@@ -374,6 +374,7 @@ export interface Pik {
   nToken: number;
   sIn: PToken;
   zOut: string;
+  printOutput: string;
   eDir: number;
   mFlags: number;
   cur: PObj | null;
@@ -411,6 +412,7 @@ export function createPik(): Pik {
     nToken: 0,
     sIn: makeToken(),
     zOut: '',
+    printOutput: '',
     eDir: DIR_RIGHT,
     mFlags: 0,
     cur: null,

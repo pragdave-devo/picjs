@@ -231,6 +231,40 @@
       border-radius: 4px;
     }
 
+    /* Console panel */
+    .console-panel {
+      max-height: 20vh;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-header);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .console-panel.hidden {
+      display: none;
+    }
+
+    .console-header {
+      padding: 4px 12px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    #console-output {
+      flex: 1;
+      margin: 0;
+      padding: 8px 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.5;
+      overflow: auto;
+      color: var(--text-primary);
+      background: var(--bg-panel);
+    }
+
     /* Example selector */
     #example-selector {
       padding: 4px 8px;
@@ -423,6 +457,10 @@
         <span id="render-status"></span>
       </div>
       <div id="result-container"></div>
+      <div id="console-panel" class="console-panel hidden">
+        <div class="console-header">Console</div>
+        <pre id="console-output"></pre>
+      </div>
     </section>
   </main>
 
@@ -588,6 +626,8 @@ box same "picjs" "Diagram" "Renderer" fit`;
     const clearBtn = document.getElementById('clear-btn');
     const exampleSelector = document.getElementById('example-selector');
     const renderStatus = document.getElementById('render-status');
+    const consolePanel = document.getElementById('console-panel');
+    const consoleOutput = document.getElementById('console-output');
 
     // Example diagrams
     const examples = {
@@ -1217,6 +1257,15 @@ for _count from 1 to teeth do {
         }
         renderStatus.textContent = `${elapsed}ms`;
         renderStatus.style.color = '';
+      }
+
+      // Update console panel
+      if (result.printOutput) {
+        consoleOutput.textContent = result.printOutput;
+        consolePanel.classList.remove('hidden');
+      } else {
+        consolePanel.classList.add('hidden');
+        consoleOutput.textContent = '';
       }
 
       // Save to localStorage

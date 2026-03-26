@@ -602,25 +602,25 @@ function evalIfStmt(p: Pik, stmt: AstIf): PicValue {
 
 function evalPrint(p: Pik, stmt: AstPrint): void {
   for (let i = 0; i < stmt.items.length; i++) {
-    if (i > 0) p.zOut += ' ';
+    if (i > 0) p.printOutput += ' ';
     const item = stmt.items[i];
     switch (item.tag) {
       case "string":
-        p.zOut += item.tok.z.substring(1, item.tok.n - 1);
+        p.printOutput += item.tok.z.substring(1, item.tok.n - 1);
         break;
       case "property": {
         const val = pikValue(p, item.tok.z, item.tok.n).val;
-        p.zOut += numToStr(val);
+        p.printOutput += numToStr(val);
         break;
       }
       case "expr": {
         const val = evalRichExpr(p, item.expr);
-        p.zOut += toString(val);
+        p.printOutput += toString(val);
         break;
       }
     }
   }
-  p.zOut += '<br>\n';
+  p.printOutput += '\n';
 }
 
 // ============================================================

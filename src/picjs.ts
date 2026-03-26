@@ -77,6 +77,7 @@ export interface PicjsResult {
   isError: boolean;
   isAnimated: boolean;
   errors: Array<{ line: number; message: string }>;
+  printOutput: string;
 }
 
 export interface PicjsOptions {
@@ -125,6 +126,7 @@ export function picjs(text: string, options?: PicjsOptions): PicjsResult {
     isError: p.nErr > 0,
     isAnimated: anims.length > 0,
     errors: p.errors,
+    printOutput: p.printOutput,
   };
 }
 
