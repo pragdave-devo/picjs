@@ -88,7 +88,11 @@ function parseStatementList(p: Pik, ts: TokenStream): AstStmt[] {
 
   while (p.nErr === 0 && !ts.atEnd()) {
     if (ts.peek().eType === T_RB) break;
-    if (!ts.match(T_EOL)) break;
+    if (!ts.match(T_EOL)) {
+      const bad = ts.peek();
+      pikError(p, bad, `unexpected '${bad.z.substring(0, bad.n)}' after statement`);
+      break;
+    }
     while (ts.match(T_EOL)) {}
     if (ts.atEnd() || ts.peek().eType === T_RB) break;
     const s2 = parseStatement(p, ts);
@@ -241,12 +245,24 @@ function parseUnnamedStatement(p: Pik, ts: TokenStream): AstShape | null {
   let textTok: PToken | null = null;
   let textPos = 0;
   let sublist: AstStmt[] | null = null;
+  let interpolatedTextExpr: AstExpr | null = null;
+  let interpolatedTextTok: PToken | null = null;
 
   if (t.eType === T_CLASSNAME) {
     classTok = ts.advance();
   } else if (t.eType === T_STRING) {
-    textTok = ts.advance();
-    textPos = parseTextposition(p, ts);
+    // Check if this is an interpolated string (followed by +)
+    // If so, parse as expression for implicit containing
+    const strTok = ts.advance();
+    if (ts.peek().eType === T_PLUS) {
+      // Interpolated string - backtrack and parse as expression
+      ts.backtrack();
+      interpolatedTextExpr = parseExpr(p, ts);
+      interpolatedTextTok = strTok;
+    } else {
+      textTok = strTok;
+      textPos = parseTextposition(p, ts);
+    }
   } else if (t.eType === T_LB) {
     ts.advance();
     sublist = parseStatementList(p, ts);
@@ -265,6 +281,10 @@ function parseUnnamedStatement(p: Pik, ts: TokenStream): AstShape | null {
 
   // Parse attributes
   const attrs: AstAttr[] = [];
+  // If we had an interpolated string at the start, add it as containing
+  if (interpolatedTextExpr && interpolatedTextTok) {
+    attrs.push({ attrKind: "containing", expr: interpolatedTextExpr, posFlags: 0, tok: interpolatedTextTok });
+  }
   while (p.nErr === 0 && !ts.atStatementEnd()) {
     const attr = parseAttribute(p, ts);
     if (!attr) break;
@@ -385,9 +405,17 @@ function parseAttribute(p: Pik, ts: TokenStream): AstAttr | null {
     return { attrKind: "same", tok, asObject };
   }
 
-  // STRING textposition
+  // STRING textposition (or interpolated string expression)
   if (t.eType === T_STRING) {
     const tok = ts.advance();
+    // Check if this is an interpolated string (followed by +)
+    if (ts.peek().eType === T_PLUS) {
+      // Backtrack and parse as expression for containing
+      ts.backtrack();
+      const expr = parseExpr(p, ts);
+      const posFlags = parseTextposition(p, ts);
+      return { attrKind: "containing", expr, posFlags, tok };
+    }
     const posFlags = parseTextposition(p, ts);
     return { attrKind: "text", tok, posFlags };
   }
@@ -666,6 +694,12 @@ function parsePrintItem(p: Pik, ts: TokenStream): AstPrintItem {
   const t = ts.peek();
   if (t.eType === T_STRING) {
     const tok = ts.advance();
+    // Check for interpolation (T_STRING followed by T_PLUS)
+    if (ts.peek().eType === T_PLUS) {
+      ts.backtrack();
+      const expr = parseExpr(p, ts);
+      return { tag: "expr", expr };
+    }
     return { tag: "string", tok };
   }
   if (t.eType === T_FILL || t.eType === T_COLOR || t.eType === T_THICKNESS) {
@@ -902,6 +936,29 @@ function parseFnCallStmt(p: Pik, ts: TokenStream): AstFnCall | null {
 
 function parsePosition(p: Pik, ts: TokenStream): AstPosition {
   if (p.nErr) return { posKind: "absolute", x: mkNumExpr(makeToken(), 0), y: mkNumExpr(makeToken(), 0) };
+  const result = parsePositionCore(p, ts);
+  // Any position may be followed by (+|-) offset
+  if (p.nErr === 0 && (ts.peek().eType === T_PLUS || ts.peek().eType === T_MINUS)) {
+    const sign: 1 | -1 = ts.advance().eType === T_PLUS ? 1 : -1;
+    if (ts.peek().eType === T_LP) {
+      ts.advance();
+      const dx = parseExpr(p, ts);
+      ts.expect(T_COMMA, 'expected ","');
+      const dy = parseExpr(p, ts);
+      ts.expect(T_RP, 'expected ")"');
+      return { posKind: "relative", base: result, sign, dx, dy, paren: true };
+    } else {
+      const dx = parseExpr(p, ts);
+      ts.expect(T_COMMA, 'expected ","');
+      const dy = parseExpr(p, ts);
+      return { posKind: "relative", base: result, sign, dx, dy, paren: false };
+    }
+  }
+  return result;
+}
+
+function parsePositionCore(p: Pik, ts: TokenStream): AstPosition {
+  if (p.nErr) return { posKind: "absolute", x: mkNumExpr(makeToken(), 0), y: mkNumExpr(makeToken(), 0) };
 
   // '(' position [',' position] ')'
   if (ts.peek().eType === T_LP) {
@@ -1025,27 +1082,7 @@ function parsePosition(p: Pik, ts: TokenStream): AstPosition {
 
 function parsePlacePosition(p: Pik, ts: TokenStream): AstPosition {
   const place = parsePlace(p, ts);
-  const pos: AstPosPlace = { posKind: "place", place };
-
-  // place (+|-) ...
-  if (ts.peek().eType === T_PLUS || ts.peek().eType === T_MINUS) {
-    const sign: 1 | -1 = ts.advance().eType === T_PLUS ? 1 : -1;
-    if (ts.peek().eType === T_LP) {
-      ts.advance();
-      const dx = parseExpr(p, ts);
-      ts.expect(T_COMMA, 'expected ","');
-      const dy = parseExpr(p, ts);
-      ts.expect(T_RP, 'expected ")"');
-      return { posKind: "relative", base: pos, sign, dx, dy, paren: true };
-    } else {
-      const dx = parseExpr(p, ts);
-      ts.expect(T_COMMA, 'expected ","');
-      const dy = parseExpr(p, ts);
-      return { posKind: "relative", base: pos, sign, dx, dy, paren: false };
-    }
-  }
-
-  return pos;
+  return { posKind: "place", place };
 }
 
 // ============================================================
@@ -1961,8 +1998,28 @@ function parseAlterStmt(p: Pik, ts: TokenStream, alterTok: PToken): AstAlter | n
   ts.expect(T_TO, 'expected "to" after alter target');
   if (p.nErr) return null;
 
-  // Parse the target value
-  const toValue = parseExpr(p, ts);
+  // Parse the target value - try position first if we see '('
+  let toValue: AstExpr | AstPosition;
+  if (ts.peek().eType === T_LP) {
+    // Try to parse as position (x, y)
+    const saved = ts.save();
+    const savedErr = p.nErr;
+    const savedOut = p.zOut;
+    const pos = parsePosition(p, ts);
+    // Check if position parse succeeded and we're at a sensible stopping point
+    const next = ts.peek().eType;
+    if (p.nErr === 0 && (next === T_EOL || next === T_SEMI || next === T_EOF || ts.atEnd())) {
+      toValue = pos;
+    } else {
+      // Backtrack and parse as expression
+      ts.restore(saved);
+      p.nErr = savedErr;
+      p.zOut = savedOut;
+      toValue = parseExpr(p, ts);
+    }
+  } else {
+    toValue = parseExpr(p, ts);
+  }
 
   // The property token is part of the target
   return {

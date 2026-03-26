@@ -83,6 +83,7 @@ export interface PicjsResult {
   height: number;
   isError: boolean;
   isAnimated: boolean;
+  errors: Array<{ line: number; message: string }>;
 }
 
 export interface PicjsOptions {
@@ -134,6 +135,7 @@ export function picjs(text: string, options?: PicjsOptions): PicjsResult {
     height: p.nErr ? -1 : p.hSVG,
     isError: p.nErr > 0,
     isAnimated: anims.length > 0,
+    errors: p.errors,
   };
 }
 

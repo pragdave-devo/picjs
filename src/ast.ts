@@ -152,7 +152,7 @@ export interface AstAnimation {
 export interface AstAlter {
   target: AstAlterTarget;
   property: PToken;               // the property or edge token
-  toValue: AstExpr;
+  toValue: AstExpr | AstPosition; // can be expr or position (for .c to (x,y))
   tok: PToken;
 }
 

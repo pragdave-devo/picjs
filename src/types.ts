@@ -360,8 +360,15 @@ export const MAX_TXT = 5;
 export const PIKCHR_TOKEN_LIMIT = 200000;
 
 // The main Pik parser/render state
+export interface PicjsError {
+  line: number;
+  message: string;
+  token: string;
+}
+
 export interface Pik {
   nErr: number;
+  errors: PicjsError[];
   nToken: number;
   sIn: PToken;
   zOut: string;
@@ -398,6 +405,7 @@ export interface Pik {
 export function createPik(): Pik {
   return {
     nErr: 0,
+    errors: [],
     nToken: 0,
     sIn: makeToken(),
     zOut: '',
@@ -554,6 +562,29 @@ export function bboxContainsPoint(box: PBox, pt: PPoint): boolean {
 export function pikError(p: Pik, pErr: PToken | null, zMsg: string | null): void {
   if (p.nErr) return;
   p.nErr++;
+  // Collect structured error
+  if (zMsg !== null) {
+    let line = 0;
+    if (pErr !== null && p.sIn.z) {
+      const input = p.sIn.z;
+      // Use lastIndexOf: short tokens (e.g. '"') may appear earlier in the input,
+      // but the error is at the last occurrence since pErr.z was a tail pointer in C.
+      let iErrPt = pErr.z.length > 0 ? input.lastIndexOf(pErr.z) : input.length - 1;
+      if (iErrPt < 0) iErrPt = input.length - 1;
+      if (iErrPt >= input.length) iErrPt = input.length - 1;
+      line = 1;
+      for (let i = 0; i < iErrPt; i++) {
+        if (input[i] === '\n') line++;
+      }
+    }
+    // Extract the offending token text (first word/token from pErr.z)
+    let token = '';
+    if (pErr !== null && pErr.z.length > 0) {
+      const m = pErr.z.match(/^\S+/);
+      token = m ? m[0] : pErr.z.slice(0, 20);
+    }
+    p.errors.push({ line, message: zMsg, token });
+  }
   if (zMsg === null) {
     p.zOut += '\n<div><p>Out of memory</p></div>\n';
     return;

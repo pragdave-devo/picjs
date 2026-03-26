@@ -162,8 +162,10 @@ export function updateMarkdown(
       j++; // skip the -->
     }
 
-    // Check for existing image reference
-    if (j < lines.length && lines[j].match(/^!\[\]\([^)]*\)$/)) {
+    // Check for existing image reference (may have trailing attributes like {:width="60%"})
+    const imgMatch = j < lines.length ? lines[j].match(/^!\[\]\([^)]*\)(.*)$/) : null;
+    const imgSuffix = imgMatch ? imgMatch[1] : '';
+    if (imgMatch) {
       j++; // include the image ref in the range to replace
     }
     endIdx = j - 1;
@@ -183,8 +185,8 @@ export function updateMarkdown(
       newLines.push('-->');
     }
 
-    // Always add image reference
-    newLines.push(imgRef);
+    // Always add image reference (preserve any trailing attributes)
+    newLines.push(imgRef + imgSuffix);
 
     // Replace the entire range
     const removeCount = endIdx - block.startLine + 1;

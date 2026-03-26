@@ -157,10 +157,12 @@ animation_clause = "starting" expr
 
 easing_name     = IDENTIFIER ;   (* linear, quad, cubic, exponential *)
 
-alter_stmt      = "alter" alter_target "to" expr ;
+alter_stmt      = "alter" alter_target "to" ( expr | position ) ;
 
 alter_target    = object "." ( property_name | "x" | "y"
                              | edge [ "." ( "x" | "y" ) ] ) ;
+(* When target is edge without axis (e.g., .c) and value is position,
+   both x and y are animated simultaneously *)
 ```
 
 Animations are first-class values. They can be assigned to `$`-prefixed
@@ -457,7 +459,9 @@ property_name   = "height" | "ht" | "width" | "wid"
 ## Positions
 
 ```ebnf
-position        = "(" position "," position ")"     (* composite x,y from *)
+position        = base_position [ ( "+" | "-" ) offset ] ;
+
+base_position   = "(" position "," position ")"     (* composite x,y from *)
                 | "(" position ")"                   (* parenthesized *)
                 | expr "," expr                      (* absolute x,y *)
                 | expr dist_direction position       (* distance + direction *)
@@ -466,7 +470,7 @@ position        = "(" position "," position ")"     (* composite x,y from *)
                 | expr EDGEPT [ "of" ] position
                 | expr between_syntax position "and" position
                 | expr "<" position "," position ">" (* angle-bracket between *)
-                | place_position
+                | place
                 ;
 
 dist_direction  = "above"
@@ -479,8 +483,6 @@ between_syntax  = "between"
                 | "way" "between"
                 | "of" [ "the" ] [ "way" ] "between"
                 ;
-
-place_position  = place [ ( "+" | "-" ) offset ] ;
 
 offset          = "(" expr "," expr ")"             (* parenthesized dx,dy *)
                 | expr "," expr                     (* bare dx,dy *)

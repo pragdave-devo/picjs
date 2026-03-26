@@ -22,7 +22,7 @@ import {
 } from './layout.ts';
 
 import { getAnimations } from './evaluator.ts';
-import type { AnimationDescriptor, ConnectorConstraint } from './animation.ts';
+import type { AnimationDescriptor, ConnectorConstraint, ShapeGeometry } from './animation.ts';
 
 // ---------------------------------------------------------------------------
 // HTML entity check
@@ -498,9 +498,78 @@ export function pikBboxAddElist(p: Pik, pList: PList, wArrow: PNum): void {
 }
 
 // ---------------------------------------------------------------------------
+// Expand bounding box to include animated positions
+// ---------------------------------------------------------------------------
+function findObjByAnimId(pList: PList, animId: string): PObj | null {
+  for (let i = 0; i < pList.n; i++) {
+    const pObj = pList.a[i];
+    if (pObj.animId === animId) return pObj;
+    if (pObj.pSublist) {
+      const found = findObjByAnimId(pObj.pSublist, animId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function pikBboxAddAnimations(p: Pik, pList: PList, animations: AnimationDescriptor[]): void {
+  // Track cumulative deltas per object (animations chain)
+  const deltas: Record<string, { dx: number; dy: number }> = {};
+
+  for (const anim of animations) {
+    for (const alt of anim.alterations) {
+      if (alt.property !== 'cx' && alt.property !== 'cy') continue;
+
+      const obj = findObjByAnimId(pList, alt.targetId);
+      if (!obj) continue;
+
+      // Initialize delta tracking for this object
+      if (!deltas[alt.targetId]) {
+        deltas[alt.targetId] = { dx: 0, dy: 0 };
+      }
+
+      // toValue is a delta from initial position
+      const delta = alt.toValue as number;
+      if (alt.property === 'cx') {
+        deltas[alt.targetId].dx = delta;
+      } else {
+        deltas[alt.targetId].dy = delta;
+      }
+
+      // Compute final center position
+      const finalX = obj.ptAt.x + deltas[alt.targetId].dx;
+      const finalY = obj.ptAt.y + deltas[alt.targetId].dy;
+
+      // Expand bbox to include object at final position
+      const w2 = obj.w / 2;
+      const h2 = obj.h / 2;
+      bboxAddXY(p.bbox, finalX - w2, finalY - h2);
+      bboxAddXY(p.bbox, finalX + w2, finalY + h2);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Build connector constraints from pFrom/pTo references
 // ---------------------------------------------------------------------------
 function assignConnectorAnimIds(pList: PList): void {
+  // First pass: assign animIds to shapes connected to animated shapes
+  // This ensures we have geometry for both ends of connectors
+  for (let i = 0; i < pList.n; i++) {
+    const pObj = pList.a[i];
+    if (pObj.type.isLine) {
+      // If one end is animated, ensure the other end also has an animId
+      if (pObj.pFrom?.animId && pObj.pTo && !pObj.pTo.animId) {
+        pObj.pTo.animId = pObj.pTo.zName || `shape-${pList.a.indexOf(pObj.pTo) + 1}`;
+      }
+      if (pObj.pTo?.animId && pObj.pFrom && !pObj.pFrom.animId) {
+        pObj.pFrom.animId = pObj.pFrom.zName || `shape-${pList.a.indexOf(pObj.pFrom) + 1}`;
+      }
+    }
+    if (pObj.pSublist) assignConnectorAnimIds(pObj.pSublist);
+  }
+
+  // Second pass: assign animIds to lines connecting shapes with animIds
   for (let i = 0; i < pList.n; i++) {
     const pObj = pList.a[i];
     if (pObj.type.isLine && !pObj.animId) {
@@ -543,6 +612,50 @@ function buildConnectorConstraints(pList: PList): ConnectorConstraint[] {
 }
 
 // ---------------------------------------------------------------------------
+// Build shape geometries for runtime chop calculations
+// ---------------------------------------------------------------------------
+function buildShapeGeometries(pList: PList, bbox: PBox, rScale: number): Record<string, ShapeGeometry> {
+  const result: Record<string, ShapeGeometry> = {};
+
+  function mapShapeType(typeName: string): ShapeGeometry['shapeType'] {
+    if (typeName === 'circle' || typeName === 'dot') return 'circle';
+    if (typeName === 'ellipse') return 'ellipse';
+    return 'box'; // box, diamond, cylinder, file, oval, text all use box-like chop
+  }
+
+  function processObj(pObj: PObj): void {
+    if (!pObj.animId || pObj.type.isLine) return;
+
+    const geo: ShapeGeometry = {
+      shapeType: mapShapeType(pObj.type.zName),
+      // Convert from PicJS coordinates to SVG coordinates
+      centerX: (pObj.ptAt.x - bbox.sw.x) * rScale,
+      centerY: (bbox.ne.y - pObj.ptAt.y) * rScale,
+      width: pObj.w * rScale,
+      height: pObj.h * rScale,
+    };
+
+    if (pObj.rad > 0) {
+      geo.radius = pObj.rad * rScale;
+    }
+
+    result[pObj.animId] = geo;
+
+    if (pObj.pSublist) {
+      for (let i = 0; i < pObj.pSublist.n; i++) {
+        processObj(pObj.pSublist.a[i]);
+      }
+    }
+  }
+
+  for (let i = 0; i < pList.n; i++) {
+    processObj(pList.a[i]);
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // Main render function
 // ---------------------------------------------------------------------------
 export function pikRender(p: Pik, pList: PList | null): void {
@@ -575,6 +688,12 @@ export function pikRender(p: Pik, pList: PList | null): void {
     // Compute bounding box
     bboxInit(p.bbox);
     pikBboxAddElist(p, pList, wArrow);
+
+    // Expand bbox to include animated positions across entire timeline
+    const animations = getAnimations();
+    if (animations.length > 0) {
+      pikBboxAddAnimations(p, pList, animations);
+    }
 
     // Expand bbox for margins
     p.bbox.ne.x += margin + pikValue(p, 'rightmargin', 11).val;
@@ -610,24 +729,26 @@ export function pikRender(p: Pik, pList: PList | null): void {
     pikElistRender(p, pList);
 
     // Embed animation data if any animations exist
-    const animations = getAnimations();
     if (animations.length > 0) {
       const connectors = buildConnectorConstraints(pList);
-      // Convert position values from PicJS coordinates to SVG coordinates
+      const shapes = buildShapeGeometries(pList, p.bbox, p.rScale);
+      // Convert position deltas from PicJS units to SVG units
+      // Note: toValue is a delta (not absolute), so only scale, don't offset
       const svgAnimations = animations.map(anim => ({
         ...anim,
         alterations: anim.alterations.map(alt => {
           if (alt.property === 'cx') {
             return {
               ...alt,
-              fromValue: (alt.fromValue as number - p.bbox.sw.x) * p.rScale,
-              toValue: (alt.toValue as number - p.bbox.sw.x) * p.rScale,
+              fromValue: alt.fromValue !== null ? (alt.fromValue as number) * p.rScale : null,
+              toValue: (alt.toValue as number) * p.rScale,
             };
           } else if (alt.property === 'cy') {
+            // SVG y is inverted, so negate the delta
             return {
               ...alt,
-              fromValue: (p.bbox.ne.y - (alt.fromValue as number)) * p.rScale,
-              toValue: (p.bbox.ne.y - (alt.toValue as number)) * p.rScale,
+              fromValue: alt.fromValue !== null ? -(alt.fromValue as number) * p.rScale : null,
+              toValue: -(alt.toValue as number) * p.rScale,
             };
           }
           return alt;
@@ -636,6 +757,7 @@ export function pikRender(p: Pik, pList: PList | null): void {
       const animData = {
         animations: svgAnimations,
         connectors,
+        shapes,
       };
       p.zOut += `<script type="application/json" data-picjs-anim>${JSON.stringify(animData)}</script>\n`;
     }

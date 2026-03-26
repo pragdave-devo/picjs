@@ -25,7 +25,7 @@ import {
 } from './layout.ts';
 
 import { Environment } from './environment.ts';
-import { mkNum, mkStr, mkBool, mkFn, mkList, mkObj, mkAnim, mkNull, toNumber, toString, toBoolean, valuesEqual, type PicValue, type PicFunction } from './values.ts';
+import { mkNum, mkStr, mkBool, mkPos, mkFn, mkList, mkObj, mkAnim, mkNull, toNumber, toString, toBoolean, valuesEqual, type PicValue, type PicFunction } from './values.ts';
 
 import type {
   AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall,
@@ -49,88 +49,11 @@ const {
   T_ASSIGN, T_LAST,
 } = TokenType;
 
-// ============================================================
-// String interpolation helper (same logic as parser.ts)
-// ============================================================
-
-function expandStringInterpolation(p: Pik, token: PToken): PToken {
-  const str = token.z.substring(0, token.n);
-  if (!str.includes('${')) return token;
-
-  let result = '"';
-  let i = 1;
-  const end = token.n - 1;
-
-  while (i < end) {
-    if (str[i] === '$' && i + 1 < end && str[i + 1] === '{') {
-      let depth = 1;
-      let j = i + 2;
-      while (j < end && depth > 0) {
-        if (str[j] === '{') depth++;
-        else if (str[j] === '}') depth--;
-        j++;
-      }
-      if (depth !== 0) {
-        pikError(p, token, 'unterminated ${...} in string');
-        return token;
-      }
-      const exprText = str.substring(i + 2, j - 1);
-      const exprValue = evaluateInterpolationExpr(p, exprText, token);
-      if (p.nErr) return token;
-      result += exprValue;
-      i = j;
-    } else {
-      result += str[i];
-      i++;
-    }
-  }
-  result += '"';
-  return { z: result, n: result.length, eType: token.eType, eCode: token.eCode, eEdge: token.eEdge };
-}
-
 // Lazy-bound reference to parseToAst (set by integration layer to avoid circular imports)
 let parseToAstFn: ((p: Pik, input: string) => AstStmt[]) | null = null;
 
 export function setParseToAstFn(fn: (p: Pik, input: string) => AstStmt[]): void {
   parseToAstFn = fn;
-}
-
-function evaluateInterpolationExpr(p: Pik, exprText: string, errToken: PToken): string {
-  if (p.nErr || !parseToAstFn) return '0';
-  // Parse as an assignment so we get an expression AST
-  const stmts = parseToAstFn(p, `_interp_result = ${exprText}`);
-  if (p.nErr || stmts.length === 0) return '0';
-  // Extract the expression from the assignment
-  const stmt = stmts[0];
-  if (stmt.kind === 'assign') {
-    const val = evalRichExpr(p, stmt.value);
-    return formatRichValue(val);
-  }
-  // Fallback: evaluate as statement and read numeric result
-  for (const s of stmts) {
-    evalStmt(p, s);
-  }
-  const val = pikValue(p, '_interp_result', 14);
-  return formatNumericValue(val.miss ? 0 : val.val);
-}
-
-function formatRichValue(value: PicValue): string {
-  switch (value.tag) {
-    case "string": return value.val;
-    case "boolean": return value.val ? "1" : "0";
-    default: return formatNumericValue(toNumber(value));
-  }
-}
-
-function formatNumericValue(value: PNum): string {
-  if (Number.isNaN(value)) return 'NaN';
-  if (!Number.isFinite(value)) return value > 0 ? 'Infinity' : '-Infinity';
-  if (Number.isInteger(value) || Math.abs(value - Math.round(value)) < 1e-9) {
-    return String(Math.round(value));
-  }
-  let s = value.toPrecision(10);
-  if (s.includes('.')) s = s.replace(/\.?0+$/, '');
-  return s;
 }
 
 // ============================================================
@@ -150,6 +73,7 @@ export function resetEvalState(): void {
 // Animation registry
 let animationList: AnimationDescriptor[] = [];
 let animIdCounter = 0;
+let evalDepth = 0;
 
 export function resetAnimations(): void {
   animationList = [];
@@ -165,12 +89,17 @@ function generateAnimId(): string {
 }
 
 export function evaluate(p: Pik, stmts: AstStmt[]): PicValue {
-  resetAnimations();
+  const isTopLevel = evalDepth === 0;
+  if (isTopLevel) {
+    resetAnimations();
+  }
+  evalDepth++;
   let lastValue: PicValue = mkNull();
   for (const stmt of stmts) {
     if (p.nErr) break;
     lastValue = evalStmt(p, stmt);
   }
+  evalDepth--;
   return lastValue;
 }
 
@@ -277,10 +206,9 @@ function evalShape(p: Pik, shape: AstShape, labelTok: PToken | null): PicValue {
     p.eDir = savedDir;
     obj = pikElemNew(p, null, null, sublist);
   } else if (shape.textTok) {
-    // bare string
-    const expanded = expandStringInterpolation(p, shape.textTok);
-    expanded.eCode = shape.textPos;
-    obj = pikElemNew(p, null, expanded, null);
+    // bare string (interpolation handled at tokenizer level)
+    const tok = { ...shape.textTok, eCode: shape.textPos };
+    obj = pikElemNew(p, null, tok, null);
   } else if (shape.classTok) {
     // class name
     obj = pikElemNew(p, shape.classTok, null, null);
@@ -341,8 +269,8 @@ function evalAttr(p: Pik, attr: AstAttr, obj: PObj): void {
       evalBoolAttr(p, attr, obj);
       break;
     case "text": {
-      const expanded = expandStringInterpolation(p, attr.tok);
-      pikAddTxt(p, expanded, attr.posFlags);
+      // Interpolation handled at tokenizer level
+      pikAddTxt(p, attr.tok, attr.posFlags);
       break;
     }
     case "containing": {
@@ -647,8 +575,8 @@ function evalPrint(p: Pik, stmt: AstPrint): void {
         break;
       }
       case "expr": {
-        const val = evalExpr(p, item.expr);
-        p.zOut += numToStr(val);
+        const val = evalRichExpr(p, item.expr);
+        p.zOut += toString(val);
         break;
       }
     }
@@ -880,6 +808,8 @@ function evalRichExpr(p: Pik, expr: AstExpr): PicValue {
       pikError(p, expr.propTok, `cannot access property '${propName}' on ${val.tag} value`);
       return mkNum(0);
     }
+    case "paren":
+      return evalRichExpr(p, expr.expr);
     case "binOp": {
       // Handle list/string concatenation with +
       if (expr.op === "+") {
@@ -1376,8 +1306,8 @@ function evalAnimationStmt(p: Pik, stmt: AstAnimation): PicValue {
   // Evaluate alter statements
   const alterations: AlterDescriptor[] = [];
   for (const alter of stmt.body) {
-    const desc = evalAlterStmt(p, alter);
-    if (desc) alterations.push(desc);
+    const descs = evalAlterStmt(p, alter);
+    alterations.push(...descs);
   }
 
   const id = stmt.id || generateAnimId();
@@ -1405,14 +1335,14 @@ function evalAnimationStmt(p: Pik, stmt: AstAnimation): PicValue {
   return mkAnim(anim);
 }
 
-function evalAlterStmt(p: Pik, alter: AstAlter): AlterDescriptor | null {
-  if (p.nErr) return null;
+function evalAlterStmt(p: Pik, alter: AstAlter): AlterDescriptor[] {
+  if (p.nErr) return [];
 
   // Resolve the target object
   const obj = resolveObject(p, alter.target.object);
   if (!obj) {
     pikError(p, alter.tok, 'alter target object not found');
-    return null;
+    return [];
   }
 
   // Assign an animId if not already set
@@ -1420,38 +1350,72 @@ function evalAlterStmt(p: Pik, alter: AstAlter): AlterDescriptor | null {
     obj.animId = obj.zName || `${obj.type.zName}-${p.list ? p.list.a.indexOf(obj) + 1 : 0}`;
   }
 
-  // Determine the property being altered
+  // Evaluate to-value - check if it's an AstPosition or AstExpr
+  const isAstPosition = 'posKind' in alter.toValue;
+  let toRichValue: PicValue;
+  if (isAstPosition) {
+    const pos = evalPosition(p, alter.toValue as AstPosition);
+    toRichValue = mkPos(pos);
+  } else {
+    toRichValue = evalRichExpr(p, alter.toValue as AstExpr);
+  }
+
+  // Get object's initial position for computing deltas
+  const initialX = obj.ptAt?.x ?? 0;
+  const initialY = obj.ptAt?.y ?? 0;
+
+  // Check if target is edge without axis and value is position — animate both x and y
+  const hasExplicitAxis = alter.target.axis !== null;
+  if (!hasExplicitAxis && alter.target.edge && toRichValue.tag === 'position') {
+    // Create two descriptors: one for cx, one for cy
+    // Store as deltas (target - initial) so runtime math works correctly
+    return [
+      {
+        targetId: obj.animId,
+        property: 'cx',
+        fromValue: null,
+        toValue: toRichValue.val.x - initialX,
+      },
+      {
+        targetId: obj.animId,
+        property: 'cy',
+        fromValue: null,
+        toValue: toRichValue.val.y - initialY,
+      },
+    ];
+  }
+
+  // Single property animation
   const propName = alter.property.z.substring(0, alter.property.n);
   const property = mapToAlterableProperty(propName, alter.target.edge, alter.target.axis);
 
   if (!property) {
     pikError(p, alter.property, `cannot animate property '${propName}'`);
-    return null;
+    return [];
   }
 
-  // Capture from-value (current state at t=0)
-  const fromValue = capturePropertyValue(obj, property);
-
-  // Evaluate to-value
-  const toRichValue = evalRichExpr(p, alter.toValue);
   let toValue: number | string;
   if (toRichValue.tag === 'color') {
     toValue = toRichValue.val;
   } else if (toRichValue.tag === 'position') {
-    // Position target — extract the relevant axis
-    if (property === 'cx') toValue = toRichValue.val.x;
-    else if (property === 'cy') toValue = toRichValue.val.y;
+    // Position target with explicit axis — extract the relevant axis as delta
+    if (property === 'cx') toValue = toRichValue.val.x - initialX;
+    else if (property === 'cy') toValue = toRichValue.val.y - initialY;
     else toValue = toNumber(toRichValue);
   } else {
-    toValue = toNumber(toRichValue);
+    // Numeric value — for position properties, treat as delta from initial
+    const numVal = toNumber(toRichValue);
+    if (property === 'cx') toValue = numVal - initialX;
+    else if (property === 'cy') toValue = numVal - initialY;
+    else toValue = numVal;
   }
 
-  return {
+  return [{
     targetId: obj.animId,
     property,
-    fromValue,
+    fromValue: null,  // captured at runtime when animation starts
     toValue,
-  };
+  }];
 }
 
 function mapToAlterableProperty(name: string, edge: PToken | null, axis: "x" | "y" | null = null): AlterableProperty | null {

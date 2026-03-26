@@ -10,7 +10,7 @@ export type EasingFn = 'linear' | 'quad' | 'cubic' | 'exponential';
 export interface AlterDescriptor {
   targetId: string;              // data-picjs-id of the SVG element
   property: AlterableProperty;   // which property to animate
-  fromValue: number | string;    // value at t=0 (captured from static render)
+  fromValue: number | string | null;  // value at t=0 (null = capture at runtime when animation starts)
   toValue: number | string;      // target value at animation end
 }
 
@@ -59,6 +59,16 @@ export interface ConnectorConstraint {
   targetId: string;              // data-picjs-id of the shape it connects to
   targetEdge: number;            // compass point on the target shape
   chopEnabled: boolean;          // whether chop was specified
+}
+
+// Shape geometry (serialized to JSON for runtime chop calculations)
+export interface ShapeGeometry {
+  shapeType: 'box' | 'circle' | 'ellipse' | 'other';
+  centerX: number;               // center in SVG coordinates
+  centerY: number;
+  width: number;
+  height: number;
+  radius?: number;               // for circles and rounded shapes
 }
 
 // Compute resolved start/end times for an animation

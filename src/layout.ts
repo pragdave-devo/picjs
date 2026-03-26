@@ -1156,6 +1156,8 @@ export function pikAfterAddingAttributes(p: Pik, pObj: PObj): void {
     const prev = p.list.a[p.list.n - 1];
     if (prev.type.isLine && prev.pFrom && !prev.pTo) {
       prev.pTo = pObj;
+      // Enable chop for auto-connected arrows so they stop at shape boundaries
+      prev.bChop = true;
     }
   }
 

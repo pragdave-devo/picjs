@@ -20,9 +20,19 @@ export interface Animator {
   destroy(): void;
 }
 
+interface ShapeGeometry {
+  shapeType: 'box' | 'circle' | 'ellipse' | 'other';
+  centerX: number;
+  centerY: number;
+  width: number;
+  height: number;
+  radius?: number;
+}
+
 interface AnimData {
   animations: any[];
   connectors: any[];
+  shapes?: Record<string, ShapeGeometry>;
 }
 
 export function createAnimator(svg: SVGSVGElement): Animator | null {
@@ -32,6 +42,7 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
   try { data = JSON.parse(dataEl.textContent || ''); } catch { return null; }
   const anims = data.animations || [];
   const connectors = data.connectors || [];
+  const shapes = data.shapes || {};
   if (anims.length === 0) return null;
 
   // Compute total duration
@@ -137,11 +148,35 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
   // --- Position tracking ---
   const posState: Record<string, { dx: number; dy: number }> = {};
 
-  function applyAlter(alter: any, t: number): void {
+  // --- Runtime fromValue capture ---
+  // Key: "animIndex:alterIndex", Value: captured fromValue
+  const capturedFrom: Record<string, number | string> = {};
+
+  function getFromValue(alter: any, animIdx: number, alterIdx: number): number | string {
+    const key = `${animIdx}:${alterIdx}`;
+    if (key in capturedFrom) return capturedFrom[key];
+
+    // Capture current state as fromValue
+    const prop = alter.property;
+    if (prop === 'cx' || prop === 'cy') {
+      // For position, fromValue is current delta (starts at 0)
+      const ps = posState[alter.targetId] || { dx: 0, dy: 0 };
+      capturedFrom[key] = prop === 'cx' ? ps.dx : ps.dy;
+    } else if (prop === 'opacity') {
+      const el = getElem(alter.targetId) as HTMLElement | null;
+      capturedFrom[key] = el ? parseFloat(el.style.opacity || '1') : 1;
+    } else {
+      // For colors and other props, use 0 as default (should be improved)
+      capturedFrom[key] = 0;
+    }
+    return capturedFrom[key];
+  }
+
+  function applyAlter(alter: any, t: number, animIdx: number, alterIdx: number): void {
     const el = getElem(alter.targetId) as HTMLElement | null;
     if (!el) return;
     const prop = alter.property;
-    const from = alter.fromValue;
+    const from = alter.fromValue !== null ? alter.fromValue : getFromValue(alter, animIdx, alterIdx);
     const to = alter.toValue;
 
     if (prop === 'fill' || prop === 'color') {
@@ -173,13 +208,14 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
     } else if (prop === 'cx' || prop === 'cy') {
       const key = alter.targetId;
       if (!posState[key]) posState[key] = { dx: 0, dy: 0 };
-      if (prop === 'cx') posState[key].dx = lerp(0, to - from, t);
-      else posState[key].dy = lerp(0, to - from, t);
+      // Accumulate deltas from all animations affecting this element
+      if (prop === 'cx') posState[key].dx += lerp(0, to - from, t);
+      else posState[key].dy += lerp(0, to - from, t);
       el.setAttribute('transform', `translate(${posState[key].dx},${posState[key].dy})`);
     }
   }
 
-  function applyBounce(alter: any, bounceTime: number, bounceDuration: number): void {
+  function applyBounce(alter: any, bounceTime: number, bounceDuration: number, animIdx: number, alterIdx: number): void {
     if (bounceDuration <= 0) return;
     const el = getElem(alter.targetId) as HTMLElement | null;
     if (!el) return;
@@ -189,9 +225,11 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
     if (prop === 'cx' || prop === 'cy') {
       const key = alter.targetId;
       if (!posState[key]) posState[key] = { dx: 0, dy: 0 };
-      const range = alter.toValue - alter.fromValue;
-      if (prop === 'cx') posState[key].dx = range + decay * range;
-      else posState[key].dy = range + decay * range;
+      const from = alter.fromValue !== null ? alter.fromValue : (capturedFrom[`${animIdx}:${alterIdx}`] ?? 0);
+      const range = alter.toValue - from;
+      // Bounce adds oscillation on top of final position
+      if (prop === 'cx') posState[key].dx += range + decay * range;
+      else posState[key].dy += range + decay * range;
       el.setAttribute('transform', `translate(${posState[key].dx},${posState[key].dy})`);
     }
   }
@@ -217,15 +255,32 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
         const pp = raw.trim().split(/\s+/).map(s => { const ab = s.split(','); return [+ab[0], +ab[1]]; });
         cache.poly = poly;
         cache.polyPts = pp;
-        const endPt = pts[pts.length - 1], startPt = pts[0];
-        let dEnd = 1e9, dStart = 1e9;
+        const pathEnd = pts[pts.length - 1], pathStart = pts[0];
+
+        // Find the arrow tip - it's the polygon point furthest from the OPPOSITE path endpoint
+        // (because the tip points away from where the line comes from)
+        let maxDistFromStart = 0, maxDistFromEnd = 0;
+        let tipFromStart: number[] = pp[0], tipFromEnd: number[] = pp[0];
         for (const p of pp) {
-          const de = (p[0] - endPt[0]) ** 2 + (p[1] - endPt[1]) ** 2;
-          const ds = (p[0] - startPt[0]) ** 2 + (p[1] - startPt[1]) ** 2;
-          if (de < dEnd) dEnd = de;
-          if (ds < dStart) dStart = ds;
+          const distFromStart = Math.hypot(p[0] - pathStart[0], p[1] - pathStart[1]);
+          const distFromEnd = Math.hypot(p[0] - pathEnd[0], p[1] - pathEnd[1]);
+          if (distFromStart > maxDistFromStart) { maxDistFromStart = distFromStart; tipFromStart = p; }
+          if (distFromEnd > maxDistFromEnd) { maxDistFromEnd = distFromEnd; tipFromEnd = p; }
         }
-        cache.arrowAtEnd = dEnd <= dStart;
+
+        // Arrow is at end if the tip found from start is closer to end than tip found from end is to start
+        const tipFromStartToEnd = Math.hypot(tipFromStart[0] - pathEnd[0], tipFromStart[1] - pathEnd[1]);
+        const tipFromEndToStart = Math.hypot(tipFromEnd[0] - pathStart[0], tipFromEnd[1] - pathStart[1]);
+        cache.arrowAtEnd = tipFromStartToEnd < tipFromEndToStart;
+
+        // Arrow length is distance from path endpoint to the tip
+        if (cache.arrowAtEnd) {
+          // Tip is at tipFromStart (furthest from path start, so pointing toward end)
+          cache.arrowLength = Math.hypot(tipFromStart[0] - pathEnd[0], tipFromStart[1] - pathEnd[1]);
+        } else {
+          // Tip is at tipFromEnd (furthest from path end, so pointing toward start)
+          cache.arrowLength = Math.hypot(tipFromEnd[0] - pathStart[0], tipFromEnd[1] - pathStart[1]);
+        }
       }
       connCache[c.lineId] = cache;
     }
@@ -236,40 +291,144 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
     return l < 1e-10 ? [1, 0] : [x / l, y / l];
   }
 
+  // --- Runtime chop functions ---
+  function chopBox(geo: ShapeGeometry, fromX: number, fromY: number, dx: number, dy: number): [number, number] {
+    const cx = geo.centerX + dx, cy = geo.centerY + dy;
+    const w2 = geo.width / 2, h2 = geo.height / 2;
+    const vx = fromX - cx, vy = fromY - cy;
+    if (Math.abs(vx) < 1e-10 && Math.abs(vy) < 1e-10) return [cx, cy];
+
+    // Find intersection with box edges
+    let t = Infinity;
+    if (vx !== 0) {
+      const t1 = w2 / Math.abs(vx);
+      if (t1 < t) t = t1;
+    }
+    if (vy !== 0) {
+      const t2 = h2 / Math.abs(vy);
+      if (t2 < t) t = t2;
+    }
+    return [cx + vx * t, cy + vy * t];
+  }
+
+  function chopCircle(geo: ShapeGeometry, fromX: number, fromY: number, dx: number, dy: number): [number, number] {
+    const cx = geo.centerX + dx, cy = geo.centerY + dy;
+    const r = geo.radius ?? geo.width / 2;
+    const vx = fromX - cx, vy = fromY - cy;
+    const dist = Math.hypot(vx, vy);
+    if (dist < 1e-10) return [cx + r, cy];
+    return [cx + vx * r / dist, cy + vy * r / dist];
+  }
+
+  function chopEllipse(geo: ShapeGeometry, fromX: number, fromY: number, dx: number, dy: number): [number, number] {
+    const cx = geo.centerX + dx, cy = geo.centerY + dy;
+    const a = geo.width / 2, b = geo.height / 2;
+    const vx = fromX - cx, vy = fromY - cy;
+    const dist = Math.hypot(vx, vy);
+    if (dist < 1e-10) return [cx + a, cy];
+    // Parametric intersection with ellipse
+    const theta = Math.atan2(vy, vx);
+    return [cx + a * Math.cos(theta), cy + b * Math.sin(theta)];
+  }
+
+  function chopShape(geo: ShapeGeometry, fromX: number, fromY: number, dx: number, dy: number): [number, number] {
+    switch (geo.shapeType) {
+      case 'circle': return chopCircle(geo, fromX, fromY, dx, dy);
+      case 'ellipse': return chopEllipse(geo, fromX, fromY, dx, dy);
+      default: return chopBox(geo, fromX, fromY, dx, dy);
+    }
+  }
+
   function updateConnectors(): void {
     if (connectors.length === 0) return;
-    const deltas: Record<string, { start: any; end: any }> = {};
+
+    // Group connectors by line
+    const lineEndpoints: Record<string, { start?: any; end?: any }> = {};
     for (const c of connectors) {
-      if (!deltas[c.lineId]) deltas[c.lineId] = { start: null, end: null };
-      const st = posState[c.targetId];
-      deltas[c.lineId][c.endpoint as 'start' | 'end'] = st ? { dx: st.dx, dy: st.dy } : { dx: 0, dy: 0 };
+      if (!lineEndpoints[c.lineId]) lineEndpoints[c.lineId] = {};
+      lineEndpoints[c.lineId][c.endpoint as 'start' | 'end'] = c;
     }
-    for (const lineId of Object.keys(deltas)) {
+
+    for (const lineId of Object.keys(lineEndpoints)) {
       const cache = connCache[lineId];
       if (!cache) continue;
-      const sd = deltas[lineId].start || { dx: 0, dy: 0 };
-      const ed = deltas[lineId].end || { dx: 0, dy: 0 };
-      const pts: number[][] = cache.pts;
+
+      const startConn = lineEndpoints[lineId].start;
+      const endConn = lineEndpoints[lineId].end;
+      const pts = cache.pts;
       const n = pts.length;
-      const newPts = pts.map((pt: number[], i: number) => {
-        const t = n > 1 ? i / (n - 1) : 0;
-        return [pt[0] + lerp(sd.dx, ed.dx, t), pt[1] + lerp(sd.dy, ed.dy, t)];
-      });
-      let d = `M${newPts[0][0]},${newPts[0][1]}`;
-      for (let i = 1; i < n; i++) d += `L${newPts[i][0]},${newPts[i][1]}`;
-      cache.path.setAttribute('d', d);
+
+      // Get current animated centers
+      let startCenter: [number, number];
+      let endCenter: [number, number];
+
+      if (startConn && shapes[startConn.targetId]) {
+        const geo = shapes[startConn.targetId];
+        const delta = posState[startConn.targetId] || { dx: 0, dy: 0 };
+        startCenter = [geo.centerX + delta.dx, geo.centerY + delta.dy];
+      } else {
+        const delta = startConn ? (posState[startConn.targetId] || { dx: 0, dy: 0 }) : { dx: 0, dy: 0 };
+        startCenter = [pts[0][0] + delta.dx, pts[0][1] + delta.dy];
+      }
+
+      if (endConn && shapes[endConn.targetId]) {
+        const geo = shapes[endConn.targetId];
+        const delta = posState[endConn.targetId] || { dx: 0, dy: 0 };
+        endCenter = [geo.centerX + delta.dx, geo.centerY + delta.dy];
+      } else {
+        const delta = endConn ? (posState[endConn.targetId] || { dx: 0, dy: 0 }) : { dx: 0, dy: 0 };
+        endCenter = [pts[n - 1][0] + delta.dx, pts[n - 1][1] + delta.dy];
+      }
+
+      // Always apply chop when shape geometry is available
+      // This ensures arrows dynamically point to shape edges during animation
+      let startPt = startCenter;
+      let endPt = endCenter;
+
+      if (startConn && shapes[startConn.targetId]) {
+        const geo = shapes[startConn.targetId];
+        const delta = posState[startConn.targetId] || { dx: 0, dy: 0 };
+        startPt = chopShape(geo, endCenter[0], endCenter[1], delta.dx, delta.dy);
+      }
+
+      if (endConn && shapes[endConn.targetId]) {
+        const geo = shapes[endConn.targetId];
+        const delta = posState[endConn.targetId] || { dx: 0, dy: 0 };
+        endPt = chopShape(geo, startCenter[0], startCenter[1], delta.dx, delta.dy);
+      }
+
+      // Calculate line direction and adjust for arrowhead length
+      // The chopped point is where the arrow TIP should be, so back up the path endpoint
+      const dir = norm(endPt[0] - startPt[0], endPt[1] - startPt[1]);
+      const arrowLen = cache.arrowLength || 0;
+      let pathStart = startPt;
+      let pathEnd = endPt;
+
+      if (cache.poly) {
+        if (cache.arrowAtEnd) {
+          // Back up endPt so the arrow tip lands at the chopped point
+          pathEnd = [endPt[0] - dir[0] * arrowLen, endPt[1] - dir[1] * arrowLen];
+        } else {
+          // Back up startPt for arrow at start
+          pathStart = [startPt[0] + dir[0] * arrowLen, startPt[1] + dir[1] * arrowLen];
+        }
+      }
+
+      // Update path
+      cache.path.setAttribute('d', `M${pathStart[0]},${pathStart[1]}L${pathEnd[0]},${pathEnd[1]}`);
+
+      // Update arrowhead - position it so the tip is at the chopped point
       if (cache.poly && cache.polyPts) {
-        const aDelta = cache.arrowAtEnd ? ed : sd;
-        const anchorEnd = cache.arrowAtEnd ? pts[n - 1] : pts[0];
-        const newAnchor = [anchorEnd[0] + aDelta.dx, anchorEnd[1] + aDelta.dy];
+        // Anchor the arrowhead at the path endpoint (after backing up for arrow length)
+        const anchor = cache.arrowAtEnd ? pathEnd : pathStart;
+        const origAnchor = cache.arrowAtEnd ? pts[n - 1] : pts[0];
         const oDir = norm(pts[n - 1][0] - pts[0][0], pts[n - 1][1] - pts[0][1]);
-        const nDir = norm(newPts[n - 1][0] - newPts[0][0], newPts[n - 1][1] - newPts[0][1]);
+        const nDir = dir;
         const cosA = oDir[0] * nDir[0] + oDir[1] * nDir[1];
         const sinA = oDir[0] * nDir[1] - oDir[1] * nDir[0];
-        const origAnchor = anchorEnd;
         const np = cache.polyPts.map((pt: number[]) => {
           const rx = pt[0] - origAnchor[0], ry = pt[1] - origAnchor[1];
-          return [newAnchor[0] + rx * cosA - ry * sinA, newAnchor[1] + rx * sinA + ry * cosA];
+          return [anchor[0] + rx * cosA - ry * sinA, anchor[1] + rx * sinA + ry * cosA];
         });
         cache.poly.setAttribute('points', np.map((p: number[]) => `${p[0]},${p[1]}`).join(' '));
       }
@@ -280,21 +439,25 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
   function renderAtTime(t: number): void {
     for (const k in posState) posState[k] = { dx: 0, dy: 0 };
 
-    for (const anim of anims) {
+    for (let animIdx = 0; animIdx < anims.length; animIdx++) {
+      const anim = anims[animIdx];
       const start = anim.startTime ?? (anim.endTime != null ? anim.endTime - anim.duration : 0);
       const end = start + anim.duration;
 
-      for (const alter of anim.alterations) {
+      for (let alterIdx = 0; alterIdx < anim.alterations.length; alterIdx++) {
+        const alter = anim.alterations[alterIdx];
         if (t < start) {
-          applyAlter(alter, 0);
+          // Animation hasn't started yet - skip it entirely
+          // (don't reset to fromValue, that would overwrite earlier animations)
+          continue;
         } else if (t <= end) {
           const progress = anim.duration > 0 ? (t - start) / anim.duration : 1;
-          applyAlter(alter, applyEasing(progress, anim.easeIn, anim.easeOut));
+          applyAlter(alter, applyEasing(progress, anim.easeIn, anim.easeOut), animIdx, alterIdx);
         } else {
-          applyAlter(alter, 1);
+          applyAlter(alter, 1, animIdx, alterIdx);
           const bounceEnd = anim.bounceEnd || 0;
           if (bounceEnd > 0 && t <= end + bounceEnd) {
-            applyBounce(alter, t - end, bounceEnd);
+            applyBounce(alter, t - end, bounceEnd, animIdx, alterIdx);
           }
         }
       }

@@ -24,6 +24,57 @@ const {
   T_EDGEPT, T_START, T_END, T_X, T_Y, T_ISODATE, T_DOTDOT,
 } = TokenType;
 
+/**
+ * Check if a string token contains interpolation ${...}
+ */
+function hasInterpolation(token: PToken): boolean {
+  const str = token.z.substring(0, token.n);
+  return str.includes('${');
+}
+
+/**
+ * Parse interpolation segments from a string token.
+ * Returns array of { isExpr: boolean, text: string } segments.
+ */
+function parseInterpolationSegments(token: PToken): { isExpr: boolean; text: string }[] {
+  const str = token.z.substring(0, token.n);
+  const segments: { isExpr: boolean; text: string }[] = [];
+  let i = 1; // skip opening quote
+  const end = token.n - 1; // before closing quote
+  let currentStr = '';
+
+  while (i < end) {
+    if (str[i] === '\\' && i + 1 < end) {
+      currentStr += str[i] + str[i + 1];
+      i += 2;
+      continue;
+    }
+    if (str[i] === '$' && i + 1 < end && str[i + 1] === '{') {
+      if (currentStr.length > 0) {
+        segments.push({ isExpr: false, text: currentStr });
+        currentStr = '';
+      }
+      let depth = 1;
+      let j = i + 2;
+      while (j < end && depth > 0) {
+        if (str[j] === '{') depth++;
+        else if (str[j] === '}') depth--;
+        j++;
+      }
+      if (depth !== 0) return []; // Unterminated
+      segments.push({ isExpr: true, text: str.substring(i + 2, j - 1) });
+      i = j;
+    } else {
+      currentStr += str[i];
+      i++;
+    }
+  }
+  if (currentStr.length > 0) {
+    segments.push({ isExpr: false, text: currentStr });
+  }
+  return segments;
+}
+
 function isUpper(c: string): boolean { return c >= 'A' && c <= 'Z'; }
 function isLower(c: string): boolean { return c >= 'a' && c <= 'z'; }
 function isDigit(c: string): boolean { return c >= '0' && c <= '9'; }
@@ -555,6 +606,36 @@ export class TokenStream {
         token.eType = T_STRING;
       }
 
+      // Handle string interpolation: "a${expr}b" → "a" + (expr) + "b"
+      // Always emit a leading string (even if empty) so parser sees T_STRING + T_PLUS
+      if (token.eType === T_STRING && hasInterpolation(token)) {
+        const segments = parseInterpolationSegments(token);
+        if (segments.length > 0) {
+          // Ensure first token is always T_STRING for parser detection
+          if (segments[0].isExpr) {
+            this.tokens.push({ z: '""', n: 2, eType: T_STRING, eCode: 0, eEdge: 0 });
+            this.tokens.push({ z: '+', n: 1, eType: T_PLUS, eCode: 0, eEdge: 0 });
+          }
+          for (let si = 0; si < segments.length; si++) {
+            if (si > 0) {
+              this.tokens.push({ z: '+', n: 1, eType: T_PLUS, eCode: 0, eEdge: 0 });
+            }
+            const seg = segments[si];
+            if (seg.isExpr) {
+              this.tokens.push({ z: '(', n: 1, eType: T_LP, eCode: 0, eEdge: 0 });
+              // Recursively tokenize the expression
+              this._tokenizeInput({ z: seg.text, n: seg.text.length, eType: 0, eCode: 0, eEdge: 0 }, aParam);
+              this.tokens.push({ z: ')', n: 1, eType: T_RP, eCode: 0, eEdge: 0 });
+            } else {
+              const strTok = `"${seg.text}"`;
+              this.tokens.push({ z: strTok, n: strTok.length, eType: T_STRING, eCode: 0, eEdge: 0 });
+            }
+          }
+          i += sz;
+          continue;
+        }
+      }
+
       // Store the original source position info
       this.tokens.push({ ...token });
       i += sz;
@@ -672,6 +753,11 @@ export class TokenStream {
   /** Restore to a saved position */
   restore(saved: number): void {
     this.pos = saved;
+  }
+
+  /** Move back one token */
+  backtrack(): void {
+    if (this.pos > 0) this.pos--;
   }
 
   /**
