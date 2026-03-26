@@ -1024,10 +1024,11 @@ starting $t4.end take 0.6 ease quad {
   alter Done.color to white
 }`,
 
-      hanoi: `# Towers of Hanoi — Recursive Solution
+      hanoi: `# Towers of Hanoi — Recursive (up/across/down)
 
 $dh = 0.22
 $gap = 2.0
+$top = 1.8
 
 # Pegs and base
 box ht 1.6 wid 0.06 fill 0x795548 at (0, 0.8)
@@ -1035,28 +1036,26 @@ box ht 1.6 wid 0.06 fill 0x795548 at ($gap, 0.8)
 box ht 1.6 wid 0.06 fill 0x795548 at (2*$gap, 0.8)
 box ht 0.08 wid 5.5 fill 0x795548 at ($gap, 0)
 
-# Disks (large to small, bottom to top)
+# Disks
 D3: box ht $dh wid 1.2 rad 0.04 fill 0x2196F3 at (0, $dh/2 + 0.15)
 D2: box ht $dh wid 0.85 rad 0.04 fill 0x4CAF50 at (0, $dh*1.5 + 0.15)
 D1: box ht $dh wid 0.5 rad 0.04 fill 0xF44336 at (0, $dh*2.5 + 0.15)
 
-# Stack counts per peg
+# Stack counts
 $s0 = 3
 $s1 = 0
 $s2 = 0
 $moves = []
 
-# Helper functions (using case since fns can't index arrays)
 $pegX = fn($p) { case $p { 0 => { $r = 0 } 1 => { $r = $gap } _ => { $r = 2*$gap } } }
 $getS = fn($p) { case $p { 0 => { $r = $s0 } 1 => { $r = $s1 } _ => { $r = $s2 } } }
 
-# Recursive Hanoi: move n disks from 'fr' to 'too' using 'aux'
 $hanoi = fn($nd, $fr, $too, $aux) {
   if $nd > 0 {
     $hanoi($nd - 1, $fr, $aux, $too)
     case $fr { 0 => { $s0 = $s0 - 1 } 1 => { $s1 = $s1 - 1 } _ => { $s2 = $s2 - 1 } }
-    $ty = $dh/2 + 0.15 + $getS($too) * $dh
-    $moves = push($moves, [$nd, $pegX($too), $ty])
+    $toY = $dh/2 + 0.15 + $getS($too) * $dh
+    $moves = push($moves, [$nd, $pegX($too), $toY])
     case $too { 0 => { $s0 = $s0 + 1 } 1 => { $s1 = $s1 + 1 } _ => { $s2 = $s2 + 1 } }
     $hanoi($nd - 1, $aux, $too, $fr)
   }
@@ -1064,18 +1063,32 @@ $hanoi = fn($nd, $fr, $too, $aux) {
 
 $hanoi(3, 0, 2, 1)
 
-# Animate each move
-$time = 0.5
+# Animate: up, across, down
+$time = 0.3
+$dur = 0.2
+
 for $mv in $moves do {
   $disk = head($mv)
   $toX = head(shift($mv))
   $toY = last($mv)
   case $disk {
-    1 => { starting $time take 0.35 ease quad { alter D1.c.x to $toX; alter D1.c.y to $toY } }
-    2 => { starting $time take 0.35 ease quad { alter D2.c.x to $toX; alter D2.c.y to $toY } }
-    3 => { starting $time take 0.35 ease quad { alter D3.c.x to $toX; alter D3.c.y to $toY } }
+    1 => {
+      starting $time take $dur ease quad { alter D1.c.y to $top }
+      starting $time + $dur take $dur ease quad { alter D1.c.x to $toX }
+      starting $time + 2*$dur take $dur ease quad { alter D1.c.y to $toY }
+    }
+    2 => {
+      starting $time take $dur ease quad { alter D2.c.y to $top }
+      starting $time + $dur take $dur ease quad { alter D2.c.x to $toX }
+      starting $time + 2*$dur take $dur ease quad { alter D2.c.y to $toY }
+    }
+    3 => {
+      starting $time take $dur ease quad { alter D3.c.y to $top }
+      starting $time + $dur take $dur ease quad { alter D3.c.x to $toX }
+      starting $time + 2*$dur take $dur ease quad { alter D3.c.y to $toY }
+    }
   }
-  $time = $time + 0.47
+  $time = $time + 3*$dur + 0.1
 }`,
 
       gear: `
