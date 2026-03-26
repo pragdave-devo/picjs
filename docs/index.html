@@ -389,6 +389,7 @@
             <option value="anim-movement">Moving Shapes</option>
             <option value="anim-sequence">Pipeline Sequence</option>
             <option value="network">Network Assembly</option>
+            <option value="hanoi">Towers of Hanoi</option>
           </optgroup>
         </select>
       </div>
@@ -1022,6 +1023,44 @@ starting $t4.end take 0.6 ease quad {
   alter Done.fill to 0x27AE60
   alter Done.color to white
 }`,
+
+      hanoi: `# Towers of Hanoi
+# 3 disks solve in 7 moves
+
+pegH = 1.6
+diskH = 0.22
+gap = 2.0
+
+# Peg positions
+px1 = 0
+px2 = gap
+px3 = 2*gap
+
+# Disk levels
+ly1 = diskH/2 + 0.15
+ly2 = diskH*1.5 + 0.15
+ly3 = diskH*2.5 + 0.15
+
+# Pegs and base
+box ht pegH wid 0.06 fill 0x795548 at (px1, pegH/2)
+box ht pegH wid 0.06 fill 0x795548 at (px2, pegH/2)
+box ht pegH wid 0.06 fill 0x795548 at (px3, pegH/2)
+box ht 0.08 wid 5.5 fill 0x795548 at (px2, 0)
+
+# Disks (large to small, bottom to top)
+D3: box ht diskH wid 1.2 rad 0.04 fill 0x2196F3 at (px1, ly1)
+D2: box ht diskH wid 0.85 rad 0.04 fill 0x4CAF50 at (px1, ly2)
+D1: box ht diskH wid 0.5 rad 0.04 fill 0xF44336 at (px1, ly3)
+
+# Solve: A→C, A→B, C→B, A→C, B→A, B→C, A→C
+$t = 0.35
+$m1 = starting 0.5 take $t ease quad { alter D1.c.x to px3; alter D1.c.y to ly1 }
+$m2 = starting $m1.end + 0.12 take $t ease quad { alter D2.c.x to px2; alter D2.c.y to ly1 }
+$m3 = starting $m2.end + 0.12 take $t ease quad { alter D1.c.x to px2; alter D1.c.y to ly2 }
+$m4 = starting $m3.end + 0.12 take $t ease quad { alter D3.c.x to px3 }
+$m5 = starting $m4.end + 0.12 take $t ease quad { alter D1.c.x to px1; alter D1.c.y to ly1 }
+$m6 = starting $m5.end + 0.12 take $t ease quad { alter D2.c.x to px3; alter D2.c.y to ly2 }
+$m7 = starting $m6.end + 0.12 take $t ease quad { alter D1.c.x to px3; alter D1.c.y to ly3 }`,
 
       gear: `
 define ps {  ($1 * sin($2), $1 * cos($2))  }
