@@ -811,6 +811,26 @@ function evalRichExpr(p: Pik, expr: AstExpr): PicValue {
       return mkStr(expr.value);
     case "list":
       return mkList(expr.items.map(item => evalRichExpr(p, item)));
+    case "index": {
+      const obj = evalRichExpr(p, expr.object);
+      const idx = Math.round(toNumber(evalRichExpr(p, expr.index)));
+      if (obj.tag === 'list') {
+        if (idx < 0 || idx >= obj.val.length) {
+          pikError(p, expr.tok, `index ${idx} out of bounds (length ${obj.val.length})`);
+          return mkNum(0);
+        }
+        return obj.val[idx];
+      }
+      if (obj.tag === 'string') {
+        if (idx < 0 || idx >= obj.val.length) {
+          pikError(p, expr.tok, `index ${idx} out of bounds (length ${obj.val.length})`);
+          return mkStr('');
+        }
+        return mkStr(obj.val[idx]);
+      }
+      pikError(p, expr.tok, `cannot index ${obj.tag}`);
+      return mkNum(0);
+    }
     case "varRef": {
       const vname = expr.tok.z.substring(0, expr.tok.n);
       if (vname[0] === '$') {

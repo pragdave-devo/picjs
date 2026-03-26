@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>picjs Playground + AI Chat</title>
+  <style>
+    :root {
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+      --bg-page: #f5f5f5;
+      --bg-panel: #ffffff;
+      --bg-header: #f0f0f0;
+      --border-color: #e0e0e0;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --accent: #1976d2;
+      --error-bg: #fff5f5;
+      --error-border: #ffcdd2;
+      --error-text: #c62828;
+      --svg-filter: none;
+      --chat-user-bg: #e3f2fd;
+      --chat-assistant-bg: #f5f5f5;
+      --chat-system-bg: #fff3e0;
+      --chat-code-bg: #f8f8f8;
+      --chat-apply-bg: #e8f5e9;
+      --chat-apply-border: #4caf50;
+    }
+
+    html.dark {
+      --bg-page: #1a1a1a;
+      --bg-panel: #242424;
+      --bg-header: #2a2a2a;
+      --border-color: #3a3a3a;
+      --text-primary: #e0e0e0;
+      --text-secondary: #999999;
+      --accent: #5ca0e8;
+      --error-bg: #2a1a1a;
+      --error-border: #5a2a2a;
+      --error-text: #ef5350;
+      --svg-filter: invert(1) hue-rotate(180deg);
+      --chat-user-bg: #1a2a3a;
+      --chat-assistant-bg: #2a2a2a;
+      --chat-system-bg: #2a2410;
+      --chat-code-bg: #1a1a1a;
+      --chat-apply-bg: #1a2a1a;
+      --chat-apply-border: #388e3c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background: var(--bg-page);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 10px 20px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    header h1 { margin: 0; font-size: 1.15rem; font-weight: 600; }
+    header h1 a { color: inherit; text-decoration: none; }
+    .header-links { display: flex; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .header-links a { color: var(--accent); text-decoration: none; }
+    .header-links a:hover { text-decoration: underline; }
+    #theme-toggle {
+      background: none; border: 1px solid var(--border-color); border-radius: 4px;
+      padding: 4px 8px; cursor: pointer; font-size: 1rem; color: var(--text-primary);
+    }
+    #theme-toggle:hover { background: var(--bg-header); }
+
+    main { display: flex; flex: 1; min-height: 0; }
+
+    .pane { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    .pane-header {
+      padding: 6px 16px;
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-secondary);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    /* Editor pane — top of left column */
+    .left-column { border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+
+    .editor-section { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+    #source-editor { flex: 1; width: 100%; overflow: auto; background: var(--bg-panel); }
+    #source-editor .cm-editor { height: 100%; font-family: var(--font-mono); font-size: 13px; }
+    #source-editor .cm-scroller { padding: 12px; line-height: 1.5; }
+    #source-editor .cm-content { tab-size: 2; }
+    #source-editor .cm-focused { outline: none; }
+
+    .editor-toolbar {
+      padding: 6px 12px; background: var(--bg-header); border-top: 1px solid var(--border-color);
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    .editor-toolbar label { font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .editor-toolbar button {
+      padding: 5px 10px; font-size: 0.8rem; border: 1px solid var(--border-color);
+      border-radius: 4px; background: var(--bg-panel); cursor: pointer;
+    }
+    .editor-toolbar button:hover { background: var(--bg-header); }
+
+    #example-selector { padding: 4px 8px; font-size: 0.8rem; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel); }
+
+    /* Chat section — bottom of left column */
+    .chat-section {
+      height: 280px; min-height: 120px;
+      display: flex; flex-direction: column;
+      border-top: 2px solid var(--border-color);
+    }
+
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 8px 12px;
+      background: var(--bg-panel); font-size: 0.85rem; line-height: 1.5;
+    }
+
+    .chat-msg { margin-bottom: 8px; padding: 6px 10px; border-radius: 6px; }
+    .chat-msg.user { background: var(--chat-user-bg); }
+    .chat-msg.assistant { background: var(--chat-assistant-bg); }
+    .chat-msg.system { background: var(--chat-system-bg); font-size: 0.8rem; color: var(--text-secondary); }
+    .chat-msg .role { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
+    .chat-msg .intent-badge {
+      font-size: 0.6rem; font-weight: 500; text-transform: lowercase;
+      padding: 1px 5px; border-radius: 3px; opacity: 0.7;
+      background: var(--border-color); color: var(--text-secondary);
+    }
+    .chat-msg .intent-badge.edit { background: #e3f2fd; color: #1565c0; }
+    .chat-msg .intent-badge.generate { background: #e8f5e9; color: #2e7d32; }
+    .chat-msg .intent-badge.fix { background: #fff3e0; color: #e65100; }
+    .chat-msg .intent-badge.question { background: #f3e5f5; color: #7b1fa2; }
+    html.dark .chat-msg .intent-badge.edit { background: #1a2a3a; color: #64b5f6; }
+    html.dark .chat-msg .intent-badge.generate { background: #1a2a1a; color: #81c784; }
+    html.dark .chat-msg .intent-badge.fix { background: #2a2410; color: #ffb74d; }
+    html.dark .chat-msg .intent-badge.question { background: #2a1a2a; color: #ce93d8; }
+
+    .chat-msg pre {
+      margin: 6px 0; padding: 8px; background: var(--chat-code-bg);
+      border-radius: 4px; font-family: var(--font-mono); font-size: 12px;
+      overflow-x: auto; white-space: pre-wrap;
+    }
+
+    .chat-msg .md-content p { margin: 4px 0; }
+    .chat-msg .md-content p:first-child { margin-top: 0; }
+    .chat-msg .md-content p:last-child { margin-bottom: 0; }
+    .chat-msg .md-content code {
+      background: var(--chat-code-bg); padding: 1px 4px; border-radius: 3px;
+      font-family: var(--font-mono); font-size: 0.9em;
+    }
+    .chat-msg .md-content pre { background: var(--chat-code-bg); padding: 8px; border-radius: 4px; }
+    .chat-msg .md-content pre code { background: none; padding: 0; }
+    .chat-msg .md-content ul, .chat-msg .md-content ol { margin: 4px 0; padding-left: 20px; }
+    .chat-msg .md-content li { margin: 2px 0; }
+    .chat-msg .md-content strong { font-weight: 600; }
+    .chat-msg .md-content h1, .chat-msg .md-content h2, .chat-msg .md-content h3 {
+      font-size: 0.9em; font-weight: 600; margin: 6px 0 2px;
+    }
+
+    .chat-msg .apply-bar {
+      margin-top: 6px; padding: 6px 8px;
+      background: var(--chat-apply-bg); border: 1px solid var(--chat-apply-border);
+      border-radius: 4px; display: flex; align-items: center; gap: 8px;
+    }
+    .chat-msg .apply-bar button {
+      padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer;
+      border: 1px solid var(--chat-apply-border); background: var(--chat-apply-border);
+      color: white; font-weight: 500;
+    }
+    .chat-msg .apply-bar button:hover { opacity: 0.9; }
+    .chat-msg .apply-bar button.reject {
+      background: transparent; color: var(--text-secondary); border-color: var(--border-color);
+    }
+
+    .chat-input-row {
+      display: flex; gap: 6px; padding: 8px 12px;
+      border-top: 1px solid var(--border-color); background: var(--bg-header);
+    }
+    .chat-input-row input {
+      flex: 1; padding: 6px 10px; font-size: 0.85rem; border: 1px solid var(--border-color);
+      border-radius: 4px; background: var(--bg-panel); color: var(--text-primary);
+      font-family: var(--font-sans);
+    }
+    .chat-input-row input:focus { outline: none; border-color: var(--accent); }
+    .chat-input-row button {
+      padding: 6px 14px; font-size: 0.85rem; border: none; border-radius: 4px;
+      background: var(--accent); color: white; cursor: pointer; font-weight: 500;
+    }
+    .chat-input-row button:hover { opacity: 0.9; }
+    .chat-input-row button:disabled { opacity: 0.4; cursor: default; }
+
+    .chat-status {
+      padding: 4px 12px; font-size: 0.7rem; color: var(--text-secondary);
+      background: var(--bg-header); border-top: 1px solid var(--border-color);
+      display: flex; justify-content: space-between;
+    }
+    .chat-status .ready { color: #4caf50; }
+    .chat-status .loading { color: #ff9800; }
+    .chat-status .error { color: #f44336; }
+
+    /* Loading progress bar */
+    .model-progress {
+      height: 3px; background: var(--border-color); overflow: hidden;
+    }
+    .model-progress .bar {
+      height: 100%; width: 0%; background: var(--accent);
+      transition: width 0.3s ease;
+    }
+
+    /* Result pane */
+    .result-pane { background: var(--bg-panel); }
+    #result-container {
+      flex: 1; padding: 16px; overflow: auto;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #result-container.has-error { background: var(--error-bg); align-items: flex-start; justify-content: flex-start; }
+    #result-container.has-animation { flex-direction: column; align-items: stretch; justify-content: flex-start; }
+    #result-container.has-animation svg { flex: 1; min-height: 0; overflow: auto; }
+    #result-container svg { max-width: 100%; height: auto; filter: var(--svg-filter); }
+    #result-container pre {
+      font-family: var(--font-mono); font-size: 12px; line-height: 1.6;
+      margin: 0; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary);
+    }
+    #result-container.has-error pre { padding: 16px; background: var(--error-bg); border: 1px solid var(--error-border); border-radius: 4px; }
+
+    footer {
+      padding: 6px 20px; background: var(--bg-panel); border-top: 1px solid var(--border-color);
+      font-size: 0.75rem; color: var(--text-secondary); text-align: center; flex-shrink: 0;
+    }
+    footer a { color: var(--accent); }
+
+    /* Error line highlight */
+    .cm-errorLine { background: rgba(220, 38, 38, 0.12); }
+    html.dark .cm-errorLine { background: rgba(239, 68, 68, 0.18); }
+
+    /* Dark mode CodeMirror */
+    html.dark #source-editor .cm-editor { background: var(--bg-panel); }
+    html.dark #source-editor .cm-gutters { background: var(--bg-header); border-color: var(--border-color); color: var(--text-secondary); }
+    html.dark #source-editor .cm-activeLineGutter { background: var(--bg-panel); }
+    html.dark #source-editor .cm-activeLine { background: rgba(255,255,255,0.05); }
+    html.dark #source-editor .cm-selectionBackground { background: rgba(90,140,200,0.3) !important; }
+    html.dark #example-selector { color: var(--text-primary); }
+
+    @media (max-width: 768px) {
+      main { flex-direction: column; }
+      .left-column { border-right: none; border-bottom: 1px solid var(--border-color); min-height: 50vh; }
+      .result-pane { min-height: 30vh; }
+      .header-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1><a href="./">picjs Playground</a> <span style="font-size:0.7em; color:var(--accent)">+ AI Chat</span></h1>
+    </div>
+    <div class="header-links">
+      <a href="Introduction/">Introduction</a>
+      <a href="Guide/">Guide</a>
+      <a href="Reference/">Reference</a>
+      <a href="./">Original Playground</a>
+      <button id="theme-toggle" title="Toggle dark mode">&#9790;</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="pane left-column">
+      <!-- Editor -->
+      <div class="editor-section">
+        <div class="pane-header">
+          <span>Source</span>
+          <select id="example-selector">
+            <option value="">-- Load Example --</option>
+            <optgroup label="Basic">
+              <option value="hello">Hello World</option>
+              <option value="flowchart">Flowchart</option>
+              <option value="shapes">All Shapes</option>
+              <option value="directions">Directions</option>
+              <option value="database">Database Flow</option>
+              <option value="styled">Styled Elements</option>
+            </optgroup>
+            <optgroup label="Architecture">
+              <option value="architecture">Pipeline Architecture</option>
+              <option value="kernighan">Hash Table (Kernighan)</option>
+              <option value="economy">Circular Flow of Economy</option>
+            </optgroup>
+            <optgroup label="Generative">
+              <option value="snail">Spiral Circles</option>
+              <option value="spiro">Spirograph</option>
+              <option value="gear">Gear Pattern</option>
+            </optgroup>
+          </select>
+        </div>
+        <div id="source-editor"></div>
+        <div class="editor-toolbar">
+          <label><input type="checkbox" id="auto-render" checked> Auto-render</label>
+          <button id="render-btn">Render</button>
+          <button id="clear-btn">Clear</button>
+        </div>
+      </div>
+
+      <!-- Chat -->
+      <div class="chat-section">
+        <div class="pane-header">
+          <span>AI Assistant</span>
+          <span id="chat-context-size">Context: 0 tokens</span>
+        </div>
+        <div class="model-progress" id="model-progress"><div class="bar" id="model-progress-bar"></div></div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" placeholder="Ask about picjs or request diagram changes..." autocomplete="off">
+          <button id="chat-send">Send</button>
+        </div>
+        <div class="chat-status">
+          <span id="chat-model-status" class="loading">Loading model...</span>
+          <span>Qwen2.5-3B picjs (in-browser)</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane result-pane">
+      <div class="pane-header">
+        <span>Result</span>
+        <span id="render-status"></span>
+      </div>
+      <div id="result-container"></div>
+    </section>
+  </main>
+
+  <footer>
+    picjs &mdash; constraint-based diagraming, embedded in your documents
+  </footer>
+
+  <script type="module">
+    import { picjs, createAnimator, createControls } from '../src/picjs.ts';
+    import {EditorView, Decoration, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter} from 'https://esm.sh/@codemirror/view@6';
+    import {EditorState, StateField, StateEffect, Compartment, RangeSet} from 'https://esm.sh/@codemirror/state@6';
+    import {StreamLanguage} from 'https://esm.sh/@codemirror/language@6';
+    import {syntaxHighlighting, HighlightStyle} from 'https://esm.sh/@codemirror/language@6';
+    import {tags} from 'https://esm.sh/@lezer/highlight@1';
+    import {history, defaultKeymap, historyKeymap} from 'https://esm.sh/@codemirror/commands@6';
+    import { CreateMLCEngine } from 'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.82/+esm';
+    import { marked } from 'https://cdn.jsdelivr.net/npm/marked@15/+esm';
+    marked.setOptions({ breaks: true, gfm: true });
+
+    // ---- Error line highlighting ----
+    const setErrorLines = StateEffect.define();
+    const errorLineDeco = Decoration.line({ class: 'cm-errorLine' });
+
+    const errorLineField = StateField.define({
+      create() { return Decoration.none; },
+      update(decos, tr) {
+        for (const e of tr.effects) {
+          if (e.is(setErrorLines)) {
+            if (e.value.length === 0) return Decoration.none;
+            const doc = tr.state.doc;
+            const widgets = [];
+            for (const lineNum of e.value) {
+              if (lineNum >= 1 && lineNum <= doc.lines) {
+                const line = doc.line(lineNum);
+                widgets.push(errorLineDeco.range(line.from));
+              }
+            }
+            return Decoration.set(widgets, true);
+          }
+        }
+        return decos;
+      },
+      provide: f => EditorView.decorations.from(f),
+    });
+
+    // ---- picjs language mode ----
+    const picjsLanguage = StreamLanguage.define({
+      token(stream) {
+        if (stream.eatSpace()) return null;
+        if (stream.match(/^#.*/) || stream.match(/^\/\/.*/)) return 'comment';
+        if (stream.match(/^"([^"\\]|\\.)*"/)) return 'string';
+        if (stream.match(/^0x[0-9a-fA-F]+/) || stream.match(/^-?\d+(\.\d*)?(%|px|pt|in|cm|mm|pc)?/)) return 'number';
+        if (stream.match(/^[A-Z][A-Za-z0-9_]*:/)) return 'definition';
+        if (stream.match(/\b(box|circle|ellipse|oval|cylinder|diamond|file|line|arrow|spline|arc|dot|text|move)\b/)) return 'keyword';
+        if (stream.match(/\b(right|down|left|up|from|to|at|with|then|go|heading|cw|ccw|chop)\b/)) return 'keyword';
+        if (stream.match(/\b(wid|width|ht|height|rad|radius|diam|diameter|thick|thickness|fit|same|invis|invisible|behind)\b/)) return 'keyword';
+        if (stream.match(/\b(dashed|dotted|solid|color|fill|stroke)\b/)) return 'keyword';
+        if (stream.match(/\b(first|last|previous|start|end|center|north|south|east|west|ne|nw|se|sw|n|s|e|w|c|top|bottom)\b/)) return 'atom';
+        if (stream.match(/\b(define|for|do|step|if|else|print|assert)\b/)) return 'keyword';
+        if (stream.match(/\b(starting|ending|take|ease|alter|to|bounce)\b/)) return 'keyword';
+        if (stream.match(/\b(boxwid|boxht|circlerad|arcrad|linewid|lineht|movewid|moveht|arrowwid|arrowht|arrowhead|scale|fontscale|charwid|charht|linerad|fill|thickness|color)\b/)) return 'variableName.special';
+        if (stream.match(/\b(sin|cos|tan|asin|acos|atan2|sqrt|abs|max|min|int)\b/)) return 'function';
+        if (stream.match(/\b(red|green|blue|yellow|cyan|magenta|white|black|gray|grey|orange|pink|purple|brown|lightblue|lightgreen|lightyellow|lightgrey|lightgray|darkblue|darkgreen|darkred)\b/)) return 'color';
+        if (stream.match(/\b(rgb|oklch)\b/)) return 'function';
+        if (stream.match(/^\$[a-zA-Z_][a-zA-Z0-9_]*/)) return 'variableName.special';
+        if (stream.match(/^[a-zA-Z_][a-zA-Z0-9_]*/)) return 'variableName';
+        if (stream.match(/^[+\-*\/=<>!&|]+/)) return 'operator';
+        stream.next();
+        return null;
+      }
+    });
+
+    const picjsHighlightStyle = HighlightStyle.define([
+      { tag: tags.comment, color: '#6a737d' }, { tag: tags.string, color: '#032f62' },
+      { tag: tags.number, color: '#005cc5' }, { tag: tags.keyword, color: '#d73a49' },
+      { tag: tags.definition(tags.variableName), color: '#6f42c1' },
+      { tag: tags.function(tags.variableName), color: '#6f42c1' },
+      { tag: tags.atom, color: '#005cc5' }, { tag: tags.variableName, color: '#24292e' },
+      { tag: tags.special(tags.variableName), color: '#e36209' },
+      { tag: tags.operator, color: '#d73a49' }, { tag: tags.color, color: '#22863a' },
+    ]);
+
+    const picjsDarkHighlightStyle = HighlightStyle.define([
+      { tag: tags.comment, color: '#8b949e' }, { tag: tags.string, color: '#a5d6ff' },
+      { tag: tags.number, color: '#79c0ff' }, { tag: tags.keyword, color: '#ff7b72' },
+      { tag: tags.definition(tags.variableName), color: '#d2a8ff' },
+      { tag: tags.function(tags.variableName), color: '#d2a8ff' },
+      { tag: tags.atom, color: '#79c0ff' }, { tag: tags.variableName, color: '#e6edf3' },
+      { tag: tags.special(tags.variableName), color: '#ffa657' },
+      { tag: tags.operator, color: '#ff7b72' }, { tag: tags.color, color: '#7ee787' },
+    ]);
+
+    // ---- Examples ----
+    const examples = {
+      hello: `box "Hello"\narrow\nbox "World"`,
+      flowchart: `boxht = 0.7 * boxht\ndown\nbox "Input"\narrow 50%\ndiamond "Valid?" fit\narrow 50% "Yes" ljust\nbox "Process"\n\narrow right from last diamond.e "No" above\nbox "Error" color red`,
+      shapes: `down\n[\n  right\n  box "box"\n  move\n  circle "circle"\n  move\n  ellipse "ellipse"\n  move\n  oval "oval"\n]\n\nmove\n[\n  right\n  cylinder "cylinder"\n  move\n  diamond "diamond" fit\n  move\n  file "file"\n  move\n  dot\n]`,
+      directions: `right\nbox "A"\narrow\nbox "B"\ndown\narrow from last box.s\nbox "C"\nleft\narrow\nbox "D"\nup\narrow\n`,
+      database: `file "config.json" fit\narrow\nbox "Parser" rad 0.1\narrow\ncylinder "Database"\narrow\nbox "API" rad 0.1\narrow right 75%\noval "Client" fit`,
+      styled: `box "Normal"\narrow\nbox "Dashed" dashed\narrow dashed\nbox "Dotted" dotted\narrow  right 50% then down 150% then left 50% dotted\nbox "Thick" thickness 0.05\narrow thick\nbox "Colored" color blue fill lightblue\narrow color blue\nbox "Rounded" rad 0.15`,
+      architecture: `right\n\nPipeline: [\n  down\n  "Internal Pipeline"\n  move 20%\n  BatchWriter: box wid 150% ht 60% fill 0xe0e0e0 "Batch Writer"\n\n  arrow "post" aligned "commit" aligned\n  TriggerEvaluation: box same "Trigger Evaluation"\n  arrow "Trigger" aligned "Fired" aligned\n  TriggerBridge: box same "Trigger Bridge"\n]\n\nDatabase: cylinder "Database" with .e at Pipeline.BatchWriter.w - (0.5, 0)\n\nbox at Pipeline \\\n   wid Pipeline.wid*1.1 ht Pipeline.ht*1.1 \\\n   fill 0xf0f0f8 color lightgrey \\\n   behind Pipeline\n\nmove right 0.5\n\nServices: [\n  down\n  GPTuple: box wid 150% ht 60% fill 0xe0e0e0 "Get/Put Tuple"\n  arrow <-> "Validate" aligned above\n  box "Schemas" same\n  move down 0.2\n  box ht 0 dotted\n  move down same\n  box wid 150% ht 60% fill 0xe0e0e0 "Playbooks"\n  move down same\n  box same "Agents"\n]\n\narrow from Pipeline.BatchWriter to Database chop\narrow from Services.GPTuple.w to Pipeline.BatchWriter.e\narrow <-> from Services.Playbooks.w to Pipeline.TriggerEvaluation.e\narrow <-> from Services.Agents to Pipeline.TriggerBridge chop\n\nbox at Services \\\n   wid Services.wid*1.1 ht Services.ht*1.1 \\\n   fill 0xf0f8f0 color lightgrey \\\n   behind Pipeline`,
+      kernighan: `define ndblock {\n  box wid boxwid/2 ht boxht/2 fill lightgrey\n  down; box same with .t at bottom of last box; box same\n}\nboxht = .2; boxwid = .3; circlerad = .3; dx = 0.05; fill = 0xffe0e0\ndown; box; box; box; box ht 3*boxht "." "." "."\nL: box; box; box invis wid 2*boxwid "hashtab:" with .e at 1st box .w\nright\nStart: box wid .5 with .sw at 1st box.ne + (.4,.2) "..."\nN1: box wid .2 "n1";  D1: box wid .3 "d1"\nN3: box wid .4 "n3";  D3: box wid .3 "d3"\nbox wid .4 "..."\nN2: box wid .5 "n2";  D2: box wid .2 "d2"\narrow right from 2nd box\nndblock\nspline -> right .2 from 3rd last box then to N1.sw + (dx,0)\nspline -> right .3 from 2nd last box then to D1.sw + (dx,0)\narrow right from last box\nndblock\nspline -> right .2 from 3rd last box to N2.sw-(dx,.2) to N2.sw+(dx,0)\nspline -> right .3 from 2nd last box to D2.sw-(dx,.2) to D2.sw+(dx,0)\narrow right 2*linewid from L\nndblock\nspline -> right .2 from 3rd last box to N3.sw + (dx,0)\nspline -> right .3 from 2nd last box to D3.sw + (dx,0)\ncirclerad = .3\ncircle invis "ndblock" at last box.e + (1.2,.2)\narrow dashed from last circle.w to 5/8<last circle.w,2nd last box> chop\nbox invis wid 2*boxwid "ndtable:" with .e at Start.w`,
+      economy: `# The standard circular flow of the economy\n\ndown\n\nboxrad = 0.1\nqtr = boxwid / 4\ntrd = boxht / 4\nfill      = oklch(.95, 0,    0)\nblackish  = oklch(0.6, 0,    0)\nblueish   = oklch(.6,  .4,   200)\ngreenish  = oklch(.6,  .4,   150)\norangeish = oklch(0.9, 0.3,  72)\nreddish   = oklch(0.6, 0.35, 40)\n\nCol: [\n  box "Government"\n  move 70%\n  box "Households"\n  move same\n  box invis\n  move same\n  box "Firms"\n  move same\n  Row: box "Rest of" "World"\n]\n\nRow: [\n  right\n  Markets: box "Markets for" "goods and" "services"\n  move\n  box invis\n  move\n  Factor:  box "Factor" "markets"\n  move\n  FM:      box "Financial" "markets"\n] with .w at Col.w - (boxwid+movewid, 0)\n\nthickness = 0.1\narrowht = .15\narrowwid = .2\nlinerad = .15\nfontscale = 0.7\n\nline -> color blueish from Col.Households.e + (0,trd) \\\n   right until even with Row.FM.n - (qtr,0) then to Row.FM.n - (qtr,0)\n"Private savings" with .s at last line.n + (0, .05)\n\nline -> color orangeish from Col.Firms.e + (0,trd) \\\n   right until even with Row.Factor.s then to Row.Factor.s\nbox invis "Wages, profit," "interest" with .w at last line.w\n\nline <- color orangeish from Col.Firms.e - (0,trd) \\\n   right until even with Row.FM.s - (qtr,0) then to Row.FM.s - (qtr,0)\nbox invis "Borrowing and stock" "issues by firms" with .se at last line.se - (0.1,0.05)\n\nline -> color orangeish from Col.Firms.w - (0,trd) \\\n   left until even with Row.Markets.s then to Row.Markets.s\nbox invis "Investment" "spending" with .n at last line.s + (0.0,0.05)\n\nline <- color blackish from Col.Firms.w + (0,trd) \\\n   left until even with Row.Markets.s + (qtr, 0) then to Row.Markets.s + (qtr,0)\nbox invis "GDP" at last line - (0.0,0.1)\n\nline <-> color reddish from Col.Row.w \\\n   left until even with Row.Markets.s - (qtr,0) then to Row.Markets.s - (qtr, 0)\nbox invis "Imports/Exports" at last line.s - (0.0,0.1)\n\nline <-> color reddish from Col.Row.e \\\n   right until even with Row.FM.s + (qtr,0) then to Row.FM.s + (qtr, 0)\nbox invis "Foreign lending/stock sales" at last line.s + (0.0,0.12)\nbox invis "Foreign borrowing/stock purchases" at last line.s - (0.0,0.1)\n\nline <- color blueish from Col.Households.e - (0,trd) \\\n   right until even with Row.Factor.n then to Row.Factor.n\nbox invis "Wages, profit," "interest" with .w at last line.w\n\nline -> color blueish from Col.Government.s + (qtr,0) to Col.Households.n + (qtr,0)\nbox invis "Govt. transfers" with .w at last line.w + (0.05, 0.05)\n\nline <- color greenish from Col.Government.s - (qtr,0) to Col.Households.n - (qtr,0)\nbox invis "Taxes" with .e at last line.w + (0.1, 0.05)\n\nline -> color blueish from Col.Households.w \\\n   left until even with Row.Markets + (qtr,0) then to Row.Markets.n + (qtr, 0)\nbox invis "Consumer" "Spending" with .se at last line.c + (0.3, -.1)\n\nline -> color greenish from Col.Government.w \\\n   left until even with Row.Markets - (qtr,0) then down until even with Row.Markets.t\nbox invis "Government purchases" "of goods and services" with .s at last line.t - (0, 0.05)\n\nline -> color greenish from Row.FM.n + (qtr,0) \\\n   up until even with Col.Government then left to Col.Government.e\nbox invis "Government Borrowing" with .se at last line.n + (0.3, -.1)`,
+      snail: `spin = 3\ncolor_factor = 255/(spin*$pi)\n\nfor i from spin*$pi to 1 step .1 do {\n  circle at (i*sin(i), i*cos(i)) \\\n         radius i \\\n         color oklch(0.4, 0.3, i*color_factor) \\\n         fill  oklch(0.6, 0.3, i*color_factor)\n}`,
+      spiro: `\nouter_radius = 10.5\ninner_radius = 4.8\ndiff = outer_radius - inner_radius\nratio = diff/inner_radius\nhue = 0\n\noffset_of_pen = .8*inner_radius\n\nmove to (diff + offset_of_pen, 0)\n\nfor theta from 0 to 32*$pi step 0.1 do {\n    xp = diff * cos(theta) + offset_of_pen * cos(ratio * theta)\n    yp = diff * sin(theta) - offset_of_pen * sin(ratio * theta)\n\n    color = oklch(.7, .3, hue)\n    line thickness 0.1 to (xp, yp)\n    hue += 1\n}`,
+      gear: `\ndefine ps {  ($1 * sin($2), $1 * cos($2))  }\n\nteeth = 12\ninner_radius = 3\nouter_radius = 4\n\nthickness = 0.07\n\ntooth_width = 2*$pi / teeth\n\nbottom_land_1 = .1 * tooth_width\nslope_up      = bottom_land_1 + .2 * tooth_width\ntop_land      = slope_up + .3 * tooth_width\nslope_down    = top_land + .2 * tooth_width\nbottom_land_2 = slope_down + .2 * tooth_width\n\ntheta = 0\nmove to ps(inner_radius, theta)\n\nfor _count from 1 to teeth do {\n  line to ps(inner_radius, theta + bottom_land_1) \\\n  then to ps(outer_radius, theta + slope_up)      \\\n  then to ps(outer_radius, theta + top_land)      \\\n  then to ps(inner_radius, theta + slope_down)    \\\n  then to ps(inner_radius, theta + bottom_land_2) \\\n       rad 0.1\n  theta += tooth_width\n}\n`,
+    };
+
+    // ---- Agentic Prompt System ----
+
+    const BASE_RULES = `You are an expert assistant for picjs, a text-based diagram language that compiles to SVG.
+
+PICJS RULES:
+- Direction: right (default), down, left, up. Each object placed relative to previous.
+- Shapes: box, circle, ellipse, oval, cylinder, diamond, file, dot, text (block); line, arrow, spline, arc, move (path).
+- Labels: Uppercase start (e.g. Start: box "Start"). Reference by label or ordinal (1st box, last circle).
+- Compass points: .n .ne .e .se .s .sw .w .nw .c .start .end .top .bot
+- Connections: arrow from A.e to B.w; line from X.s down 0.5 then right to Y.w
+- Size: wid/width, ht/height, rad/radius, fit (auto-size to text)
+- Style: color <name|hex>, fill <name|hex>, dashed, dotted, thick, thin, behind
+- Hex colors: 0xFF6600 (NOT #FF6600). Named colors: red, blue, green, lightblue, etc.
+- Strings use DOUBLE quotes only: "hello". NOT single quotes. NOT backticks.
+- Text: "line1" "line2", above/below/ljust/rjust, bold/italic/mono
+- Variables: $name = value, boxwid, boxht, circlerad, fontscale, scale
+- Loops: for i from 1 to 5 do { ... } or for $x in [list] do { ... }
+- If: if condition { ... } else { ... }
+- Functions: $fn = fn($x) { ... }, called as $fn(arg)
+- Groups: [ ... ] creates a sublist/block. Reference with "last block" or "last []"
+- Comments: # or //
+- picjs does NOT support: Mermaid syntax, CSS #hex colors, class/subgraph keywords, --> arrow syntax.
+- Keywords are lowercase. "Box" is wrong, "box" is right.
+- Always wrap code in \`\`\`picjs code blocks.`;
+
+    const INTENT_PROMPTS = {
+      edit: `${BASE_RULES}
+
+TASK: The user wants to modify their existing diagram. You MUST:
+1. Return the COMPLETE modified diagram (not just the changed part).
+2. Make ONLY the requested change — do not delete, reorder, or rewrite other elements.
+3. Preserve all existing labels, positions, styles, and structure.
+4. If adding an element, place it relative to existing elements.
+5. Keep the same variable names and values unless asked to change them.
+
+Return the full modified diagram in a \`\`\`picjs block, then briefly explain what you changed.`,
+
+      generate: `${BASE_RULES}
+
+TASK: Generate a new picjs diagram from the user's description.
+1. Start with a direction (down for flowcharts, right for pipelines).
+2. Use fit on boxes with text. Use labels for objects you'll reference later.
+3. Keep it clean and simple — prefer explicit positioning over complex layouts.
+4. Use appropriate shapes: diamond for decisions, cylinder for databases, file for documents, oval for terminals.
+
+Return the diagram in a \`\`\`picjs block, then briefly explain the structure.`,
+
+      fix: `${BASE_RULES}
+
+TASK: The user's picjs code has compilation errors. Diagnose and fix them.
+You will be given ERROR MESSAGES first, then the code. Focus on the errors.
+1. The error is on or AFTER the indicated line — the parser may detect it a few tokens late. Examine that line and the lines just before it.
+2. Lines well before the error line are almost certainly CORRECT — do not change them.
+3. The token named in the error is what the parser choked on. Look at that token and its context to find the real mistake.
+4. Do not "fix" valid keywords (box, oval, circle, ellipse, etc.) that appear on earlier, correct lines.
+5. First explain what went wrong and where.
+6. Then return the COMPLETE fixed diagram in a \`\`\`picjs block.
+7. Common causes: misspelled keywords, made-up words, capitalized keywords (Box→box), CSS hex (#fff→0xfff), Mermaid syntax.`,
+
+      question: `${BASE_RULES}
+
+TASK: Answer the user's question about picjs. Be concise and include short code examples in \`\`\`picjs blocks when helpful.`,
+    };
+
+    function classifyIntent(userText) {
+      const lower = userText.toLowerCase();
+
+      // Fix intent: explicit error/fix/diagnosis mentions
+      if (/\b(fix|error|bug|broken|wrong|problem|issue|doesn't work|won't compile|syntax error|not working|help.*error|what happened|why.*fail)\b/.test(lower)) return 'fix';
+
+      // Auto-fix: if editor has errors and user asks about the code
+      if (lastRenderErrors.length > 0 && /\b(what's|whats|why|help|look|check|debug)\b/.test(lower)) return 'fix';
+
+      // Edit intent: modification of existing diagram
+      if (/\b(change|modify|edit|update|replace|add|remove|delete|move|make .* (bigger|smaller|red|blue|green|dashed|dotted|bold|thick)|fill .* with|set .* to|swap|rename)\b/.test(lower)) return 'edit';
+
+      // Generate intent: creating something new
+      if (/\b(create|draw|generate|make|build|show|diagram|flowchart|write)\b/.test(lower)) return 'generate';
+
+      // Default to question
+      return 'question';
+    }
+
+    // ---- WebLLM Engine ----
+    const MODEL_URL = new URL('./model/', window.location.href).href;
+    const MODEL_LIB_URL_MLC = 'https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_80/Qwen2.5-3B-Instruct-q4f16_1-ctx4k_cs1k-webgpu.wasm';
+
+    let engine = null;
+    let modelReady = false;
+
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const chatSend = document.getElementById('chat-send');
+    const chatContextSize = document.getElementById('chat-context-size');
+    const chatModelStatus = document.getElementById('chat-model-status');
+    const modelProgressBar = document.getElementById('model-progress-bar');
+
+    let chatHistory = [];
+    let lastRenderErrors = [];  // structured errors from last render
+
+    function estimateTokens(text) { return Math.ceil(text.length / 4); }
+
+    function updateContextSize() {
+      let total = estimateTokens(BASE_RULES);
+      for (const msg of chatHistory) total += estimateTokens(msg.content);
+      chatContextSize.textContent = `Context: ~${total} tokens`;
+    }
+
+    function addChatMessage(role, content) {
+      chatHistory.push({ role, content });
+      renderChatMessage(role, content);
+      updateContextSize();
+    }
+
+    function renderChatMessage(role, content, intent) {
+      const div = document.createElement('div');
+      div.className = `chat-msg ${role}`;
+
+      const roleLabel = document.createElement('div');
+      roleLabel.className = 'role';
+      roleLabel.textContent = role;
+      if (intent && role === 'assistant') {
+        const badge = document.createElement('span');
+        badge.className = `intent-badge ${intent}`;
+        badge.textContent = intent;
+        roleLabel.appendChild(badge);
+      }
+      div.appendChild(roleLabel);
+
+      const parts = content.split(/(```picjs\n[\s\S]*?```)/g);
+
+      for (const part of parts) {
+        const picjsMatch = part.match(/^```picjs\n([\s\S]*?)```$/);
+        if (picjsMatch && role === 'assistant') {
+          const codeMatch = picjsMatch;
+          const code = codeMatch[1].trim();
+
+          const pre = document.createElement('pre');
+          pre.textContent = code;
+          div.appendChild(pre);
+
+          const bar = document.createElement('div');
+          bar.className = 'apply-bar';
+
+          const applyBtn = document.createElement('button');
+          applyBtn.textContent = 'Apply to editor';
+          applyBtn.addEventListener('click', () => {
+            setEditorContent(code);
+            render();
+            bar.innerHTML = '<span style="color:var(--chat-apply-border)">Applied!</span>';
+          });
+
+          const rejectBtn = document.createElement('button');
+          rejectBtn.className = 'reject';
+          rejectBtn.textContent = 'Dismiss';
+          rejectBtn.addEventListener('click', () => {
+            bar.innerHTML = '<span style="color:var(--text-secondary)">Dismissed</span>';
+          });
+
+          bar.appendChild(applyBtn);
+          bar.appendChild(rejectBtn);
+          div.appendChild(bar);
+        } else if (part.trim()) {
+          const textEl = document.createElement('div');
+          textEl.className = 'md-content';
+          textEl.innerHTML = marked.parse(part.trim());
+          div.appendChild(textEl);
+        }
+      }
+
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Create a streaming message element that can be updated token-by-token
+    function createStreamingMessage(intent) {
+      const div = document.createElement('div');
+      div.className = 'chat-msg assistant';
+
+      const roleLabel = document.createElement('div');
+      roleLabel.className = 'role';
+      roleLabel.textContent = 'assistant';
+      if (intent) {
+        const badge = document.createElement('span');
+        badge.className = `intent-badge ${intent}`;
+        badge.textContent = intent;
+        roleLabel.appendChild(badge);
+      }
+      div.appendChild(roleLabel);
+
+      const contentEl = document.createElement('div');
+      contentEl.className = 'streaming-content';
+      div.appendChild(contentEl);
+
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      return { div, contentEl };
+    }
+
+    // Replace streaming element with final rendered version
+    function finalizeStreamingMessage(streamEl, content, intent) {
+      streamEl.div.remove();
+      renderChatMessage('assistant', content, intent);
+    }
+
+    async function initModel() {
+      chatModelStatus.textContent = 'Loading model (first time downloads ~1.6GB)...';
+      chatModelStatus.className = 'loading';
+      chatSend.disabled = true;
+
+      try {
+        engine = await CreateMLCEngine('picjs-qwen3b', {
+          initProgressCallback: (report) => {
+            const pct = Math.round((report.progress || 0) * 100);
+            modelProgressBar.style.width = pct + '%';
+            chatModelStatus.textContent = report.text || `Loading: ${pct}%`;
+          },
+          appConfig: {
+            model_list: [{
+              model: MODEL_URL,
+              model_id: 'picjs-qwen3b',
+              model_lib: MODEL_LIB_URL_MLC,
+              vram_required_MB: 2505,
+              low_resource_required: true,
+              overrides: {
+                context_window_size: 4096,
+              },
+            }],
+          },
+        });
+
+        modelReady = true;
+        modelProgressBar.style.width = '100%';
+        chatModelStatus.textContent = 'Model ready';
+        chatModelStatus.className = 'ready';
+        chatSend.disabled = false;
+        renderChatMessage('system', 'picjs AI Assistant ready. Ask questions about picjs or request diagram changes. Model is running entirely in your browser via WebGPU.');
+      } catch (err) {
+        console.error('WebLLM init error:', err);
+        modelProgressBar.style.width = '0%';
+        chatModelStatus.textContent = 'Failed to load model';
+        chatModelStatus.className = 'error';
+        renderChatMessage('system', `Failed to load model: ${err.message}\n\nMake sure you're using Chrome/Edge with WebGPU support.`);
+      }
+    }
+
+    // Stream a completion and return the full response text
+    async function streamCompletion(messages, intent) {
+      const streamEl = createStreamingMessage(intent);
+      let fullResponse = '';
+
+      try {
+        const chunks = await engine.chat.completions.create({
+          messages,
+          max_tokens: 512,
+          temperature: 0.1,
+          stream: true,
+        });
+
+        for await (const chunk of chunks) {
+          const delta = chunk.choices?.[0]?.delta?.content || '';
+          fullResponse += delta;
+          streamEl.contentEl.textContent = fullResponse;
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        finalizeStreamingMessage(streamEl, fullResponse, intent);
+        return fullResponse;
+      } catch (e) {
+        streamEl.div.remove();
+        throw e;
+      }
+    }
+
+    // Extract first ```picjs block from response
+    function extractPicjsCode(response) {
+      const match = response.match(/```picjs\n([\s\S]*?)```/);
+      return match ? match[1].trim() : null;
+    }
+
+    // Try to compile code and return errors (if any)
+    function tryCompile(code) {
+      const result = picjs(code);
+      return result.errors;
+    }
+
+    // Auto-fix: apply code, check for errors, ask model to fix if needed
+    async function autoFixIfNeeded(response, intent) {
+      const code = extractPicjsCode(response);
+      if (!code) return; // no code block to fix
+
+      const errors = tryCompile(code);
+      if (errors.length === 0) return; // compiles fine
+
+      // Build fix request
+      const errorDesc = errors.map(e => `Line ${e.line}: ${e.message}${e.token ? ` at '${e.token}'` : ''}`).join('\n');
+      addChatMessage('system', `Auto-fix: code has ${errors.length} error(s). Attempting fix...`);
+
+      const fixMessages = [
+        { role: 'system', content: INTENT_PROMPTS.fix },
+        { role: 'user', content: `Fix this picjs code:\n\n\`\`\`picjs\n${code}\n\`\`\`\n\nErrors:\n${errorDesc}` },
+      ];
+
+      try {
+        const fixResponse = await streamCompletion(fixMessages, 'fix');
+        chatHistory.push({ role: 'assistant', content: fixResponse });
+        updateContextSize();
+
+        // Check if the fix worked
+        const fixedCode = extractPicjsCode(fixResponse);
+        if (fixedCode) {
+          const fixErrors = tryCompile(fixedCode);
+          if (fixErrors.length > 0) {
+            addChatMessage('system', `Auto-fix still has errors. You may need to fix manually.`);
+          }
+        }
+      } catch (e) {
+        addChatMessage('system', `Auto-fix failed: ${e.message}`);
+      }
+    }
+
+    async function sendChat() {
+      const userText = chatInput.value.trim();
+      if (!userText || !modelReady) return;
+
+      chatInput.value = '';
+      chatSend.disabled = true;
+
+      const intent = classifyIntent(userText);
+      const currentSource = editorView.state.doc.toString();
+
+      // Build the user message with context
+      let contextMsg = userText;
+      if (intent === 'fix' && lastRenderErrors.length > 0) {
+        // Pre-diagnose errors client-side to give the model concrete hints
+        const sourceLines = currentSource.split('\n');
+        const errorDesc = lastRenderErrors.map(e => {
+          const lineTxt = (e.line >= 1 && e.line <= sourceLines.length) ? sourceLines[e.line - 1] : '';
+          const hint = diagnoseError(e, lineTxt);
+          return `Line ${e.line}: ${e.message}${e.token ? ` at '${e.token}'` : ''}${hint ? `\nHINT: ${hint}` : ''}\nLine content: ${lineTxt}`;
+        }).join('\n\n');
+        contextMsg = `ERRORS:\n${errorDesc}\n\nSOURCE CODE:\n\`\`\`picjs\n${currentSource}\n\`\`\`\n\n${userText}`;
+      } else if (currentSource && (intent === 'edit' || intent === 'question')) {
+        contextMsg = `[Current picjs source in the editor:]\n\`\`\`picjs\n${currentSource}\n\`\`\`\n\n${userText}`;
+      }
+
+      addChatMessage('user', userText);
+
+      // Build messages with intent-specific system prompt
+      const systemPrompt = INTENT_PROMPTS[intent];
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        ...chatHistory.map(m => ({ role: m.role === 'system' ? 'user' : m.role, content: m.content })),
+      ];
+      messages[messages.length - 1] = { role: 'user', content: contextMsg };
+
+      try {
+        const fullResponse = await streamCompletion(messages, intent);
+        chatHistory.push({ role: 'assistant', content: fullResponse });
+        updateContextSize();
+
+        // Auto-fix if edit or generate produced code with errors
+        if (intent === 'edit' || intent === 'generate') {
+          await autoFixIfNeeded(fullResponse, intent);
+        }
+      } catch (e) {
+        addChatMessage('system', `Error: ${e.message}`);
+      }
+
+      chatSend.disabled = false;
+      chatInput.focus();
+    }
+
+    chatSend.addEventListener('click', sendChat);
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+    });
+
+    // ---- Editor + Rendering ----
+    const defaultSource = `arrow right 200% "Markdown" "Source"\nbox rad 10px "Markdown" "Formatter" "(picjs)" fit\narrow right 200% "HTML+SVG" "Output"\narrow <-> down from last box.s\nbox same "picjs" "Diagram" "Renderer" fit`;
+
+    const editorContainer = document.getElementById('source-editor');
+    const resultContainer = document.getElementById('result-container');
+    const autoRenderCheckbox = document.getElementById('auto-render');
+    const renderBtn = document.getElementById('render-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const exampleSelector = document.getElementById('example-selector');
+    const renderStatus = document.getElementById('render-status');
+
+    function debounce(fn, delay) {
+      let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), delay); };
+    }
+
+    let editorView;
+    let currentAnimator = null;
+    let currentControls = null;
+
+    function render() {
+      if (currentAnimator) { currentAnimator.destroy(); currentAnimator = null; }
+      if (currentControls) { currentControls.destroy(); currentControls = null; }
+
+      const source = editorView.state.doc.toString();
+      const t0 = performance.now();
+      const result = picjs(source);
+      const ms = (performance.now() - t0).toFixed(1);
+
+      lastRenderErrors = result.errors || [];
+
+      // Highlight error lines in editor
+      const errorLines = lastRenderErrors.map(e => e.line).filter(l => l > 0);
+      editorView.dispatch({ effects: setErrorLines.of(errorLines) });
+
+      if (result.isError) {
+        resultContainer.classList.add('has-error');
+        resultContainer.innerHTML = result.svg;
+        renderStatus.textContent = 'Error';
+        renderStatus.style.color = '#c62828';
+      } else {
+        resultContainer.classList.remove('has-error', 'has-animation');
+        resultContainer.innerHTML = result.svg;
+        if (result.isAnimated) {
+          const svg = resultContainer.querySelector('svg');
+          if (svg) {
+            currentAnimator = createAnimator(svg);
+            if (currentAnimator) {
+              resultContainer.classList.add('has-animation');
+              currentControls = createControls(resultContainer, currentAnimator);
+            }
+          }
+        }
+        renderStatus.textContent = `${ms}ms`;
+        renderStatus.style.color = '';
+      }
+
+      try { localStorage.setItem('picjs-chat-source', source); } catch {}
+    }
+
+    const debouncedRender = debounce(render, 300);
+
+    function setEditorContent(content) {
+      editorView.dispatch({
+        changes: { from: 0, to: editorView.state.doc.length, insert: content }
+      });
+    }
+
+    renderBtn.addEventListener('click', render);
+    clearBtn.addEventListener('click', () => { setEditorContent(''); render(); });
+    exampleSelector.addEventListener('change', (e) => {
+      const key = e.target.value;
+      if (key && examples[key]) { setEditorContent(examples[key]); render(); }
+      e.target.value = '';
+    });
+
+    function getInitialContent() {
+      try { const s = localStorage.getItem('picjs-chat-source'); if (s) return s; } catch {}
+      return defaultSource;
+    }
+
+    // Theme
+    const themeCompartment = new Compartment();
+    function isDark() { return document.documentElement.classList.contains('dark'); }
+    function getHL() { return syntaxHighlighting(isDark() ? picjsDarkHighlightStyle : picjsHighlightStyle); }
+    function applyTheme(dark) {
+      document.documentElement.classList.toggle('dark', dark);
+      try { localStorage.setItem('picjs-theme', dark ? 'dark' : 'light'); } catch {}
+      if (editorView) editorView.dispatch({ effects: themeCompartment.reconfigure(getHL()) });
+      const btn = document.getElementById('theme-toggle');
+      btn.textContent = dark ? '\u2600' : '\u263E';
+      btn.title = dark ? 'Switch to light mode' : 'Switch to dark mode';
+    }
+
+    const stored = (() => { try { return localStorage.getItem('picjs-theme'); } catch { return null; } })();
+    if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches))
+      document.documentElement.classList.add('dark');
+
+    document.getElementById('theme-toggle').addEventListener('click', () => applyTheme(!isDark()));
+
+    editorView = new EditorView({
+      doc: getInitialContent(),
+      extensions: [
+        lineNumbers(), highlightActiveLine(), highlightActiveLineGutter(), errorLineField,
+        history(), keymap.of([...defaultKeymap, ...historyKeymap]),
+        keymap.of([{ key: 'Mod-Enter', run: () => { render(); return true; } }]),
+        picjsLanguage, themeCompartment.of(getHL()),
+        EditorView.updateListener.of((u) => { if (u.docChanged && autoRenderCheckbox.checked) debouncedRender(); }),
+        EditorView.lineWrapping,
+      ],
+      parent: editorContainer,
+    });
+
+    applyTheme(isDark());
+    render();
+    updateContextSize();
+
+    // Start loading the model
+    initModel();
+  </script>
+</body>
+</html>

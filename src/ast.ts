@@ -413,7 +413,7 @@ export interface AstExprList {
 export interface AstExprIndex {
   exprKind: "index";
   object: AstExpr;
-  index: number;
+  index: AstExpr;  // expression, not just literal
   tok: PToken;
 }
 

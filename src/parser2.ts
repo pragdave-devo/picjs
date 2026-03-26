@@ -1530,6 +1530,13 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
       const propTok = ts.advance(); // consume the property name
       return { exprKind: "dollarProp", varTok: id, propTok } as AstExprDollarProp;
     }
+    // $name[expr] — array indexing
+    if (name[0] === '$' && ts.peek().eType === T_LB) {
+      ts.advance(); // consume [
+      const indexExpr = parseExpr(p, ts);
+      ts.expect(T_RB, 'expected "]"');
+      return { exprKind: "index", object: { exprKind: "varRef", tok: id }, index: indexExpr, tok: id };
+    }
     return { exprKind: "varRef", tok: id };
   }
 
