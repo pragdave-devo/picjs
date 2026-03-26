@@ -1031,6 +1031,7 @@ $dh = 0.18
 $gap = 2.0
 $top = $n * $dh + 0.5
 $base = 0.12
+$pegX = [0, $gap, 2*$gap]
 
 # Pegs and base
 box ht $n*$dh + 0.4 wid 0.06 fill 0x795548 at (0, ($n*$dh + 0.4)/2)
@@ -1038,24 +1039,22 @@ box ht $n*$dh + 0.4 wid 0.06 fill 0x795548 at ($gap, ($n*$dh + 0.4)/2)
 box ht $n*$dh + 0.4 wid 0.06 fill 0x795548 at (2*$gap, ($n*$dh + 0.4)/2)
 box ht 0.08 wid 5.5 fill 0x795548 at ($gap, 0)
 
-# Disks (created conditionally, largest=n at bottom)
+# Disks (conditional creation, largest at bottom)
 $w = fn($d) { $r = 0.35 + ($n - $d + 1) * 0.15 }
 $ypos = fn($d) { $r = $base + $dh/2 + ($n - $d) * $dh }
+$colors = [0xF44336, 0xFF9800, 0xFFEB3B, 0x4CAF50, 0x2196F3, 0x9C27B0]
 
-if $n >= 1 { D1: box ht $dh wid $w(1) rad 0.03 fill 0xF44336 at (0, $ypos(1)) }
-if $n >= 2 { D2: box ht $dh wid $w(2) rad 0.03 fill 0xFF9800 at (0, $ypos(2)) }
-if $n >= 3 { D3: box ht $dh wid $w(3) rad 0.03 fill 0xFFEB3B at (0, $ypos(3)) }
-if $n >= 4 { D4: box ht $dh wid $w(4) rad 0.03 fill 0x4CAF50 at (0, $ypos(4)) }
-if $n >= 5 { D5: box ht $dh wid $w(5) rad 0.03 fill 0x2196F3 at (0, $ypos(5)) }
-if $n >= 6 { D6: box ht $dh wid $w(6) rad 0.03 fill 0x9C27B0 at (0, $ypos(6)) }
+if $n >= 1 { D1: box ht $dh wid $w(1) rad 0.03 fill $colors[0] at (0, $ypos(1)) }
+if $n >= 2 { D2: box ht $dh wid $w(2) rad 0.03 fill $colors[1] at (0, $ypos(2)) }
+if $n >= 3 { D3: box ht $dh wid $w(3) rad 0.03 fill $colors[2] at (0, $ypos(3)) }
+if $n >= 4 { D4: box ht $dh wid $w(4) rad 0.03 fill $colors[3] at (0, $ypos(4)) }
+if $n >= 5 { D5: box ht $dh wid $w(5) rad 0.03 fill $colors[4] at (0, $ypos(5)) }
+if $n >= 6 { D6: box ht $dh wid $w(6) rad 0.03 fill $colors[5] at (0, $ypos(6)) }
 
-# Stack tracking
-$s0 = $n
-$s1 = 0
-$s2 = 0
+# Stack heights per peg (mutable during recursion)
+$s0 = $n;  $s1 = 0;  $s2 = 0
 $moves = []
 
-$pegX = fn($p) { case $p { 0 => { $r = 0 } 1 => { $r = $gap } _ => { $r = 2*$gap } } }
 $getS = fn($p) { case $p { 0 => { $r = $s0 } 1 => { $r = $s1 } _ => { $r = $s2 } } }
 
 $hanoi = fn($nd, $fr, $too, $aux) {
@@ -1063,7 +1062,7 @@ $hanoi = fn($nd, $fr, $too, $aux) {
     $hanoi($nd - 1, $fr, $aux, $too)
     case $fr { 0 => { $s0 = $s0 - 1 } 1 => { $s1 = $s1 - 1 } _ => { $s2 = $s2 - 1 } }
     $toY = $base + $dh/2 + $getS($too) * $dh
-    $moves = push($moves, [$nd, $pegX($too), $toY])
+    $moves = push($moves, [$nd, $pegX[$too], $toY])
     case $too { 0 => { $s0 = $s0 + 1 } 1 => { $s1 = $s1 + 1 } _ => { $s2 = $s2 + 1 } }
     $hanoi($nd - 1, $aux, $too, $fr)
   }
@@ -1076,9 +1075,9 @@ $time = 0.2
 $dur = 0.15
 
 for $mv in $moves do {
-  $disk = head($mv)
-  $toX = head(shift($mv))
-  $toY = last($mv)
+  $disk = $mv[0]
+  $toX = $mv[1]
+  $toY = $mv[2]
   case $disk {
     1 => {
       starting $time take $dur ease quad { alter D1.c.y to $top }
