@@ -667,6 +667,115 @@ if $enabled { circle fill Green }
 
 ---
 
+## Animation
+
+Animation brings diagrams to life by smoothly transitioning properties over time.
+
+### Animation Blocks
+
+```
+starting EXPR take DURATION [ease EASING] {
+  alter TARGET.PROPERTY to VALUE
+  ...
+}
+```
+
+- `starting EXPR` — Start time in seconds (omit for time 0)
+- `take DURATION` — Animation duration in seconds
+- `ease EASING` — Easing function: `linear`, `quad`, `cubic`, `exponential`
+
+### Alter Statements
+
+Animate a property from its current value to a target:
+
+```
+alter TARGET.PROPERTY to VALUE
+```
+
+Animatable properties:
+- **Position**: `.c`, `.c.x`, `.c.y` (center coordinates)
+- **Dimensions**: `.wid`, `.ht`, `.rad`
+- **Colors**: `.fill`, `.color`
+- **Opacity**: `.opacity` (0 to 1)
+- **Stroke**: `.sw` (stroke width)
+
+### Chained Animations
+
+Assign animations to variables to chain them:
+
+```
+$s1 = starting 0 take 1 ease cubic {
+  alter A.fill to Red
+}
+
+# Start after $s1 completes
+$s2 = starting $s1.end take 0.5 {
+  alter B.fill to Blue
+}
+
+# Add a delay
+starting $s2.end + 0.2 take 1 {
+  alter C.opacity to 0
+}
+```
+
+### Animation Properties
+
+Animation variables expose timing:
+- `$anim.start` — Start time (seconds)
+- `$anim.end` — End time (start + duration)
+
+### Position Animation
+
+Animate center position with coordinates:
+
+```
+C: circle at (0, 0)
+starting 0 take 2 ease cubic {
+  alter C.c to (3, 1)      # Move to absolute position
+}
+```
+
+Or animate individual axes:
+
+```
+alter C.c.x to 3
+alter C.c.y to 1
+```
+
+### Dynamic Arrows
+
+Arrows automatically recalculate endpoints during animation:
+
+```
+A: circle; arrow; B: circle
+starting 0 take 2 {
+  alter A.c to (2, 0)      # Arrow follows A
+}
+```
+
+### Example: Fade Sequence
+
+```
+A: box "Step 1" fill LightBlue
+B: box "Step 2" fill LightGray
+C: box "Step 3" fill LightGreen
+
+$t1 = starting 0 take 0.5 ease quad {
+  alter A.fill to DodgerBlue
+}
+$t2 = starting $t1.end take 0.5 ease quad {
+  alter A.opacity to 0.3
+  alter B.fill to Gold
+}
+starting $t2.end take 0.5 ease quad {
+  alter B.opacity to 0.3
+  alter C.fill to Crimson
+}
+```
+
+---
+
 ## Object References
 
 ```
@@ -827,6 +936,7 @@ statement       = direction_stmt
                 | case_stmt
                 | if_stmt
                 | fncall_stmt
+                | animation_stmt
                 | shape_stmt
                 ;
 ```
@@ -871,6 +981,19 @@ pattern         = expr
 if_stmt         = "if" expr codeblock [ "else" codeblock ] ;
 
 fncall_stmt     = "$" IDENTIFIER "(" [ expr { "," expr } ] ")" ;
+
+animation_stmt  = animation_header "{" { alter_stmt NEWLINE } "}" ;
+
+animation_header = { animation_clause } ;
+
+animation_clause = "starting" expr
+                 | "ending" expr
+                 | "take" expr
+                 | "ease" IDENTIFIER
+                 | "bounce" expr
+                 ;
+
+alter_stmt      = "alter" place "." IDENTIFIER "to" ( expr | position ) ;
 
 shape_stmt      = basetype [ rel_expr ] { attribute } ;
 

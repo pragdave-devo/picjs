@@ -387,6 +387,11 @@
           <optgroup label="Animated">
             <option value="network">Network Assembly</option>
           </optgroup>
+          <optgroup label="Animations">
+            <option value="anim-basic">Color &amp; Opacity</option>
+            <option value="anim-movement">Moving Shapes</option>
+            <option value="anim-sequence">Pipeline Sequence</option>
+          </optgroup>
         </select>
       </div>
       <div id="source-editor"></div>
@@ -925,6 +930,99 @@ $a5 = starting $a4.end take 0.5 ease quad {
 
 $online = starting $a5.end + 0.3 take 0.8 ease exponential {
   alter HUB.fill to 0x27AE60
+}`,
+
+      "anim-basic": `# Basic Animation: Color & Opacity
+# Demonstrates chained animations with easing
+
+A: box "Start" fill LightBlue
+arrow
+B: box "Process" fill LightGray
+arrow
+C: box "End" fill LightGreen
+
+# First animation: change A's color
+$s1 = starting 0 take 1.5 ease cubic {
+  alter A.fill to DodgerBlue
+}
+
+# Chain from first: change B's color
+$s2 = starting $s1.end take 1 ease quad {
+  alter B.fill to Gold
+}
+
+# Chain again: change C and fade others
+starting $s2.end take 1.2 ease cubic {
+  alter C.fill to Crimson
+  alter A.opacity to 0.4
+  alter B.opacity to 0.4
+}`,
+
+      "anim-movement": `# Moving Shapes Animation
+# Circles swap positions with dynamic arrows
+
+C1: circle "1" rad 0.4 fill SteelBlue color white at (0, 0)
+C2: circle "2" rad 0.4 fill Coral color white at (2.5, 0)
+
+arrow from C1 to C2
+
+# Both circles move toward each other's position
+$swap = starting 0.3 take 2 ease cubic {
+  alter C1.c to (2.5, 0)
+  alter C2.c to (0, 0)
+}
+
+# Then change colors
+starting $swap.end + 0.2 take 0.8 ease quad {
+  alter C1.fill to Coral
+  alter C2.fill to SteelBlue
+}`,
+
+      "anim-sequence": `# Pipeline Sequence Animation
+# Data flows through processing stages
+
+boxrad = 0.1
+boxht = 0.5
+
+right
+Input: box "Input" fill 0xE8E8E8
+arrow
+Parse: box "Parse" fill 0xE8E8E8
+arrow
+Valid: box "Validate" fill 0xE8E8E8
+arrow
+Store: box "Store" fill 0xE8E8E8
+arrow
+Done:  box "Done" fill 0xE8E8E8
+
+# Highlight each stage in sequence
+$t1 = starting 0.2 take 0.6 ease quad {
+  alter Input.fill to 0x3498DB
+  alter Input.color to white
+}
+$t2 = starting $t1.end take 0.6 ease quad {
+  alter Input.fill to 0xE8E8E8
+  alter Input.color to black
+  alter Parse.fill to 0x9B59B6
+  alter Parse.color to white
+}
+$t3 = starting $t2.end take 0.6 ease quad {
+  alter Parse.fill to 0xE8E8E8
+  alter Parse.color to black
+  alter Valid.fill to 0xE67E22
+  alter Valid.color to white
+}
+$t4 = starting $t3.end take 0.6 ease quad {
+  alter Valid.fill to 0xE8E8E8
+  alter Valid.color to black
+  alter Store.fill to 0xE74C3C
+  alter Store.color to white
+}
+starting $t4.end take 0.6 ease quad {
+  alter Store.fill to 0xE8E8E8
+  alter Store.color to black
+  alter Done.fill to 0x27AE60
+  alter Done.color to white
 }`,
 
       gear: `
