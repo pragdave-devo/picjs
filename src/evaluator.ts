@@ -1063,6 +1063,23 @@ function evalBuiltinCall(p: Pik, name: string, args: AstExpr[], tok: PToken): Pi
       return mkList([]);
     }
 
+    case 'lset': {
+      const list = evaledArgs[0];
+      const idx = Math.round(toNumber(evaledArgs[1]));
+      const val = evaledArgs[2];
+      if (list.tag !== 'list') {
+        pikError(p, tok, 'lset() expects a list as first argument');
+        return mkList([]);
+      }
+      if (idx < 0 || idx >= list.val.length) {
+        pikError(p, tok, `lset() index ${idx} out of bounds (length ${list.val.length})`);
+        return list;
+      }
+      const newList = [...list.val];
+      newList[idx] = val;
+      return mkList(newList);
+    }
+
     case 'contains': {
       const list = evaledArgs[0];
       const val = evaledArgs[1];

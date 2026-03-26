@@ -1834,6 +1834,8 @@ const builtinFuncs: Record<string, BuiltinFuncInfo> = {
   'split':    { minArgs: 2, maxArgs: 2 },
   'map':      { minArgs: 2, maxArgs: 2 },
   'filter':   { minArgs: 2, maxArgs: 2 },
+  // 3-arg functions
+  'lset':     { minArgs: 3, maxArgs: 3 },
   // 1-arg (sort)
   'sort':     { minArgs: 1, maxArgs: 1 },
 };
