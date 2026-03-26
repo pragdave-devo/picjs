@@ -592,7 +592,7 @@ function buildConnectorConstraints(pList: PList): ConnectorConstraint[] {
         endpoint: 'start',
         targetId: pObj.pFrom.animId,
         targetEdge: 0,
-        chopEnabled: pObj.bChop,
+        chopEnabled: pObj.bChopStart || pObj.bChop,
       });
     }
     if (pObj.pTo && pObj.pTo.animId) {
@@ -601,7 +601,7 @@ function buildConnectorConstraints(pList: PList): ConnectorConstraint[] {
         endpoint: 'end',
         targetId: pObj.pTo.animId,
         targetEdge: 0,
-        chopEnabled: pObj.bChop,
+        chopEnabled: pObj.bChopEnd || pObj.bChop,
       });
     }
     if (pObj.pSublist) {

@@ -336,6 +336,8 @@ export interface PObj {
   aPath: PPoint[];
   pFrom: PObj | null;
   pTo: PObj | null;
+  bChopStart: boolean;  // chop at start (from) endpoint
+  bChopEnd: boolean;    // chop at end (to) endpoint
   bbox: PBox;
   // Animation fields
   opacity: PNum;
@@ -476,6 +478,8 @@ export function createPObj(type: PClass): PObj {
     aPath: [],
     pFrom: null,
     pTo: null,
+    bChopStart: false,
+    bChopEnd: false,
     bbox: { sw: { x: 1, y: 1 }, ne: { x: 0, y: 0 } },
     // Animation fields
     opacity: 1.0,

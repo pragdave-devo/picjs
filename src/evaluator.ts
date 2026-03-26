@@ -237,6 +237,15 @@ function evalShape(p: Pik, shape: AstShape, labelTok: PToken | null): PicValue {
   }
 
   if (p.nErr) return mkNull();
+
+  // Apply auto-chop only if BOTH endpoints reference objects without explicit edges
+  const pending = autoChopPending.get(obj);
+  if (pending && pending.start && pending.end) {
+    obj.bChopStart = true;
+    obj.bChopEnd = true;
+  }
+  autoChopPending.delete(obj);
+
   pikAfterAddingAttributes(p, obj);
   pikElistAppend(p, p.list, obj);
   return mkObj(obj);
@@ -342,6 +351,24 @@ function resolvePositionObject(p: Pik, pos: AstPosition): PObj | null {
   return null;
 }
 
+// Check if a position references an object without an explicit edge
+// (i.e., "from A" not "from A.n" or "from A.c")
+function shouldChopAtPosition(pos: AstPosition): boolean {
+  if (pos.posKind === 'place') {
+    // Chop only if no explicit edge specified
+    return pos.place.edge === null;
+  }
+  if (pos.posKind === 'paren') {
+    return shouldChopAtPosition(pos.inner);
+  }
+  // Coordinates, between, etc. - no chop
+  return false;
+}
+
+// Track which endpoints should be auto-chopped per object
+// Key: object reference, Value: { start: boolean, end: boolean }
+const autoChopPending = new WeakMap<PObj, { start: boolean; end: boolean }>();
+
 function evalPositionAttr(p: Pik, attr: AstAttrPosition, obj: PObj): void {
   switch (attr.variant) {
     case "from": {
@@ -349,6 +376,12 @@ function evalPositionAttr(p: Pik, attr: AstAttrPosition, obj: PObj): void {
       const pos = evalPosition(p, attr.position);
       pikSetFrom(p, obj, attr.tok, pos);
       if (refObj && !obj.pFrom) obj.pFrom = refObj;
+      // Mark pending chop at start if no explicit edge was specified
+      if (refObj && shouldChopAtPosition(attr.position)) {
+        const pending = autoChopPending.get(obj) || { start: false, end: false };
+        pending.start = true;
+        autoChopPending.set(obj, pending);
+      }
       break;
     }
     case "to": {
@@ -356,6 +389,12 @@ function evalPositionAttr(p: Pik, attr: AstAttrPosition, obj: PObj): void {
       const pos = evalPosition(p, attr.position);
       pikAddTo(p, obj, attr.tok, pos);
       if (refObj && !obj.pTo) obj.pTo = refObj;
+      // Mark pending chop at end if no explicit edge was specified
+      if (refObj && shouldChopAtPosition(attr.position)) {
+        const pending = autoChopPending.get(obj) || { start: false, end: false };
+        pending.end = true;
+        autoChopPending.set(obj, pending);
+      }
       break;
     }
     case "at": {

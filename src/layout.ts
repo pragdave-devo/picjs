@@ -1157,7 +1157,8 @@ export function pikAfterAddingAttributes(p: Pik, pObj: PObj): void {
     if (prev.type.isLine && prev.pFrom && !prev.pTo) {
       prev.pTo = pObj;
       // Enable chop for auto-connected arrows so they stop at shape boundaries
-      prev.bChop = true;
+      prev.bChopStart = true;
+      prev.bChopEnd = true;
     }
   }
 
@@ -1242,11 +1243,17 @@ export function pikAfterAddingAttributes(p: Pik, pObj: PObj): void {
       // Instead, we mark a flag so the next non-line object can backfill.
     }
 
-    // "chop" processing
-    if (pObj.bChop && pObj.nPath >= 2) {
+    // "chop" processing - per-endpoint or global bChop
+    if (pObj.nPath >= 2) {
       const n = pObj.nPath;
-      pikAutochop(p, pObj.aPath[n - 2], pObj.aPath[n - 1], pObj.pTo);
-      pikAutochop(p, pObj.aPath[1], pObj.aPath[0], pObj.pFrom);
+      // Chop at end if bChopEnd or global bChop is set
+      if (pObj.bChopEnd || pObj.bChop) {
+        pikAutochop(p, pObj.aPath[n - 2], pObj.aPath[n - 1], pObj.pTo);
+      }
+      // Chop at start if bChopStart or global bChop is set
+      if (pObj.bChopStart || pObj.bChop) {
+        pikAutochop(p, pObj.aPath[1], pObj.aPath[0], pObj.pFrom);
+      }
     }
 
     pObj.ptEnter = pointCopy(pObj.aPath[0]);

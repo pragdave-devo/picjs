@@ -1,7 +1,6 @@
-// test-new-parser.ts — Test the new AST-based parser+evaluator
-// Runs key tests with useNewParser=true and compares to old parser output
+// test-new-parser.ts — Test the picjs parser and evaluator
 
-import { picjs, setUseNewParser } from './picjs.ts';
+import { picjs } from './picjs.ts';
 
 let passed = 0;
 let failed = 0;
@@ -22,7 +21,7 @@ function assert(condition: boolean, msg: string): void {
   if (!condition) throw new Error(msg);
 }
 
-console.log('picjs — New Parser Tests\n');
+console.log('picjs — Parser Tests\n');
 
 // Test cases: pairs of (description, source)
 const testCases: [string, string][] = [
@@ -59,9 +58,9 @@ const testCases: [string, string][] = [
   ['at absolute', 'box at 0,0\nbox at 1,1'],
   ['at relative', 'A: box\nbox at 1 right of A'],
   ['with clause', 'A: box\nbox with .nw at A.ne'],
-  ['from/to', 'A: box\nB: box at 2,0\narrow from A.e to B.w'],
-  ['labeled objects', 'A: box "A"\nB: box "B"\narrow from A to B'],
-  ['nth reference', 'box\nbox\nbox\narrow from 1st box to 3rd box'],
+  ['from/to explicit edges', 'A: box\nB: box at 2,0\narrow from A.e to B.w'],
+  ['from/to implicit (auto-chop)', 'A: box "A"\nmove\nB: box "B"\narrow from A to B'],
+  ['nth reference', 'box\nmove\nbox\nmove\nbox\narrow from 1st box to 3rd box'],
   ['last reference', 'box "A"\nbox "B"\narrow from last box.e right 0.5'],
   ['variable assignment', 'myvar = 2\nbox width myvar'],
   ['builtin override', 'boxwid = 1.5\nbox'],
@@ -82,8 +81,8 @@ const testCases: [string, string][] = [
   ['fit', 'box "A long text string" fit'],
   ['define no args', 'define mybox { box "macro" }\nmybox'],
   ['compass points', 'A: box\ndot at A.n\ndot at A.ne\ndot at A.e\ndot at A.se\ndot at A.s\ndot at A.sw\ndot at A.w\ndot at A.nw'],
-  ['for range', 'for x from 0 to 3 do { box }'],
-  ['for in', 'for x in [0.5, 1.0, 1.5] do { circle rad x }'],
+  ['for range', 'for _i from 0 to 3 do { box }'],
+  ['for in', 'for _r in [0.5, 1.0, 1.5] do { circle rad _r }'],
   ['macro with args', 'define labeled_box { box $1 }\nlabeled_box("hello")'],
   ['macro in position', 'define point { ( $2*cos($1), $2*sin($1) ) }\ntheta = 0\nr = 0.5\nbox at point(theta, r)'],
   ['assert position', 'A: box\nassert( A == A )'],
@@ -92,58 +91,19 @@ const testCases: [string, string][] = [
   ['even with', 'box "A"\nline right until even with 1 right of last box'],
   ['darkMode', 'box "Dark"'],
   ['between', 'A: box\nB: box at 2,0\nC: box at 0.5 between A and B'],
-  ['string interpolation', 'x = 42\nbox "Value is ${x}"'],
+  ['string interpolation', 'val = 42\nbox "Value is ${val}"'],
 ];
 
-// First, run with old parser to get reference output
-console.log('Running comparison tests...\n');
-
-let matchCount = 0;
-let mismatchCount = 0;
+// Run basic syntax tests
+console.log('Running basic syntax tests...\n');
 
 for (const [name, source] of testCases) {
   test(name, () => {
-    // Old parser
-    setUseNewParser(false);
-    const oldResult = picjs(source);
-
-    // New parser
-    setUseNewParser(true);
-    const newResult = picjs(source);
-
-    // Both should succeed or both should fail
-    if (oldResult.isError !== newResult.isError) {
-      if (newResult.isError) {
-        // Extract error message
-        const errMatch = newResult.svg.match(/ERROR: ([^\n<]+)/);
-        const errMsg = errMatch ? errMatch[1].trim() : newResult.svg.substring(0, 200);
-        throw new Error(`old parser succeeded but new parser failed: ${errMsg}`);
-      } else {
-        throw new Error(`old parser failed but new parser succeeded`);
-      }
-    }
-
-    if (!oldResult.isError) {
-      // Compare SVG output
-      if (oldResult.svg === newResult.svg) {
-        matchCount++;
-      } else {
-        mismatchCount++;
-        // Find first difference
-        const maxLen = Math.max(oldResult.svg.length, newResult.svg.length);
-        let diffPos = 0;
-        for (let i = 0; i < maxLen; i++) {
-          if (oldResult.svg[i] !== newResult.svg[i]) { diffPos = i; break; }
-        }
-        const context = 40;
-        const oldSnippet = oldResult.svg.substring(Math.max(0, diffPos - context), diffPos + context);
-        const newSnippet = newResult.svg.substring(Math.max(0, diffPos - context), diffPos + context);
-        throw new Error(
-          `SVG mismatch at position ${diffPos}:\n` +
-          `        old: ...${oldSnippet}...\n` +
-          `        new: ...${newSnippet}...`
-        );
-      }
+    const result = picjs(source);
+    if (result.isError) {
+      const errMatch = result.svg.match(/ERROR: ([^\n<]+)/);
+      const errMsg = errMatch ? errMatch[1].trim() : result.svg.substring(0, 200);
+      throw new Error(`parse error: ${errMsg}`);
     }
   });
 }
@@ -162,47 +122,19 @@ if (fs.existsSync(examplesDir)) {
   for (const f of exampleFiles) {
     test(`example: ${f}`, () => {
       const source = fs.readFileSync(path.join(examplesDir, f), 'utf-8');
-
-      setUseNewParser(false);
-      const oldResult = picjs(source);
-
-      setUseNewParser(true);
-      const newResult = picjs(source);
-
-      if (oldResult.isError !== newResult.isError) {
-        if (newResult.isError) {
-          const errMatch = newResult.svg.match(/ERROR: ([^\n<]+)/);
-          throw new Error(`new parser failed: ${errMatch ? errMatch[1].trim() : newResult.svg.substring(0, 200)}`);
-        } else {
-          // Old parser doesn't support new DSL features — new-only pass
-          return;
-        }
-      }
-      if (!oldResult.isError && oldResult.svg !== newResult.svg) {
-        // Animated SVGs will always differ (old parser doesn't produce animations)
-        if (newResult.isAnimated) return;
-        const maxLen = Math.max(oldResult.svg.length, newResult.svg.length);
-        let diffPos = 0;
-        for (let i = 0; i < maxLen; i++) {
-          if (oldResult.svg[i] !== newResult.svg[i]) { diffPos = i; break; }
-        }
-        const ctx = 60;
-        throw new Error(
-          `SVG mismatch at pos ${diffPos}:\n` +
-          `  old: ...${oldResult.svg.substring(Math.max(0, diffPos - ctx), diffPos + ctx)}...\n` +
-          `  new: ...${newResult.svg.substring(Math.max(0, diffPos - ctx), diffPos + ctx)}...`
-        );
+      const result = picjs(source);
+      if (result.isError) {
+        const errMatch = result.svg.match(/ERROR: ([^\n<]+)/);
+        throw new Error(`parse error: ${errMatch ? errMatch[1].trim() : result.svg.substring(0, 200)}`);
       }
     });
   }
 }
 
 // ============================================================
-// Phase 2A: New feature tests (new parser only)
+// New feature tests
 // ============================================================
-console.log('\nPhase 2A: New feature tests (new parser only)...\n');
-
-setUseNewParser(true);
+console.log('\nNew feature tests...\n');
 
 // Boolean literals
 test('yes literal equals 1', () => {
@@ -954,11 +886,7 @@ test('animated SVG contains animation data (JSON)', () => {
   assert(!r.svg.includes('requestAnimationFrame'), 'should NOT embed runtime JS');
 });
 
-// Reset to old parser
-setUseNewParser(false);
-
 console.log(`\n${'='.repeat(60)}`);
 console.log(`Results: ${passed} passed, ${failed} failed`);
-console.log(`SVG matches: ${matchCount}, mismatches: ${mismatchCount}`);
 console.log('='.repeat(60));
 if (failed > 0) process.exit(1);

@@ -18,7 +18,6 @@ import {
   setPikValueFn, setPikAppendStyleFn, setPikAppendTxtFn, setPikSizeToFitFn,
 } from './shapes.ts';
 import { pikAppendStyle, pikAppendTxt, pikRender } from './renderer.ts';
-import { pikParse } from './parser.ts';
 import { parseToAst } from './parser2.ts';
 import { evaluate, setParseToAstFn, resetEvalState, resetAnimations, getAnimations } from './evaluator.ts';
 
@@ -66,12 +65,6 @@ function ensureInit(): void {
   setParseToAstFn(parseToAst);
 }
 
-// Feature flag: set to true to use new AST-based parser+evaluator
-let useNewParser = true;
-
-export function setUseNewParser(flag: boolean): void {
-  useNewParser = flag;
-}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -109,15 +102,11 @@ export function picjs(text: string, options?: PicjsOptions): PicjsResult {
   p.mFlags = mFlags;
 
   let pList: PList | null = null;
-  if (useNewParser) {
-    const ast = parseToAst(p, text);
-    if (p.nErr === 0) {
-      resetEvalState();
-      evaluate(p, ast);
-      pList = p.list;
-    }
-  } else {
-    pList = pikParse(p, text);
+  const ast = parseToAst(p, text);
+  if (p.nErr === 0) {
+    resetEvalState();
+    evaluate(p, ast);
+    pList = p.list;
   }
 
   if (p.nErr === 0 && pList) {
