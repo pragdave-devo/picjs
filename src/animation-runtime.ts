@@ -152,21 +152,47 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
   // Key: "animIndex:alterIndex", Value: captured fromValue
   const capturedFrom: Record<string, number | string> = {};
 
+  // Parse rgb(r,g,b) string to integer color value
+  function parseRGB(rgbStr: string): number {
+    const m = rgbStr.match(/rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    if (m) {
+      return (parseInt(m[1]) << 16) | (parseInt(m[2]) << 8) | parseInt(m[3]);
+    }
+    return 0;
+  }
+
+  // Extract color from element's style
+  function getElementColor(el: Element, prop: 'fill' | 'color'): number {
+    const shape = el.querySelector('path, rect, circle, ellipse, polygon');
+    if (!shape) return 0;
+    const style = shape.getAttribute('style') || '';
+    if (prop === 'fill') {
+      const m = style.match(/fill:\s*([^;]+)/);
+      if (m) return parseRGB(m[1]);
+    } else {
+      const m = style.match(/stroke:\s*([^;]+)/);
+      if (m) return parseRGB(m[1]);
+    }
+    return 0;
+  }
+
   function getFromValue(alter: any, animIdx: number, alterIdx: number): number | string {
     const key = `${animIdx}:${alterIdx}`;
     if (key in capturedFrom) return capturedFrom[key];
 
     // Capture current state as fromValue
     const prop = alter.property;
+    const el = getElem(alter.targetId);
     if (prop === 'cx' || prop === 'cy') {
       // For position, fromValue is current delta (starts at 0)
       const ps = posState[alter.targetId] || { dx: 0, dy: 0 };
       capturedFrom[key] = prop === 'cx' ? ps.dx : ps.dy;
     } else if (prop === 'opacity') {
-      const el = getElem(alter.targetId) as HTMLElement | null;
-      capturedFrom[key] = el ? parseFloat(el.style.opacity || '1') : 1;
+      capturedFrom[key] = el ? parseFloat((el as HTMLElement).style.opacity || '1') : 1;
+    } else if (prop === 'fill' || prop === 'color') {
+      // Read current fill/stroke color from element
+      capturedFrom[key] = el ? getElementColor(el, prop) : 0;
     } else {
-      // For colors and other props, use 0 as default (should be improved)
       capturedFrom[key] = 0;
     }
     return capturedFrom[key];
