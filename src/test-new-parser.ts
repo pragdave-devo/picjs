@@ -740,6 +740,124 @@ test('filter with assignment return', () => {
   assert(r.svg.includes('2'), 'should contain "2" (3 and 4)');
 });
 
+// Unified expression tests (positions, objects, edges as expressions)
+console.log('\n--- Unified expressions ---');
+
+test('position literal (x, y)', () => {
+  const r = picjs('$p = (1, 2)\nprint $p');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.printOutput?.includes('(1,2)'), 'should print (1,2)');
+});
+
+test('position addition', () => {
+  const r = picjs('$p = (1, 2) + (3, 4)\nprint $p');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.printOutput?.includes('(4,6)'), 'should print (4,6)');
+});
+
+test('position subtraction', () => {
+  const r = picjs('$p = (5, 5) - (2, 1)\nprint $p');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.printOutput?.includes('(3,4)'), 'should print (3,4)');
+});
+
+test('position * scalar', () => {
+  const r = picjs('$p = (2, 3) * 2\nprint $p');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.printOutput?.includes('(4,6)'), 'should print (4,6)');
+});
+
+test('position / scalar', () => {
+  const r = picjs('$p = (6, 8) / 2\nprint $p');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.printOutput?.includes('(3,4)'), 'should print (3,4)');
+});
+
+test('scalar * position', () => {
+  const r = picjs('$p = 3 * (1, 2)\nprint $p');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.printOutput?.includes('(3,6)'), 'should print (3,6)');
+});
+
+test('object edge as expression', () => {
+  const r = picjs('B: box at (0, 0)\n$p = B.ne\nprint $p');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  // B.ne should be the northeast corner, some position
+  assert(r.printOutput?.includes('('), 'should print a position');
+});
+
+test('object edge + offset', () => {
+  const r = picjs('B: box at (0, 0)\n$p = B.ne + (1, 0)\nprint $p');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.printOutput?.includes('('), 'should print a position');
+});
+
+test('$var.edge compass access', () => {
+  const r = picjs('B: box\n$b = B\n$p = $b.n\nprint $p');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.printOutput?.includes('('), 'should print a position');
+});
+
+test('indexed object edge: $arr[i].edge', () => {
+  const r = picjs('Peg1: box\nPeg2: box\n$pegs = [Peg1, Peg2]\nmove to $pegs[0].s\nbox');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('from obj.edge right dist (direction after position)', () => {
+  const r = picjs('box "A"\nbox "B"\narrow from last box.e right 0.5');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('right until even with syntax', () => {
+  const r = picjs('A: box\nB: box at (2, 1)\nline from A.e right until even with B.w');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('right until even with position offset', () => {
+  const r = picjs('A: box\nB: box at (2, 1)\nqtr = 0.25\nline from A.e right until even with B.n - (qtr, 0)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('angle bracket between with nth object', () => {
+  const r = picjs('A: circle\nB: box\nC: box\narrow to 5/8<A.w, 2nd last box>');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('bare nth object as expression', () => {
+  const r = picjs('box\nbox\narrow to 2nd last box');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('2nd last box in position context', () => {
+  const r = picjs('box\nbox\nmove to 2nd last box');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('simple angle bracket between', () => {
+  const r = picjs('A: box\nB: box\narrow to 1/2<A, B>');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('angle bracket with edge', () => {
+  const r = picjs('A: box\nB: box\narrow to 1/2<A.w, B.e>');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('angle bracket with last box', () => {
+  const r = picjs('A: box\nB: box\narrow to 1/2<A.w, last box>');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('position+offset then direction attribute', () => {
+  const r = picjs('A: box\nline from A.e + (0, 0.1) right 0.5');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
+test('position+offset then until even with', () => {
+  const r = picjs('A: box\nB: box at (2, 1)\nline from A.e + (0, 0.1) right until even with B.n');
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
 // Phase 3A: Animation parsing
 console.log('\n--- Animation parsing ---');
 

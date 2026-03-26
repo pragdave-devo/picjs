@@ -25,7 +25,7 @@ import {
 } from './layout.ts';
 
 import { Environment } from './environment.ts';
-import { mkNum, mkStr, mkBool, mkPos, mkFn, mkList, mkObj, mkAnim, mkNull, toNumber, toString, toBoolean, valuesEqual, type PicValue, type PicFunction } from './values.ts';
+import { mkNum, mkStr, mkBool, mkPos, mkFn, mkList, mkObj, mkAnim, mkNull, toNumber, toString, toBoolean, valuesEqual, applyBinOp, type PicValue, type PicFunction, type BinOp } from './values.ts';
 
 import type {
   AstStmt, AstShape, AstLabel, AstLabelPosition, AstForRange, AstForIn, AstFnCall,
@@ -47,6 +47,7 @@ const {
   T_FILL, T_COLOR, T_THICKNESS,
   T_EDGEPT, T_X, T_Y,
   T_ASSIGN, T_LAST,
+  T_CENTER, T_TOP, T_BOTTOM, T_START, T_END, T_RIGHT, T_LEFT,
 } = TokenType;
 
 // Lazy-bound reference to parseToAst (set by integration layer to avoid circular imports)
@@ -864,25 +865,53 @@ function evalRichExpr(p: Pik, expr: AstExpr): PicValue {
             return mkNum(0);
         }
       }
+      if (val.tag === 'obj') {
+        // Compass edge access: $var.n, $var.ne, etc.
+        const pt = pikPlaceOfElem(p, val.val, expr.propTok);
+        return mkPos(pt.x, pt.y);
+      }
       pikError(p, expr.propTok, `cannot access property '${propName}' on ${val.tag} value`);
       return mkNum(0);
     }
     case "paren":
       return evalRichExpr(p, expr.expr);
+    case "posLiteral": {
+      const x = toNumber(evalRichExpr(p, expr.x));
+      const y = toNumber(evalRichExpr(p, expr.y));
+      return mkPos(x, y);
+    }
+    case "objRef": {
+      const obj = resolveObject(p, expr.object);
+      if (obj) return mkObj(obj);
+      return mkNull();
+    }
     case "binOp": {
-      // Handle list/string concatenation with +
-      if (expr.op === "+") {
-        const leftVal = evalRichExpr(p, expr.left);
-        const rightVal = evalRichExpr(p, expr.right);
-        if (leftVal.tag === 'list' && rightVal.tag === 'list') {
-          return mkList([...leftVal.val, ...rightVal.val]);
-        }
-        if (leftVal.tag === 'string' || rightVal.tag === 'string') {
-          return mkStr(toString(leftVal) + toString(rightVal));
-        }
-        return mkNum(toNumber(leftVal) + toNumber(rightVal));
+      const leftVal = evalRichExpr(p, expr.left);
+      const rightVal = evalRichExpr(p, expr.right);
+      // Try double dispatch first
+      const result = applyBinOp(expr.op as BinOp, leftVal, rightVal);
+      if (result !== null) return result;
+      // Fallback: string coercion for + (e.g., number + string)
+      if (expr.op === '+' && (leftVal.tag === 'string' || rightVal.tag === 'string')) {
+        return mkStr(toString(leftVal) + toString(rightVal));
       }
+      // Fallback: numeric evaluation
       return mkNum(evalExpr(p, expr));
+    }
+    case "property": {
+      const obj = resolveObject(p, expr.object);
+      if (!obj) return mkNum(0);
+      // Check if it's a compass edge - return position
+      const eType = expr.prop.eType;
+      if (eType === T_CENTER || eType === T_EDGEPT ||
+          eType === T_TOP || eType === T_BOTTOM ||
+          eType === T_START || eType === T_END ||
+          eType === T_RIGHT || eType === T_LEFT) {
+        const pt = pikPlaceOfElem(p, obj, expr.prop);
+        return mkPos(pt.x, pt.y);
+      }
+      // Numeric property
+      return mkNum(pikPropertyOf(obj, expr.prop));
     }
     default:
       return mkNum(evalExpr(p, expr));
@@ -1361,6 +1390,13 @@ function resolveObject(p: Pik, astObj: AstObject): PObj | null {
       // Set eCode on classTok for pikFindNth
       const nthTok = { ...astObj.classTok };
       return pikFindNth(p, basis, nthTok);
+    }
+
+    case "expr": {
+      const val = evalRichExpr(p, astObj.expr);
+      if (val.tag === 'obj') return val.val;
+      pikError(p, astObj.expr.tok || makeToken(), `expected object, got ${val.tag}`);
+      return null;
     }
   }
 }

@@ -307,6 +307,8 @@ export type AstExpr =
   | AstExprUserCall
   | AstExprRange
   | AstExprDollarProp
+  | AstExprPosLiteral
+  | AstExprObjRef
 
 export interface AstExprNumber {
   exprKind: "number";
@@ -444,6 +446,19 @@ export interface AstExprDollarProp {
   propTok: PToken;        // the property name (start, end, duration)
 }
 
+export interface AstExprPosLiteral {
+  exprKind: "posLiteral";
+  x: AstExpr;
+  y: AstExpr;
+  tok: PToken;
+}
+
+export interface AstExprObjRef {
+  exprKind: "objRef";
+  object: AstObject;
+  tok: PToken;
+}
+
 // ============================================================
 // Positions
 // ============================================================
@@ -518,6 +533,7 @@ export type AstObject =
   | AstObjThis
   | AstObjNamed
   | AstObjNth
+  | AstObjExpr
 
 export interface AstObjThis {
   objKind: "this";
@@ -534,6 +550,11 @@ export interface AstObjNth {
   nth: PToken;       // T_NTH with eCode set, or T_LAST
   classTok: PToken;  // T_CLASSNAME or T_LB or T_LAST
   inObject: AstObject | null;  // "of" or "in" basis object
+}
+
+export interface AstObjExpr {
+  objKind: "expr";
+  expr: AstExpr;
 }
 
 // Vertex expression

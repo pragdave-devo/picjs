@@ -665,14 +665,7 @@ function parseOptRelExpr(p: Pik, ts: TokenStream): AstRelExpr | null {
 // ============================================================
 
 function parseRvalueExpr(p: Pik, ts: TokenStream): AstExpr {
-  if (ts.peek().eType === T_PLACENAME) {
-    const t2 = ts.peekAhead(1);
-    if (t2.eType !== T_DOT_E && t2.eType !== T_DOT_XY &&
-        t2.eType !== T_DOT_L && t2.eType !== T_DOT_U) {
-      const clr = ts.advance();
-      return { exprKind: "colorName", tok: clr };
-    }
-  }
+  // parseExpr now handles PLACENAME as either color or object reference
   return parseExpr(p, ts);
 }
 
@@ -999,35 +992,42 @@ function parsePositionCore(p: Pik, ts: TokenStream): AstPosition {
     return parsePlacePosition(p, ts);
   }
 
-  // expr COMMA expr -> absolute
-  if (ts.peek().eType === T_COMMA) {
+  // Position-valued expressions: property with edge, objRef, posLiteral, or binOp involving positions
+  // These should not be interpreted as numeric distances or coordinates
+  const isPositionExpr = isPositionValuedExpr(val);
+
+  // expr COMMA expr -> absolute (only if expr looks numeric, not position-valued)
+  // Position-valued expression followed by comma is likely a different context (e.g., <A.w,B> between syntax)
+  if (ts.peek().eType === T_COMMA && !isPositionExpr) {
     ts.advance();
     const y = parseExpr(p, ts);
     return { posKind: "absolute", x: val, y };
   }
 
-  // Distance + direction
-  if (ts.peek().eType === T_ABOVE) {
-    ts.advance();
-    const of = parsePosition(p, ts);
-    return { posKind: "distDir", distance: val, direction: "above", headingExpr: null, edgeptTok: null, of };
-  }
-  if (ts.peek().eType === T_BELOW) {
-    ts.advance();
-    const of = parsePosition(p, ts);
-    return { posKind: "distDir", distance: val, direction: "below", headingExpr: null, edgeptTok: null, of };
-  }
-  if (ts.peek().eType === T_LEFT) {
-    ts.advance();
-    ts.match(T_OF);
-    const of = parsePosition(p, ts);
-    return { posKind: "distDir", distance: val, direction: "left", headingExpr: null, edgeptTok: null, of };
-  }
-  if (ts.peek().eType === T_RIGHT) {
-    ts.advance();
-    ts.match(T_OF);
-    const of = parsePosition(p, ts);
-    return { posKind: "distDir", distance: val, direction: "right", headingExpr: null, edgeptTok: null, of };
+  // Distance + direction (only if expression looks numeric, not position-valued)
+  if (!isPositionExpr) {
+    if (ts.peek().eType === T_ABOVE) {
+      ts.advance();
+      const of = parsePosition(p, ts);
+      return { posKind: "distDir", distance: val, direction: "above", headingExpr: null, edgeptTok: null, of };
+    }
+    if (ts.peek().eType === T_BELOW) {
+      ts.advance();
+      const of = parsePosition(p, ts);
+      return { posKind: "distDir", distance: val, direction: "below", headingExpr: null, edgeptTok: null, of };
+    }
+    if (ts.peek().eType === T_LEFT) {
+      ts.advance();
+      ts.match(T_OF);
+      const of = parsePosition(p, ts);
+      return { posKind: "distDir", distance: val, direction: "left", headingExpr: null, edgeptTok: null, of };
+    }
+    if (ts.peek().eType === T_RIGHT) {
+      ts.advance();
+      ts.match(T_OF);
+      const of = parsePosition(p, ts);
+      return { posKind: "distDir", distance: val, direction: "right", headingExpr: null, edgeptTok: null, of };
+    }
   }
 
   // EDGEPT
@@ -1176,6 +1176,20 @@ function parseObject(p: Pik, ts: TokenStream): AstObject {
   if (t.eType === T_THIS) {
     const tok = ts.advance();
     return { objKind: "this", tok };
+  }
+
+  // $-prefixed expression: $var or $var[i] (but NOT $var.edge - that's handled by place parsing)
+  if (t.eType === T_ID && t.z[0] === '$') {
+    const id = ts.advance();
+    let expr: AstExpr = { exprKind: "varRef", tok: id };
+    // Allow array indexing: $var[i]
+    while (ts.peek().eType === T_LB) {
+      ts.advance(); // consume [
+      const indexExpr = parseExpr(p, ts);
+      ts.expect(T_RB, 'expected "]"');
+      expr = { exprKind: "index", object: expr, index: indexExpr, tok: id };
+    }
+    return { objKind: "expr", expr };
   }
 
   // PLACENAME [.PLACENAME]*
@@ -1540,18 +1554,38 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
     return { exprKind: "varRef", tok: id };
   }
 
-  // PLACENAME as color name (Red, Blue, LightGreen, etc.)
-  // Only if: (1) not followed by dot (object reference), (2) is a known color
+  // PLACENAME: either color name or object reference
   if (t.eType === T_PLACENAME) {
     const t2 = ts.peekAhead(1);
+    // If followed by dot, it's an object property access - handle below
     if (t2.eType !== T_DOT_E && t2.eType !== T_DOT_XY &&
         t2.eType !== T_DOT_L && t2.eType !== T_DOT_U) {
-      // Check if it's actually a known color (lookupColor returns -99 if not found)
+      // Check if it's a known color (lookupColor returns -99 if not found)
       const colorVal = lookupColor(t.z.substring(0, t.n));
       if (colorVal !== -99) {
         const clr = ts.advance();
         return { exprKind: "colorName", tok: clr };
       }
+      // Not a color - parse as object reference expression
+      const tok = t;
+      const obj = parseObject(p, ts);
+      return { exprKind: "objRef", object: obj, tok };
+    }
+  }
+
+  // NTH, LAST, THIS: object reference expressions (e.g., "2nd last box", "last circle", "this")
+  // When not followed by property access, return as objRef
+  if (t.eType === T_NTH || t.eType === T_LAST || t.eType === T_THIS) {
+    const saved = ts.save();
+    const tok = t;
+    const obj = parseObject(p, ts);
+    // Check if followed by property access - if so, restore and let isObjectStart block handle it
+    const next = ts.peek();
+    if (next.eType === T_DOT_E || next.eType === T_DOT_XY ||
+        next.eType === T_DOT_L || next.eType === T_DOT_U) {
+      ts.restore(saved);
+    } else {
+      return { exprKind: "objRef", object: obj, tok };
     }
   }
 
@@ -1599,9 +1633,9 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
     return { exprKind: "dist", p1, p2, tok };
   }
 
-  // LP expr RP or LP FILL|COLOR|THICKNESS RP
+  // LP expr RP or LP FILL|COLOR|THICKNESS RP or LP x, y RP (position literal)
   if (t.eType === T_LP) {
-    ts.advance();
+    const tok = ts.advance();
     const inner = ts.peek();
     if ((inner.eType === T_FILL || inner.eType === T_COLOR || inner.eType === T_THICKNESS) &&
         ts.peekAhead(1).eType === T_RP) {
@@ -1610,6 +1644,13 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
       return { exprKind: "varRef", tok: varTok };
     }
     const expr = parseExpr(p, ts);
+    // Check for position literal: (x, y)
+    if (ts.peek().eType === T_COMMA) {
+      ts.advance();
+      const y = parseExpr(p, ts);
+      ts.expect(T_RP, 'expected ")"');
+      return { exprKind: "posLiteral", x: expr, y, tok };
+    }
     ts.expect(T_RP, 'expected ")"');
     return { exprKind: "paren", expr };
   }
@@ -1667,9 +1708,8 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
         }
       }
 
-      // .edge.x / .edge.y
+      // .edge.x / .edge.y or just .edge (returns position)
       if (ts.peek().eType === T_DOT_E) {
-        const dotSaved = ts.save();
         ts.advance();
         const edge = parseEdge(p, ts);
         if (ts.peek().eType === T_DOT_XY) {
@@ -1683,7 +1723,8 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
             return { exprKind: "placeXY", place: { object: obj, edge, hasDotE: true }, axis: "y" };
           }
         }
-        ts.restore(dotSaved);
+        // Just .edge - returns position value
+        return { exprKind: "property", object: obj, prop: edge };
       }
 
       // .property
@@ -1755,6 +1796,20 @@ function isEdge(t: PToken): boolean {
          t.eType === T_TOP || t.eType === T_BOTTOM ||
          t.eType === T_START || t.eType === T_END ||
          t.eType === T_RIGHT || t.eType === T_LEFT;
+}
+
+function isPositionValuedExpr(val: AstExpr): boolean {
+  if (val.exprKind === "objRef") return true;
+  if (val.exprKind === "posLiteral") return true;
+  if (val.exprKind === "property" && isEdge((val as any).prop)) return true;
+  if (val.exprKind === "binOp") {
+    // If either operand is position-valued, the result might be too
+    return isPositionValuedExpr((val as any).left) || isPositionValuedExpr((val as any).right);
+  }
+  if (val.exprKind === "paren") {
+    return isPositionValuedExpr((val as any).expr);
+  }
+  return false;
 }
 
 function isExprStart(t: PToken): boolean {
