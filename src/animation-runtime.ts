@@ -148,6 +148,17 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
   // --- Position tracking ---
   const posState: Record<string, { dx: number; dy: number }> = {};
 
+  // Pre-collect all element IDs that have position animations so we can
+  // reset their transforms even when no animation is active at time t
+  const posAnimatedIds = new Set<string>();
+  for (const a of anims) {
+    for (const alt of a.alterations) {
+      if (alt.property === 'cx' || alt.property === 'cy') {
+        posAnimatedIds.add(alt.targetId);
+      }
+    }
+  }
+
   // --- Runtime fromValue capture ---
   // Key: "animIndex:alterIndex", Value: captured fromValue
   const capturedFrom: Record<string, number | string> = {};
@@ -234,17 +245,14 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
     } else if (prop === 'cx' || prop === 'cy') {
       const key = alter.targetId;
       if (!posState[key]) posState[key] = { dx: 0, dy: 0 };
-      // Accumulate deltas from all animations affecting this element
+      // Accumulate deltas — transform is applied in renderAtTime post-loop
       if (prop === 'cx') posState[key].dx += lerp(0, to - from, t);
       else posState[key].dy += lerp(0, to - from, t);
-      el.setAttribute('transform', `translate(${posState[key].dx},${posState[key].dy})`);
     }
   }
 
   function applyBounce(alter: any, bounceTime: number, bounceDuration: number, animIdx: number, alterIdx: number): void {
     if (bounceDuration <= 0) return;
-    const el = getElem(alter.targetId) as HTMLElement | null;
-    if (!el) return;
     const t = bounceTime / bounceDuration;
     const decay = Math.cos(t * Math.PI * 3) * (1 - t) * 0.1;
     const prop = alter.property;
@@ -256,7 +264,6 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
       // Bounce adds oscillation on top of final position
       if (prop === 'cx') posState[key].dx += range + decay * range;
       else posState[key].dy += range + decay * range;
-      el.setAttribute('transform', `translate(${posState[key].dx},${posState[key].dy})`);
     }
   }
 
@@ -488,6 +495,17 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
         }
       }
     }
+
+    // Apply accumulated position to ALL position-animated elements,
+    // including those with no active animation at time t (ensures
+    // elements reset to initial position when scrubbing to t=0)
+    for (const id of posAnimatedIds) {
+      const el = getElem(id) as HTMLElement | null;
+      if (!el) continue;
+      const ps = posState[id] || { dx: 0, dy: 0 };
+      el.setAttribute('transform', `translate(${ps.dx},${ps.dy})`);
+    }
+
     updateConnectors();
   }
 

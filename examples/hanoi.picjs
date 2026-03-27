@@ -1,0 +1,112 @@
+# Towers of Hanoi
+
+$n = 5                  # number of disks
+
+# the disks
+$dh = 0.18              # height of a disk
+$stack_gap = 0.05       # vertical gap betweeg disks
+$max_width  = 1.5
+$min_width  = 0.75
+$delta_width = ($max_width - $min_width)/$n
+$disk_width = $max_width + $delta_width
+$disk_hue = 200
+$hue_delta = 120 / ($n-1)
+
+
+# The pegs
+$gap = 2.0              # gap between pegs
+$peg_width = 0.15       # the width of a peg
+$peg_rad = 0.05         # and the rounding at the end
+$peg_height = ($n + 1) * ($dh + $stack_gap)
+
+
+
+########################################################################
+# Pegs and base
+Base: box wid 3*$gap ht 0.2 color none fill seagreen with .nw at (0,0)
+$top_of_base = Base.n.y  # the height of disks moving between pegs
+
+$pegs = map([0..2], fn ($peg) {
+  move right $gap
+  box wid $peg_width ht $peg_height color none fill seagreen \
+    rad $peg_rad \
+    with .s at ($peg*$gap + $gap/2, $top_of_base - $peg_rad)
+})
+
+$top = $pegs[0].n.y + $dh
+
+
+########################################################################
+# Draw the disks in their initial position
+move to ($pegs[0].c.x, $top_of_base)
+up
+
+$disks = map([1..$n], fn ($i) {
+  $disk_hue = $disk_hue + $hue_delta
+  $disk_width = $disk_width - $delta_width
+  move up $stack_gap
+  box ht $dh wid $disk_width rad 0.03 \
+      color gray fill oklch(.8, .15, $disk_hue)
+})
+
+#########################################################################
+#  Record which disks are on which pegs
+$piles = [ $disks, [], [] ]
+
+
+$time = 0 # animation time
+
+#########################################################################
+# The y coordinate of the base of the disk about to be added to peg $stack
+$stack_height = fn ($stack) {
+  $len = len($piles[$stack])
+  $r = $len * ($dh + $stack_gap) + $stack_gap + $top_of_base
+}
+
+#########################################################################
+# Move a disk up from the current peg, across to the target peg, and
+# down to just above any disks already there
+$animate = fn($disk, $from, $to) {
+  $x_travel = abs($from - $to)
+
+  $aa = starting $time  take 0.4 {
+     alter $disk.c.y to $top
+  }
+
+  $ab = starting $aa.end take 0.4 * $x_travel ease cubic {
+      alter $disk.c.x to $pegs[$to].c.x
+  }
+
+  $ac = starting $ab.end take 0.4 {
+      alter $disk.s.y to $stack_height($to)
+  }
+  # overlap the start of the next with the end of this one
+  $time = $ac.end - .5
+}
+#########################################################################
+# We do two things.
+# 1. We model the positions of disks, popping and pushing them onto stacks
+# 2. We animate the movement of the disk
+$move = fn ($from, $to) {
+  print "Move from ${$from} to ${$to}"
+  $src = $piles[$from]
+  $disk = last($src)
+  $src  = pop($src)
+
+  $animate($disk, $from, $to)
+
+  $dest = $piles[$to]
+  $dest = push($dest, $disk)
+  $piles = lset($piles, $from, $src)
+  $piles = lset($piles, $to, $dest)
+}
+
+$hanoi = fn($nd, $from, $to, $using) {
+  if $nd > 0 {
+    $hanoi($nd-1, $from, $using, $to)
+    $move($from, $to)
+    $hanoi($nd-1, $using, $to, $from)
+  }
+}
+
+$hanoi($n, 0, 2, 1)

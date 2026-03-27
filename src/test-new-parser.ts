@@ -1068,6 +1068,30 @@ test('animated SVG contains animation data (JSON)', () => {
   assert(!r.svg.includes('requestAnimationFrame'), 'should NOT embed runtime JS');
 });
 
+// --- Animation rewind/reset ---
+console.log('\n--- Animation rewind/reset ---');
+
+test('delayed animation elements reset to initial position at t=0', () => {
+  // Two boxes: first animates at t=0, second at t=1
+  // At t=0, both should be at their initial positions
+  const r = picjs(`A: box
+B: box
+starting 0 take 1 { alter A.c.x to 5 }
+starting 1 take 1 { alter B.c.x to 5 }`);
+  assert(!r.isError, 'should not error');
+  assert(r.isAnimated, 'should be animated');
+
+  // Verify the JSON data has both animations
+  const jsonMatch = r.svg.match(/data-picjs-anim[^>]*>(.*?)<\/script/s);
+  assert(jsonMatch !== null, 'should have animation JSON');
+  const data = JSON.parse(jsonMatch![1]);
+  assert(data.animations.length === 2, 'should have 2 animations');
+
+  // Both should target cx property
+  const targets = data.animations.map((a: any) => a.alterations[0].property);
+  assert(targets.every((t: string) => t === 'cx'), 'both should animate cx');
+});
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(`Results: ${passed} passed, ${failed} failed`);
 console.log('='.repeat(60));
