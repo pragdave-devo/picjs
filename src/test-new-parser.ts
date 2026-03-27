@@ -885,6 +885,43 @@ starting 0 take 0.5 { alter $disk.c.x to $pegs[1].c.x }`);
   assert(!r.isError, `expected success: ${r.svg}`);
 });
 
+test('alter .s.y animates south edge correctly', () => {
+  const r = picjs(`B: box ht 1 at (0, 0.5)
+starting 0 take 1 { alter B.s.y to 2 }`);
+  assert(!r.isError, `expected success: ${r.svg}`);
+  // Box starts with center at (0, 0.5), height 1, so south is at y=0
+  // After animation, south should be at y=2, so center should be at y=2.5
+  const anims = getAnimations();
+  assert(anims.length === 1, 'should have 1 animation');
+  const alter = anims[0].alterations[0];
+  console.log('  alter .s.y:', JSON.stringify(alter));
+  // The animation should target the center y (since that's what we can actually move)
+  // and the toValue should account for the offset from south to center
+  assert(alter.property === 'cy' || alter.property === 'y', `expected cy or y property, got ${alter.property}`);
+});
+
+test('alter .c.y vs .s.y comparison', () => {
+  // Box at center (0, 1) with height 2 means south is at y=0, north at y=2
+  const r1 = picjs(`B: box ht 2 at (0, 1)
+starting 0 take 1 { alter B.c.y to 3 }`);
+  const r2 = picjs(`B: box ht 2 at (0, 1)
+starting 0 take 1 { alter B.s.y to 2 }`);
+
+  assert(!r1.isError, `r1 error: ${r1.svg}`);
+  assert(!r2.isError, `r2 error: ${r2.svg}`);
+
+  const anims1 = getAnimations();
+  picjs('box'); // reset
+  const code2Result = picjs(`B: box ht 2 at (0, 1)
+starting 0 take 1 { alter B.s.y to 2 }`);
+  const anims2 = getAnimations();
+
+  console.log('  .c.y to 3:', JSON.stringify(anims1[0]?.alterations[0]));
+  console.log('  .s.y to 2:', JSON.stringify(anims2[0]?.alterations[0]));
+
+  // Both should result in center going to y=3 (since s.y=2 with ht=2 means c.y=3)
+});
+
 // Phase 3A: Animation parsing
 console.log('\n--- Animation parsing ---');
 

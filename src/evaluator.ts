@@ -1506,19 +1506,44 @@ function evalAlterStmt(p: Pik, alter: AstAlter): AlterDescriptor[] {
     return [];
   }
 
+  // Calculate edge offset: when animating .s.y or .n.y, we need to adjust for edge-to-center offset
+  let edgeOffsetX = 0;
+  let edgeOffsetY = 0;
+  if (alter.target.edge && alter.target.axis) {
+    const edgeName = alter.target.edge.z.substring(0, alter.target.edge.n).toLowerCase();
+    const halfWidth = (obj.w ?? 0) / 2;
+    const halfHeight = (obj.h ?? 0) / 2;
+    // For y-axis animations: south means add halfHeight, north means subtract
+    if (alter.target.axis === 'y') {
+      if (edgeName === 's' || edgeName === 'sw' || edgeName === 'se') {
+        edgeOffsetY = halfHeight;  // south edge: center = target + halfHeight
+      } else if (edgeName === 'n' || edgeName === 'nw' || edgeName === 'ne') {
+        edgeOffsetY = -halfHeight; // north edge: center = target - halfHeight
+      }
+    }
+    // For x-axis animations: west means add halfWidth, east means subtract
+    if (alter.target.axis === 'x') {
+      if (edgeName === 'w' || edgeName === 'nw' || edgeName === 'sw') {
+        edgeOffsetX = halfWidth;   // west edge: center = target + halfWidth
+      } else if (edgeName === 'e' || edgeName === 'ne' || edgeName === 'se') {
+        edgeOffsetX = -halfWidth;  // east edge: center = target - halfWidth
+      }
+    }
+  }
+
   let toValue: number | string;
   if (toRichValue.tag === 'color') {
     toValue = toRichValue.val;
   } else if (toRichValue.tag === 'position') {
     // Position target with explicit axis — extract the relevant axis as delta
-    if (property === 'cx') toValue = toRichValue.val.x - initialX;
-    else if (property === 'cy') toValue = toRichValue.val.y - initialY;
+    if (property === 'cx') toValue = toRichValue.val.x + edgeOffsetX - initialX;
+    else if (property === 'cy') toValue = toRichValue.val.y + edgeOffsetY - initialY;
     else toValue = toNumber(toRichValue);
   } else {
     // Numeric value — for position properties, treat as delta from initial
     const numVal = toNumber(toRichValue);
-    if (property === 'cx') toValue = numVal - initialX;
-    else if (property === 'cy') toValue = numVal - initialY;
+    if (property === 'cx') toValue = numVal + edgeOffsetX - initialX;
+    else if (property === 'cy') toValue = numVal + edgeOffsetY - initialY;
     else toValue = numVal;
   }
 
