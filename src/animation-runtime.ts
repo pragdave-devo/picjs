@@ -528,12 +528,14 @@ export function createAnimator(svg: SVGSVGElement): Animator | null {
       else { startOffset = currentTime; }
       playing = true;
       startTimestamp = null;
+      notifyUpdate();
       rafId = requestAnimationFrame(tick);
     },
     pause() {
       playing = false;
       startOffset = currentTime;
       if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
+      notifyUpdate();
     },
     toggle() { playing ? animator.pause() : animator.play(); },
     seek(t: number) {
