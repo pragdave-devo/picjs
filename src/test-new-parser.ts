@@ -858,6 +858,33 @@ test('position+offset then until even with', () => {
   assert(!r.isError, `expected success: ${r.svg}`);
 });
 
+test('nested empty lists', () => {
+  const r = picjs('$piles = [ [1,2], [], [] ]\nprint len($piles)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.printOutput?.includes('3'), 'should have 3 elements');
+});
+
+test('list with variable then empty lists', () => {
+  const r = picjs('$disks = [1, 2, 3]\n$piles = [ $disks, [], [] ]\nprint len($piles)');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.printOutput?.includes('3'), 'should have 3 piles');
+});
+
+test('$arr[i].edge.x in expression', () => {
+  const r = picjs('B1: box at (0, 0)\nB2: box at (2, 0)\n$pegs = [B1, B2]\nprint $pegs[1].c.x');
+  assert(!r.isError, `expected success: ${r.svg}`);
+  assert(r.printOutput?.includes('2'), 'should print x=2');
+});
+
+test('$arr[i].edge in alter value', () => {
+  const r = picjs(`B1: box at (0, 0)
+B2: box at (2, 0)
+$pegs = [B1, B2]
+$disk = B1
+starting 0 take 0.5 { alter $disk.c.x to $pegs[1].c.x }`);
+  assert(!r.isError, `expected success: ${r.svg}`);
+});
+
 // Phase 3A: Animation parsing
 console.log('\n--- Animation parsing ---');
 

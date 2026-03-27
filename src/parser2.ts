@@ -1544,12 +1544,28 @@ function parsePrimary(p: Pik, ts: TokenStream): AstExpr {
       const propTok = ts.advance(); // consume the property name
       return { exprKind: "dollarProp", varTok: id, propTok } as AstExprDollarProp;
     }
-    // $name[expr] — array indexing
+    // $name[expr] — array indexing, possibly followed by .edge or .edge.x/.edge.y
     if (name[0] === '$' && ts.peek().eType === T_LB) {
       ts.advance(); // consume [
       const indexExpr = parseExpr(p, ts);
       ts.expect(T_RB, 'expected "]"');
-      return { exprKind: "index", object: { exprKind: "varRef", tok: id }, index: indexExpr, tok: id };
+      let expr: AstExpr = { exprKind: "index", object: { exprKind: "varRef", tok: id }, index: indexExpr, tok: id };
+      // Check for .edge or .edge.x/.edge.y after the index
+      if (ts.peek().eType === T_DOT_E) {
+        ts.advance(); // consume dot
+        const edge = parseEdge(p, ts);
+        // Check for .x or .y after edge
+        if (ts.peek().eType === T_DOT_XY) {
+          ts.advance(); // consume dot
+          const xyTok = ts.advance(); // consume x or y
+          const axis = xyTok.z.substring(0, xyTok.n) as "x" | "y";
+          // Wrap in placeXY: need to convert index expr to object ref first
+          return { exprKind: "placeXY", place: { object: { objKind: "expr", expr }, edge, hasDotE: true }, axis };
+        }
+        // Just .edge - return property (position-valued)
+        return { exprKind: "property", object: { objKind: "expr", expr }, prop: edge };
+      }
+      return expr;
     }
     return { exprKind: "varRef", tok: id };
   }
