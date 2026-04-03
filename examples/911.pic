@@ -1,0 +1,10 @@
+sstart = Circle "start" -> "9" above
+saw9 = Circle "9 seen" -> "1" above
+saw1 = Circle "1st 1"  -> "1" above
+saw1_again = Circle "2nd 1"
+Line -> from start.sw to start.w - (50,0) then to start.nw "*"
+Arc -> from saw9.s to start.s "*" below
+Arc -> from saw1.s to start.s  "*" below
+Arc -> from saw1_again.s to start.s "*" below
+
+

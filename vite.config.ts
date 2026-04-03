@@ -1,42 +1,11 @@
-import { defineConfig } from 'vite';
-import { resolve } from 'path';
+import { defineConfig } from 'vite'
 
 export default defineConfig({
-  root: 'docs',
   build: {
-    outDir: resolve(__dirname, 'dist'),
-    emptyOutDir: true,
     lib: {
-      entry: resolve(__dirname, 'src/picjs.ts'),
-      name: 'picjs',
-      fileName: (format) => format === 'umd' ? 'picjs.umd.js' : 'picjs.js',
-      formats: ['es', 'umd'],
-    },
-    rollupOptions: {
-      output: {
-        exports: 'named',
-      },
-    },
-    minify: 'esbuild',
-    sourcemap: true,
-  },
-  server: {
-    fs: {
-      allow: ['..'],
-    },
-  },
-  plugins: [
-    {
-      name: 'rewrite-assets-to-dist',
-      configureServer(server) {
-        // In dev, rewrite /assets/ requests to /dist/ so paths work like production
-        server.middlewares.use((req, res, next) => {
-          if (req.url?.startsWith('/assets/')) {
-            req.url = req.url.replace('/assets/', '/dist/');
-          }
-          next();
-        });
-      },
-    },
-  ],
-});
+      entry: 'src/index.ts',
+      name: 'jp',
+      fileName: 'jp'
+    }
+  }
+})

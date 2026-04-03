@@ -1,0 +1,11 @@
+stepper = (base, angle) => {
+  spin = 0
+  => { 
+    spin = spin + angle   
+    base.spin(spin)
+  }
+}
+
+s = stepper(#4488cc, 15)
+
+10.times(n => Box fill s() at (n*50, n*50))

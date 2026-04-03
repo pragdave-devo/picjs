@@ -1,0 +1,978 @@
+{
+  "meta": {
+    "generatedAt": "2026-03-30T14:33:53.234Z",
+    "grammarFile": "src/peg_parser/jp.pegjs",
+    "ruleCount": 193
+  },
+  "statements": [
+    {
+      "name": "Inspect",
+      "syntax": [
+        "?? <expr>"
+      ],
+      "description": "Debug: print the value of an expression"
+    },
+    {
+      "name": "ShapeDefaultSetter",
+      "syntax": [
+        "<Shape>.<attr> = <expr>",
+        "<Shape>.<class>.<attr> = <expr>"
+      ],
+      "description": "Set a default attribute for a shape type"
+    },
+    {
+      "name": "Shape",
+      "syntax": [
+        "Arc from <position> to <position> <line-style> | <option> | <turn>*",
+        "Arc <line-style> | <option> | <turn>*",
+        "Box <option> | <option> | <option>* [with [.<cardinal>] at <place>]",
+        "Circle | Ellipse | Oval <option> | <option>* [with [.<cardinal>] at <place>]",
+        "Line from <position> to <position> <line-style> | <line-shape> | <option>*",
+        "Line from <position> <line-style> | <line-shape> | <option>*",
+        "Line to <position> <line-style> | <line-shape> | <option>*",
+        "Line <line-style> | <option> | <line-shape> | <option>*",
+        "Label <expr> <option> | <option>* [with [.<cardinal>] at <place>]",
+        "Face <cardinal>",
+        "Face <expr>",
+        "Skip [<distance>]"
+      ],
+      "description": "Draw a shape"
+    },
+    {
+      "name": "SetTime",
+      "syntax": [
+        "@@ <expr>"
+      ],
+      "description": "Set the animation timeline position"
+    },
+    {
+      "name": "AnimationSequence",
+      "syntax": [
+        "<Animation> then <Animation>+"
+      ],
+      "description": "One or more animations, optionally chained with \"then\""
+    },
+    {
+      "name": "Assignment",
+      "syntax": [
+        "<target> = <expr>",
+        "<target> += <expr>",
+        "<target> -= <expr>",
+        "<target> *= <expr>",
+        "<target> /= <expr>",
+        "<target> %= <expr>"
+      ],
+      "description": "Assign a value to a variable or attribute"
+    },
+    {
+      "name": "IfExpression",
+      "syntax": [
+        "if ( <expr> ) <body> else <body>",
+        "if ( <expr> ) <body>"
+      ],
+      "description": "Conditional expression (if/else)"
+    },
+    {
+      "name": "ConditionalExpression",
+      "syntax": [
+        "<expr> ? <expr> : <expr>"
+      ],
+      "description": "Ternary conditional (test ? then : else)"
+    }
+  ],
+  "shapes": [
+    {
+      "name": "Arc",
+      "variants": [
+        "Arc from <position> to <position> [<options>...]",
+        "Arc [<options>...]"
+      ],
+      "optionSets": [
+        "SECommon",
+        "SELineEndings",
+        "SETurn"
+      ]
+    },
+    {
+      "name": "Box",
+      "variants": [
+        "Box [<options>...] [with [.<cardinal>] at <place>]"
+      ],
+      "optionSets": [
+        "SECommon",
+        "SESize",
+        "SERadii",
+        "WithConstraint"
+      ]
+    },
+    {
+      "name": "Circle",
+      "variants": [
+        "Circle [<options>...] [with [.<cardinal>] at <place>]"
+      ],
+      "optionSets": [
+        "SECommon",
+        "SERadius",
+        "WithConstraint"
+      ]
+    },
+    {
+      "name": "Ellipse",
+      "variants": [
+        "Ellipse [<options>...] [with [.<cardinal>] at <place>]"
+      ],
+      "optionSets": [
+        "SECommon",
+        "SERadius",
+        "WithConstraint"
+      ]
+    },
+    {
+      "name": "Oval",
+      "variants": [
+        "Oval [<options>...] [with [.<cardinal>] at <place>]"
+      ],
+      "optionSets": [
+        "SECommon",
+        "SERadius",
+        "WithConstraint"
+      ]
+    },
+    {
+      "name": "Line",
+      "variants": [
+        "Line from <position> to <position> [<options>...]",
+        "Line from <position> [<options>...]",
+        "Line to <position> [<options>...]",
+        "Line [<options>...]"
+      ],
+      "optionSets": [
+        "SECommon",
+        "SELineEndings",
+        "SELineShape",
+        "SELineLength"
+      ]
+    },
+    {
+      "name": "Label",
+      "variants": [
+        "Label <expr> [<options>...] [with [.<cardinal>] at <place>]"
+      ],
+      "optionSets": [
+        "SECommon",
+        "SEText",
+        "WithConstraint"
+      ]
+    },
+    {
+      "name": "Face",
+      "variants": [
+        "Face <cardinal>",
+        "Face <expr>"
+      ],
+      "optionSets": []
+    },
+    {
+      "name": "Skip",
+      "variants": [
+        "Skip [<distance>]"
+      ],
+      "optionSets": []
+    }
+  ],
+  "animations": [
+    {
+      "name": "move",
+      "variants": [
+        "move <expr> [to] <expr> [take <duration>] [ease <name>]"
+      ],
+      "params": [
+        {
+          "name": "take",
+          "type": "<expr>",
+          "description": "animation duration"
+        },
+        {
+          "name": "ease",
+          "type": "<string>",
+          "description": "easing function name"
+        }
+      ]
+    },
+    {
+      "name": "rotate",
+      "variants": [
+        "rotate <expr> by <expr> about <position> [take <duration>] [ease <name>]",
+        "rotate <expr> by <expr> [take <duration>] [ease <name>]"
+      ],
+      "params": [
+        {
+          "name": "take",
+          "type": "<expr>",
+          "description": "animation duration"
+        },
+        {
+          "name": "ease",
+          "type": "<string>",
+          "description": "easing function name"
+        }
+      ]
+    },
+    {
+      "name": "set",
+      "variants": [
+        "set <target> [to] <expr> [take <duration>] [ease <name>]"
+      ],
+      "params": [
+        {
+          "name": "take",
+          "type": "<expr>",
+          "description": "animation duration"
+        },
+        {
+          "name": "ease",
+          "type": "<string>",
+          "description": "easing function name"
+        }
+      ]
+    }
+  ],
+  "options": {
+    "SECommon": {
+      "description": "Options available on most shapes",
+      "syntax": [
+        "\"<text>\"           — label",
+        "rotation <angle> [about <position>]",
+        "at <position> | (<x>, <y>) | x <n> | y <n>",
+        "fill <color>",
+        "stroke <color>",
+        "thickness <n> | solid | dotted | dashed",
+        ".<class-name>"
+      ]
+    },
+    "SELabel": {
+      "description": "Attach a text label to a shape",
+      "syntax": []
+    },
+    "SEPos": {
+      "description": "Set the position of a shape",
+      "syntax": [
+        "at <expr>",
+        "(<x>, <y>)",
+        "x <expr>",
+        "y <expr>"
+      ]
+    },
+    "SERotation": {
+      "description": "Rotate a shape",
+      "syntax": [
+        "rotation <expr> about <position>",
+        "rotation <expr>"
+      ]
+    },
+    "SEFill": {
+      "description": "Set the fill color",
+      "syntax": [
+        "fill <expr>"
+      ]
+    },
+    "SEStrokeAttr": {
+      "description": "Set stroke color, thickness, or line style",
+      "syntax": [
+        "stroke <expr>",
+        "thickness <expr>",
+        "solid | dotted | dashed"
+      ]
+    },
+    "SEClass": {
+      "description": "Apply a CSS class to the shape",
+      "syntax": [
+        ". <name>"
+      ]
+    },
+    "SESize": {
+      "description": "Set width and/or height (Box)",
+      "syntax": [
+        "<width> x <height>",
+        "width <expr>",
+        "height <expr>"
+      ]
+    },
+    "SERadius": {
+      "description": "Set the radius (Circle, Ellipse, Oval)",
+      "syntax": [
+        "radius <expr>"
+      ]
+    },
+    "SERadii": {
+      "description": "Set corner radii (Box)",
+      "syntax": [
+        "rx <expr>",
+        "ry <expr>"
+      ]
+    },
+    "SELineEndings": {
+      "description": "Line path style and arrow markers",
+      "syntax": [
+        "<start><path><end>",
+        "start/end markers: < (arrow) | > (arrow) | | (bar) | o (dot)",
+        "path style: -- (straight) | ~~ (smooth)"
+      ]
+    },
+    "SELineShape": {
+      "description": "Line interpolation: straight, stepped, or smooth",
+      "syntax": [
+        "straight",
+        "stepped",
+        "smooth"
+      ]
+    },
+    "SELineLength": {
+      "description": "Set the length of a line",
+      "syntax": [
+        "length <expr>"
+      ]
+    },
+    "SEText": {
+      "description": "Label text options: alignment and font",
+      "syntax": [
+        "align .<cardinal>",
+        "font <font-spec>"
+      ]
+    },
+    "SETurn": {
+      "description": "Arc turn direction: cw, ccw, or angle",
+      "syntax": [
+        "[turn] cw | ccw",
+        "turn <angle>"
+      ]
+    },
+    "WithConstraint": {
+      "description": "Position a shape by constraining a cardinal point to a place",
+      "syntax": [
+        "with [.<cardinal>] [at] <place>"
+      ]
+    }
+  },
+  "expressions": {
+    "precedence": [
+      {
+        "level": 1,
+        "name": "Logical OR",
+        "operators": [
+          "||"
+        ]
+      },
+      {
+        "level": 2,
+        "name": "Logical AND",
+        "operators": [
+          "&&"
+        ]
+      },
+      {
+        "level": 3,
+        "name": "Equality",
+        "operators": [
+          "==",
+          "!="
+        ]
+      },
+      {
+        "level": 4,
+        "name": "Relational",
+        "operators": [
+          "<",
+          ">",
+          "<=",
+          ">="
+        ]
+      },
+      {
+        "level": 5,
+        "name": "Additive",
+        "operators": [
+          "+",
+          "-"
+        ]
+      },
+      {
+        "level": 6,
+        "name": "Multiplicative",
+        "operators": [
+          "*",
+          "/",
+          "%"
+        ]
+      },
+      {
+        "level": 7,
+        "name": "Power",
+        "operators": [
+          "^"
+        ]
+      },
+      {
+        "level": 8,
+        "name": "Unary",
+        "operators": [
+          "+",
+          "-",
+          "!"
+        ]
+      }
+    ],
+    "qualifiers": [
+      {
+        "syntax": "<expr>(<args>)",
+        "description": "function call"
+      },
+      {
+        "syntax": "<expr>[<index>]",
+        "description": "index access"
+      },
+      {
+        "syntax": "<expr>.<attr>",
+        "description": "attribute access"
+      }
+    ],
+    "conditionals": [
+      "if ( <expr> ) <body> else <body>",
+      "if ( <expr> ) <body>",
+      "<expr> ? <expr> : <expr>"
+    ],
+    "assignment": {
+      "operators": [
+        "=",
+        "+=",
+        "-=",
+        "*=",
+        "/=",
+        "%="
+      ],
+      "syntax": [
+        "<target> = <expr>",
+        "<target> <op> = <expr>"
+      ]
+    },
+    "functions": {
+      "syntax": [
+        "( <params> ) => <body>",
+        "<name> => <body>",
+        "[( )] => <body>"
+      ]
+    }
+  },
+  "values": [
+    {
+      "name": "Number",
+      "syntax": [
+        "<digits> %",
+        "<digits>"
+      ],
+      "description": "Integer, decimal, scientific notation; append % to divide by 100",
+      "examples": [
+        "42",
+        "3.14",
+        "50%",
+        "1e3",
+        ".5"
+      ]
+    },
+    {
+      "name": "Boolean",
+      "syntax": [
+        "true | false"
+      ],
+      "description": "Boolean true or false"
+    },
+    {
+      "name": "Color",
+      "syntax": [
+        "<model>(<r>, <g>, <b>[, <a>])",
+        "#rrggbb[aa]",
+        "#rgb[a]",
+        "~<name>"
+      ],
+      "description": "Colors in various formats",
+      "examples": [
+        "#f00",
+        "#ff0000",
+        "#ff000080",
+        "~red",
+        "rgb(255, 0, 0)",
+        "hsl(0, 100, 50)",
+        "oklch(63, 0.26, 29)"
+      ],
+      "models": {
+        "rgb": {
+          "params": [
+            "r (0-255)",
+            "g (0-255)",
+            "b (0-255)",
+            "[alpha (0-1)]"
+          ]
+        },
+        "hsl": {
+          "params": [
+            "h (0-360)",
+            "s (0-100)",
+            "l (0-100)",
+            "[alpha (0-1)]"
+          ]
+        },
+        "hsv": {
+          "params": [
+            "h (0-360)",
+            "s (0-100)",
+            "v (0-100)",
+            "[alpha (0-1)]"
+          ]
+        },
+        "oklch": {
+          "params": [
+            "L (0-100)",
+            "C (0-0.4)",
+            "h (0-360)",
+            "[alpha (0-1)]"
+          ]
+        }
+      }
+    },
+    {
+      "name": "String",
+      "syntax": [
+        "\"...\" | '...'"
+      ],
+      "description": "Single or double quoted, with standard escape sequences (\\n, \\t, \\\\, etc.)"
+    },
+    {
+      "name": "Position",
+      "syntax": [
+        "( <expr> [,] <expr> )"
+      ],
+      "description": "An (x, y) coordinate pair",
+      "examples": [
+        "(100, 200)",
+        "(x + 10, y)"
+      ]
+    },
+    {
+      "name": "Array",
+      "syntax": [
+        "[<expr>, ...]",
+        "[]"
+      ],
+      "description": "A list of values",
+      "examples": [
+        "[1, 2, 3]",
+        "[]",
+        "[~red, ~blue]"
+      ]
+    },
+    {
+      "name": "Range",
+      "syntax": [
+        "[<start> .. <end>]"
+      ],
+      "description": "An inclusive range between two values",
+      "examples": [
+        "[1..10]",
+        "[0..n-1]",
+        "[~red .. ~blue]"
+      ]
+    },
+    {
+      "name": "Timeline",
+      "syntax": [
+        "@ (read current time)",
+        "@@ (advance timeline)"
+      ],
+      "description": "Access the animation timeline"
+    },
+    {
+      "name": "Function",
+      "syntax": [
+        "( <params> ) => <body>",
+        "<name> => <body>",
+        "[( )] => <body>"
+      ],
+      "description": "Lambda/arrow function expressions",
+      "examples": [
+        "n => n * 2",
+        "(x, y) => x + y",
+        "=> Box"
+      ]
+    }
+  ],
+  "builtins": {
+    "functions": [
+      {
+        "name": "sin",
+        "params": [
+          "angle-in-degrees"
+        ],
+        "description": "return the sine (-1...+1) of the given angle (in degrees)"
+      },
+      {
+        "name": "cos",
+        "params": [
+          "angle-in-degrees"
+        ],
+        "description": "return the cosine (-1...+1) of the given angle (in degrees)"
+      },
+      {
+        "name": "tan",
+        "params": [
+          "angle-in-degrees"
+        ],
+        "description": "return the tangent (-1...+1) of the given angle (in degrees)"
+      },
+      {
+        "name": "asin",
+        "params": [
+          "ratio"
+        ],
+        "description": "return the angle (in degrees) whose sine is _ratio_"
+      },
+      {
+        "name": "acos",
+        "params": [
+          "ratio"
+        ],
+        "description": "return the angle (in degrees) whose sine is _ratio_"
+      },
+      {
+        "name": "atan2",
+        "params": [
+          "dy",
+          "dx"
+        ],
+        "description": "return the angle (in degrees) between the x-axis and the point (dx,dy). (note the parameter order: y, x, not x, y)"
+      },
+      {
+        "name": "polar",
+        "params": [
+          "radius",
+          "theta"
+        ],
+        "description": "return the posiio of the point \"radius\" away from the origin along a line at angle \"theta\" (degrees)"
+      },
+      {
+        "name": "ln",
+        "params": [
+          "number"
+        ],
+        "description": "return the natural logarithm of number"
+      },
+      {
+        "name": "log10",
+        "params": [
+          "number"
+        ],
+        "description": "return the logarithm (base 10) of number"
+      }
+    ],
+    "typeMethods": {
+      "Number": {
+        "methods": [
+          {
+            "name": "abs",
+            "params": [],
+            "description": "return the absolute value of number"
+          },
+          {
+            "name": "interpolate",
+            "params": [
+              "other",
+              "ratio"
+            ],
+            "description": "return the number that is _ratio_ of the way between this number and other (where ratio == 0 returns this number and ratio == 1 the other)"
+          },
+          {
+            "name": "times",
+            "params": [
+              "callback"
+            ],
+            "description": "Invoke the callback «number» times, passing it from 0 to n-1"
+          }
+        ],
+        "attrs": [],
+        "operators": [
+          "+",
+          "-",
+          "*",
+          "/",
+          "^",
+          "==",
+          "!=",
+          "<",
+          "<=",
+          ">",
+          ">="
+        ]
+      },
+      "List": {
+        "methods": [
+          {
+            "name": "push",
+            "params": [
+              "item"
+            ],
+            "description": "add a new item to the end of a list"
+          },
+          {
+            "name": "pop",
+            "params": [],
+            "description": "remove the last item from a list and return that item"
+          },
+          {
+            "name": "first",
+            "params": [],
+            "description": "return the first item in this collection or range"
+          },
+          {
+            "name": "last",
+            "params": [],
+            "description": "return the last item in host collection or range"
+          },
+          {
+            "name": "each",
+            "params": [
+              "[step]",
+              "callback"
+            ],
+            "description": "invoke 'callback' with each item in turn. The optional step allows you to select each nth item. It 0.0 < step < 1.0, then we do interpolation"
+          },
+          {
+            "name": "map",
+            "params": [
+              "[step]",
+              "callback"
+            ],
+            "description": "invoke 'callback' with each item in turn, and collect the results into a list, which we return. The optional step allows you to select each nth item. It 0.0 < step < 1.0, then we do interpolation"
+          }
+        ],
+        "attrs": [
+          {
+            "name": "length"
+          }
+        ],
+        "operators": [
+          "+",
+          "-",
+          "*",
+          "/",
+          "^"
+        ]
+      },
+      "Color": {
+        "methods": [
+          {
+            "name": "lighten",
+            "params": [
+              "ratio"
+            ],
+            "description": "return a lighter version of this color (ratio is 0 to 1)"
+          },
+          {
+            "name": "darken",
+            "params": [
+              "ratio"
+            ],
+            "description": "return a darker version of this color (ratio is 0 to 1)"
+          },
+          {
+            "name": "brighten",
+            "params": [
+              "ratio"
+            ],
+            "description": "add white to this color (ratio is 0 to 1)"
+          },
+          {
+            "name": "desaturate",
+            "params": [
+              "amount"
+            ],
+            "description": "reduce chroma (amount is 0 to 1, with 1 producing grayscale)"
+          },
+          {
+            "name": "saturate",
+            "params": [
+              "amount"
+            ],
+            "description": "increase chroma (amount is 0 to 1)"
+          },
+          {
+            "name": "grayscale",
+            "params": [],
+            "description": "convert this color to grayscale"
+          },
+          {
+            "name": "spin",
+            "params": [
+              "angle"
+            ],
+            "description": "rotate the hue by the given angle in oklch space (−360 to 360)"
+          }
+        ],
+        "attrs": [],
+        "operators": [
+          "==",
+          "!="
+        ]
+      },
+      "Range": {
+        "methods": [
+          {
+            "name": "start",
+            "params": [],
+            "description": "return the first value in the range"
+          },
+          {
+            "name": "end",
+            "params": [],
+            "description": "return the last value in the range"
+          },
+          {
+            "name": "ease",
+            "params": [
+              "style"
+            ],
+            "description": "Apply easing to the interpolation. Style is one of: linear, cubicIn, cubicOut, cubic, quadIn, quadOut, quad, bounce"
+          },
+          {
+            "name": "interpolate",
+            "params": [
+              "ratio"
+            ],
+            "description": "return the value that is _ratio_ of the way between start and end (where ratio is between 0 and 1 inclusive)"
+          },
+          {
+            "name": "steps",
+            "params": [
+              "number_of_steps",
+              "callback"
+            ],
+            "description": "Invoke the callback _steps_ times, passing equally spaced interpolations from the range"
+          },
+          {
+            "name": "each",
+            "params": [
+              "callback"
+            ],
+            "description": "If (and only if) start and end are integers, invokes the callback \"end - start + 1\" times, passing it the current value and the index."
+          },
+          {
+            "name": "map",
+            "params": [
+              "callback"
+            ],
+            "description": "If (and only if) start and end are integers, invokes the callback \"end - start + 1\" times, passing it the current value. Collects and returns a list of the values returned by each invocation."
+          }
+        ],
+        "attrs": [],
+        "operators": [
+          "*"
+        ]
+      },
+      "String": {
+        "methods": [],
+        "attrs": [
+          {
+            "name": "length"
+          }
+        ],
+        "operators": [
+          "+",
+          "*",
+          "/",
+          "==",
+          "!=",
+          "<",
+          "<=",
+          ">",
+          ">="
+        ]
+      },
+      "Position": {
+        "methods": [],
+        "attrs": [
+          {
+            "name": "length"
+          },
+          {
+            "name": "x"
+          },
+          {
+            "name": "y"
+          }
+        ],
+        "operators": [
+          "+",
+          "-"
+        ]
+      },
+      "Timeline": {
+        "methods": [],
+        "attrs": [
+          {
+            "name": "now"
+          },
+          {
+            "name": "max_time"
+          },
+          {
+            "name": "last_animation_start"
+          },
+          {
+            "name": "last_animation_end"
+          }
+        ],
+        "operators": [
+          "+",
+          "*",
+          "/",
+          "==",
+          "!=",
+          "<",
+          "<=",
+          ">",
+          ">="
+        ]
+      },
+      "Font": {
+        "methods": [],
+        "attrs": [
+          {
+            "name": "family"
+          },
+          {
+            "name": "height"
+          },
+          {
+            "name": "size"
+          },
+          {
+            "name": "stretch"
+          },
+          {
+            "name": "style"
+          },
+          {
+            "name": "variant"
+          },
+          {
+            "name": "weight"
+          }
+        ],
+        "operators": []
+      },
+      "Bool": {
+        "methods": [],
+        "attrs": [],
+        "operators": []
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+teeth = 12
+inner_radius = 3
+outer_radius = 4
+thickness    = 0.07 // line thickness
+
+
+ps = (radius, theta) => {
+  radius * (sin(theta), cos(theta) )
+}
+
+
+// angular width of one tooth
+tooth_width =  360/ teeth
+
+// angular width of slope up, top land, slope down, bottom land
+// we start in the middle of the land to we don't get ugly
+// joins between teeth
+
+bottom_land_1 = .1 * tooth_width
+slope_up      = bottom_land_1 + .2 * tooth_width
+top_land      = slope_up      + .3 * tooth_width
+slope_down    = top_land      + .2 * tooth_width
+bottom_land_2 = slope_down    + .2 * tooth_width
+
+theta = 0
+
+draw_tooth  = => {
+ line to ps(inner_radius, theta + bottom_land_1) 
+ then to ps(outer_radius, theta + slope_up) 
+ then to ps(outer_radius, theta + top_land)
+ then to ps(inner_radius, theta + slope_down)
+ then to ps(inner_radius, theta + bottom_land_2)
+ rx 0.1
+ theta += tooth_width
+}

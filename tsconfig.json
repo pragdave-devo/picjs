@@ -1,19 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "strict": true,
-    "noEmit": false,
-    "emitDeclarationOnly": true,
-    "rootDir": "src",
-    "outDir": "dist",
-    "declaration": true,
-    "declarationMap": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/test.ts", "src/cli.ts", "src/processor.ts"]
+      "allowJs": true,
+      "skipLibCheck": true,
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "strict": true,
+      "forceConsistentCasingInFileNames": true,
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "resolveJsonModule": true,
+      "isolatedModules": true,    "lib": [ "es2019", "dom", "es2017.object" ],
+      "target": "ES6"
+  }
 }

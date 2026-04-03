@@ -48,7 +48,19 @@
       "Bash(node:*)",
       "Bash(pkill -f \"vite --host\")",
       "mcp__plugin_chrome-devtools-mcp_chrome-devtools__select_page",
-      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__new_page"
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__new_page",
+      "Bash(wc:*)",
+      "Bash(git stash:*)",
+      "Bash(find ~/code/original-picjs -name *.picjs -o -type d -name examples)",
+      "Bash(curl:*)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(/Users/dave.thomas/code/picjs/examples/line-labels.pic:*)",
+      "Bash(make test:*)",
+      "Bash(make:*)",
+      "Bash(cat:*)",
+      "Bash(git log:*)",
+      "Bash(npx tsx -e \":*)",
+      "Bash(npx jest:*)"
     ]
   }
 }

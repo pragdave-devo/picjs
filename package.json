@@ -1,54 +1,43 @@
 {
-  "name": "@strike48/picjs",
-  "version": "0.1.6",
-  "description": "Native TypeScript implementation of PIC-like diagram language to SVG",
+  "name": "jp",
+  "version": "1.0.0",
+  "description": "JavaScript implementation of DWB pic",
+  "main": "dist/index.js",
   "type": "module",
-  "main": "./dist/picjs.umd.js",
-  "module": "./dist/picjs.js",
-  "types": "./dist/picjs.d.ts",
-  "bin": {
-    "picjs": "bin/picjs.mjs"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/picjs.d.ts",
-      "import": "./dist/picjs.js",
-      "require": "./dist/picjs.umd.js"
-    }
-  },
-  "files": [
-    "dist",
-    "src",
-    "bin"
-  ],
   "scripts": {
-    "build": "vite build && tsc --emitDeclarationOnly --outDir dist",
-    "test": "node --import=tsx src/test.ts",
+    "build": "vite build",
     "dev": "vite",
-    "cli": "node --import=tsx ./bin/picjs",
-    "prepublishOnly": "npm run build"
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "parser": "make src/peg_parser/jp.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/pragdave-devo/picjs.git"
-  },
-  "keywords": [
-    "diagram",
-    "svg",
-    "pic",
-    "pikchr",
-    "graphics",
-    "mermaid",
-    "visualization"
+  "repository": "https://github.com/pragdave/jp",
+  "author": "pragdave",
+  "license": "MIT",
+  "browserslist": [
+    "last 3 and_chr versions",
+    "last 3 chrome versions",
+    "last 3 opera versions",
+    "last 3 ios_saf versions",
+    "last 3 safari versions"
   ],
-  "author": "Dave Thomas <labs@strike48.com> (https://labs.strike48.com)",
   "devDependencies": {
-    "tsx": "^4.7.0",
+    "@babel/core": "^7.29.0",
+    "@babel/register": "^7.28.6",
+    "@types/culori": "^4.0.1",
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "peggy": "^4.2.0",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.1.0",
     "typescript": "^5.9.3",
-    "vite": "^6.0.0"
+    "vite": "^8.0.2"
   },
-  "license": "MPL",
-  "optionalDependencies": {
-    "@resvg/resvg-js": "^2.6.2"
+  "dependencies": {
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@datastructures-js/priority-queue": "^5.4.1",
+    "codemirror": "^6.0.2",
+    "culori": "^4.0.2",
+    "redom": "^3.29.1",
+    "simple-markdown": "^0.7.3"
   }
 }

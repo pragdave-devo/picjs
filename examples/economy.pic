@@ -1,0 +1,87 @@
+
+
+
+
+if (true) {
+
+// The standard circular flow of the economy
+
+// Colors
+bgFill    = oklch(0.45, 0, 0)
+blackish  = oklch(0.6, 0, 0)
+blueish   = oklch(0.6, 0.4, 200)
+greenish  = oklch(0.6, 0.4, 150)
+orangeish = oklch(0.9, 0.3, 72)
+reddish   = oklch(0.6, 0.35, 40)
+
+// Shape defaults
+Box.fill = bgFill
+Box.rx = 0.1
+Box.ry = 0.1
+
+Line.thickness = .17
+Line.rx = .3
+
+
+// Offset helpers — fractions of default box dimensions
+qtr = 0.25
+trd = 0.19
+
+
+// === The players ===
+
+// Column actors
+govt       = Box "Government"      at (4, 0.7)
+households = Box "Households"      at (4, 2)
+firms      = Box "Firms"           at (4, 4.5)
+world      = Box "Rest of\nWorld"  at (4, 5.8)
+
+// Row actors
+markets = Box "Markets for\ngoods and\nservices"  at (1.2, 3.25)
+factor  = Box "Factor\nmarkets"                    at (6.5, 3.25)
+fm      = Box "Financial\nmarkets"                 at (9, 3.25)
+
+
+// === Flows ===
+
+// Private savings: Households → Financial markets (blue)
+Line -> from households.e - (0, trd) to (fm.c.x - qtr, households.c.y - trd) then to fm.n - (qtr, 0) stroke blueish rx .1 "Private Savings" above
+
+// Wages, profit, interest: Factor markets → Households (blue)
+Line <- from households.e + (0, trd) to (factor.c.x, households.c.y + trd) then to factor.n stroke blueish "Wages, profit, interest" below at 60%
+
+// Wages, profit, interest: Firms → Factor markets (orange)
+Line -> from firms.e - (0, trd) to (factor.c.x, firms.c.y - trd) then to factor.s stroke orangeish "Wages, profit, interest" above
+
+// Borrowing and stock issues: Financial markets → Firms (orange)
+Line <- from firms.e + (0, trd) to (fm.c.x - qtr, firms.c.y + trd) then to fm.s - (qtr, 0) stroke orangeish "Borrowing and stock issues by firms" below
+
+// Investment spending: Firms → Markets (orange)
+Line -> from firms.w + (0, trd) to (markets.c.x, firms.c.y + trd) then to markets.s stroke orangeish "Investment spending" below
+
+// GDP: Markets → Firms (black)
+Line <- from firms.w - (0, trd) to (markets.c.x + qtr, firms.c.y - trd) then to markets.s + (qtr, 0) stroke blackish "GDP" 
+
+// Imports/Exports: Rest of World ↔ Markets (red)
+l = Line <-> from world.w to (markets.c.x - qtr, world.c.y) then to markets.s - (qtr, 0) stroke reddish 
+Label "Imports/Exports" at l.s 
+
+// Foreign lending and borrowing: Rest of World ↔ Financial markets (red)
+Line <-> from world.e to (fm.c.x + qtr, world.c.y) then to fm.s + (qtr, 0) stroke reddish "Foreign lending/stock sales" 
+Label "Foreign borrowing/stock purchases" with .n at (fm.c.x + qtr, world.c.y + 0.35)
+
+// Government transfers: Government → Households (blue, straight)
+Line -> from govt.s + (qtr, 0) to households.n + (qtr, 0) stroke blueish  "Govt. transfers"
+
+// Taxes: Households → Government (green, straight)
+Line <- from govt.s - (qtr, 0) to households.n - (qtr, 0) stroke greenish  "Taxes" 
+
+// Consumer spending: Households → Markets (blue)
+Line -> from households.w to (markets.c.x + qtr, households.c.y) then to markets.n + (qtr, 0) stroke blueish "Consumer\nSpending"
+
+// Government purchases of goods and services (green)
+Line -> from govt.w to (markets.c.x - qtr, govt.c.y) then to (markets.c.x - qtr, markets.n.y) stroke greenish  "Government purchases\nof goods and services"
+
+// Government borrowing: Financial markets → Government (green)
+Line -> from fm.n + (qtr, 0) to (fm.c.x + qtr, govt.c.y) then to govt.e stroke greenish  "Government\nBorrowing"
+}

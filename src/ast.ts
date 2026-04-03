@@ -1,566 +1,341 @@
-// ast.ts — AST node types for the new DSL parser
-// Part of the DSL overhaul (Phase 0)
-//
-// The AST is produced by parser2.ts and consumed by evaluator.ts.
-// Expressions are unevaluated; the evaluator walks them to produce PicValues.
-
-import type { PToken } from './types.ts';
-import type { EasingFn } from './animation.ts';
-
-// ============================================================
-// Statements
-// ============================================================
-
-export type AstStmt =
-  | AstDirection
-  | AstAssign
-  | AstDefine
-  | AstShape
-  | AstLabel
-  | AstSublist
-  | AstForRange
-  | AstForIn
-  | AstFnCall
-  | AstCase
-  | AstIf
-  | AstPrint
-  | AstAssert
-  | AstAnimation
-  | AstEmpty
-
-export interface AstDirection {
-  kind: "direction";
-  dir: number;       // DIR_RIGHT, DIR_DOWN, etc.
-  tok: PToken;
-}
-
-export interface AstAssign {
-  kind: "assign";
-  name: PToken;
-  op: PToken;         // T_ASSIGN with eCode indicating +=, *= etc.
-  value: AstExpr;
-}
-
-export interface AstDefine {
-  kind: "define";
-  name: PToken;
-  body: PToken;
-}
-
-export interface AstShape {
-  kind: "shape";
-  classTok: PToken | null;   // T_CLASSNAME, or null for string/sublist
-  textTok: PToken | null;     // T_STRING for bare text objects
-  textPos: number;            // text position flags for textTok
-  sublist: AstStmt[] | null;  // [...] sublist body
-  attrs: AstAttr[];
-  leadingExpr: AstRelExpr | null;  // implicit direction distance
-}
-
-export interface AstLabel {
-  kind: "label";
-  name: PToken;
-  body: AstShape | AstLabelPosition;
-}
+import { Location } from "./parser.js"
+import { Cardinals, XY } from "./position.js"
+import { WithConstraint } from "./shapes/_base.js"
 
-export interface AstLabelPosition {
-  kind: "label_position";
-  position: AstPosition;
-}
-
-export interface AstSublist {
-  kind: "sublist";
-  body: AstStmt[];
-}
-
-export interface AstForRange {
-  kind: "for_range";
-  varTok: PToken;
-  start: AstExpr;
-  end: AstExpr;
-  step: AstExpr | null;
-  body: AstStmt[];    // parsed body (not raw codeblock)
-  bodyTok: PToken;     // original codeblock token for error reporting
-}
-
-export interface AstForIn {
-  kind: "for_in";
-  varTok: PToken;
-  list: AstExpr[];
-  body: AstStmt[];
-  bodyTok: PToken;
-}
-
-export interface AstPrint {
-  kind: "print";
-  items: AstPrintItem[];
-}
-
-export type AstPrintItem =
-  | { tag: "string"; tok: PToken }
-  | { tag: "property"; tok: PToken }   // fill, color, thickness
-  | { tag: "expr"; expr: AstExpr }
-
-export interface AstAssert {
-  kind: "assert";
-  variant: "expr" | "position" | "bool";
-  left: AstExpr | AstPosition;
-  right: AstExpr | AstPosition | null;
-  eqTok: PToken;
-}
-
-export interface AstCase {
-  kind: "case";
-  expr: AstExpr;
-  arms: { pattern: AstExpr | null; body: AstStmt[] }[];  // null pattern = default (_)
-  tok: PToken;
-}
-
-export interface AstIf {
-  kind: "if";
-  condition: AstExpr;
-  thenBody: AstStmt[];
-  elseBody: AstStmt[] | null;
-  tok: PToken;
-}
-
-export interface AstFnCall {
-  kind: "fncall";
-  func: AstExpr;
-  args: AstExpr[];
-  tok: PToken;
-}
+// type Expression 
+//   = Inspect
+//   | ShapeDefaultSetter
+//   | Shape
+//   | SetTime
+//   | AnimationSequence
+//   | Assignment
+//   | IfExpression
+//   | ConditionalExpression
 
-export interface AstEmpty {
-  kind: "empty";
-}
-
-export interface AstAnimation {
-  kind: "animation";
-  id: string | null;               // variable name if assigned ($scene1), or null
-  startExpr: AstExpr | null;      // starting <time>
-  endExpr: AstExpr | null;        // ending <time>
-  durationExpr: AstExpr | null;   // take <duration>
-  easeIn: EasingFn | null;
-  easeOut: EasingFn | null;
-  bounceStart: AstExpr | null;
-  bounceEnd: AstExpr | null;
-  body: AstAlter[];
-  tok: PToken;
-}
-
-export interface AstAlter {
-  target: AstAlterTarget;
-  property: PToken;               // the property or edge token
-  toValue: AstExpr | AstPosition; // can be expr or position (for .c to (x,y))
-  tok: PToken;
-}
+// type AnimationSequence = ExpressionList | Animation
 
-export interface AstAlterTarget {
-  object: AstObject;
-  edge: PToken | null;            // compass point (maps to center animation)
-  axis: "x" | "y" | null;        // for .edge.x / .edge.y
-}
+// type Animation 
+//   = MoveTo
+//   | Rotate
+//   | Set
 
-// ============================================================
-// Attributes (canonical form)
-// ============================================================
+// type ConditionalExpression 
+//   = IfExpression
+//   | BinaryExpression
+//   | UnaryExpression
+//   | FunctionExpression
+//   | Primary
 
-export type AstAttr =
-  | AstAttrNumeric
-  | AstAttrColor
-  | AstAttrDash
-  | AstAttrBool
-  | AstAttrText
-  | AstAttrContaining
-  | AstAttrPosition
-  | AstAttrDirection
-  | AstAttrFlag
-  | AstAttrWith
-  | AstAttrSame
-  | AstAttrBehind
-  | AstAttrFit
-  | AstAttrEvenWith
+// type Primary
+//   = Number
+//   | Boolean
+//   | Color
+//   | Position
+//   | String
+//   | TimelineValue
+//   | VarfiableValue
+//   | ArrayOrRange
+//   | ConditionalExpression
 
-export interface AstAttrNumeric {
-  attrKind: "numeric";
-  prop: PToken;       // T_HEIGHT, T_WIDTH, T_RADIUS, T_DIAMETER, T_THICKNESS
-  value: AstRelExpr;
+export interface Base {
+  type: string
+  location?: Location
 }
 
-export interface AstAttrColor {
-  attrKind: "color";
-  prop: PToken;       // T_FILL or T_COLOR
-  value: AstExpr;
-}
+export type Parameters = { [paramname: string]: any }
 
-export interface AstAttrDash {
-  attrKind: "dash";
-  prop: PToken;       // T_DASHED or T_DOTTED
-  value: AstExpr | null;
-}
+type FormalParameterList = Identifier[] 
+export type ExpressionOrBlock = ExpressionList | Node
 
-export interface AstAttrBool {
-  attrKind: "bool";
-  prop: string;       // "cw", "ccw", "larrow", "rarrow", "lrarrow", "invis", "thick", "thin", "solid"
-  tok: PToken;
-}
-
-export interface AstAttrText {
-  attrKind: "text";
-  tok: PToken;         // T_STRING
-  posFlags: number;   // text position flags
-}
-
-export interface AstAttrContaining {
-  attrKind: "containing";
-  expr: AstExpr;
-  posFlags: number;   // text position flags
-  tok: PToken;
-}
-
-export interface AstAttrPosition {
-  attrKind: "position";
-  variant: "from" | "to" | "at" | "close";
-  tok: PToken;
-  position: AstPosition;
-}
-
-export interface AstAttrDirection {
-  attrKind: "direction";
-  dirTok: PToken | null;   // direction token, or null for implicit
-  hasGo: boolean;
-  value: AstRelExpr | null;
-  // For heading-based movement
-  headingTok: PToken | null;
-  headingExpr: AstExpr | null;
-  edgeptTok: PToken | null;
-}
 
-export interface AstAttrWith {
-  attrKind: "with";
-  edge: PToken | null;
-  hasDotE: boolean;
-  position: AstPosition;
+export interface ArrayExpression extends Base {
+  type: `ArrayExpression`
+  elements: Node[] 
 }
 
-export interface AstAttrSame {
-  attrKind: "same";
-  tok: PToken;
-  asObject: AstObject | null;
+export interface Assignment extends Base {
+  type: `Assignment`,
+  lvalue: Node, 
+  rvalue: Node 
 }
 
-export interface AstAttrBehind {
-  attrKind: "behind";
-  object: AstObject;
+export interface BinaryExpression extends Base {
+  type: `BinaryExpression`,
+  left: Node, 
+  operator: string, 
+  right: Node
 }
 
-export interface AstAttrFit {
-  attrKind: "fit";
-  tok: PToken;
-}
+// //   VisitBlockStatement(node: AST.Base) {
+// export interface BlockStatement extends Base {
+//   constructor(
+//     location: Location, 
+//     left: Node, 
+//     operator: string, 
+//     right: Node
+//   ) {
+//     super(location)
+//   }
+// }
 
-export interface AstAttrEvenWith {
-  attrKind: "even_with";
-  dirTok: PToken;
-  position: AstPosition;
+export interface Boolean extends Base {
+  type: `Booloean`
+  value: boolean 
 }
 
-export interface AstAttrFlag {
-  attrKind: "flag";
-  name: string;       // "chop", "close", "then"
-  tok: PToken;
+export interface ColorLiteralString extends Base {
+  type: `ColorLiteralString`,
+  spec: string 
 }
 
-// ============================================================
-// Relative expression (value or percentage)
-// ============================================================
-
-export interface AstRelExpr {
-  expr: AstExpr;
-  isPercent: boolean;
+export interface ColorLiteralWithModel extends Base {
+  type: `ColorLiteralWithModel`,
+  model: string, 
+  params: Node[]
 }
 
-// ============================================================
-// Expressions
-// ============================================================
+export type ColorLiteral = ColorLiteralString | ColorLiteralWithModel
 
-export type AstExpr =
-  | AstExprNumber
-  | AstExprString
-  | AstExprBool
-  | AstExprVarRef
-  | AstExprBinOp
-  | AstExprUnaryOp
-  | AstExprCompare
-  | AstExprLogical
-  | AstExprParen
-  | AstExprFuncCall
-  | AstExprBuiltinCall
-  | AstExprDist
-  | AstExprProperty
-  | AstExprPlaceXY
-  | AstExprColorName
-  | AstExprList
-  | AstExprIndex
-  | AstExprFn
-  | AstExprUserCall
-  | AstExprRange
-  | AstExprDollarProp
-  | AstExprPosLiteral
-  | AstExprObjRef
 
-export interface AstExprNumber {
-  exprKind: "number";
-  tok: PToken;
-  value: number;
+export interface Draw extends Base {
+  type: `Draw`
+  what: Node,
+  params: Parameters
 }
 
-export interface AstExprString {
-  exprKind: "string";
-  tok: PToken;
-  value: string;
+export interface ExpressionList extends Base {
+  type: `ExpressionList`
+  body: Node[]
 }
 
-export interface AstExprBool {
-  exprKind: "boolean";
-  tok: PToken;
-  value: boolean;
+export interface FaceAngle extends Base {
+  type: `FaceAngle`
+  angle: Node
 }
 
-export interface AstExprVarRef {
-  exprKind: "varRef";
-  tok: PToken;
+export interface FaceCardinalDirection extends Base {
+  type: `FaceCardinalDirection`
+  direction: XY    // unit vector
 }
 
-export interface AstExprBinOp {
-  exprKind: "binOp";
-  op: "+" | "-" | "*" | "/" | "%";
-  left: AstExpr;
-  right: AstExpr;
-  tok: PToken;
-}
 
-export interface AstExprUnaryOp {
-  exprKind: "unaryOp";
-  op: "-" | "+";
-  operand: AstExpr;
-  tok: PToken;
+export interface SystemFont extends Base {
+  type: `SystemFont`
+  name: string, 
 }
 
-export interface AstExprCompare {
-  exprKind: "compare";
-  op: "==" | ">" | "<" | ">=" | "<=" | "!=";
-  left: AstExpr;
-  right: AstExpr;
-  tok: PToken;
+export interface Font extends Base {
+  type: `Font`
+  spec: { [attr: string]: string }
 }
 
-export interface AstExprLogical {
-  exprKind: "logical";
-  op: "and" | "or" | "not";
-  left: AstExpr;
-  right: AstExpr | null;  // null for "not"
-  tok: PToken;
+export interface FunctionExpression extends Base {
+  type: `FunctionExpression`
+  params: FormalParameterList, 
+  body: ExpressionOrBlock 
 }
 
-export interface AstExprParen {
-  exprKind: "paren";
-  expr: AstExpr;
+export interface GetTime extends Base {
+  type: `GetTime`
 }
 
-export interface AstExprFuncCall {
-  exprKind: "funcCall";
-  func: PToken;     // T_FUNC1, T_FUNC2, T_FUNC3
-  args: AstExpr[];
+export interface Group extends Base {
+  type: `Group`
+  body: ExpressionList | Node
+  withConstraint?: WithConstraint
 }
 
-export interface AstExprBuiltinCall {
-  exprKind: "builtinCall";
-  name: string;
-  args: AstExpr[];
-  tok: PToken;
+export interface Identifier extends Base {
+  type: `Identifier`
+  name: string, 
 }
 
-export interface AstExprDist {
-  exprKind: "dist";
-  p1: AstPosition;
-  p2: AstPosition;
-  tok: PToken;
+export interface IfExpression extends Base {
+  type: `IfExpression`
+  test: Node, 
+  consequent: Node, 
+  alternate: Node 
 }
 
-export interface AstExprProperty {
-  exprKind: "property";
-  object: AstObject;
-  prop: PToken;     // T_HEIGHT, T_WIDTH, etc. or T_X, T_Y via DOT_L
+export interface Inspect extends Base {
+  type: `Inspect`
+  value: Node, 
 }
 
-export interface AstExprPlaceXY {
-  exprKind: "placeXY";
-  place: AstPlace;
-  axis: "x" | "y";
+export interface MoveTo extends Base {
+  type: `MoveTo`
+  what: QualifiedLValue | VariableValue, 
+  place: Node, 
+  params: { [name: string]: any }
 }
 
-export interface AstExprColorName {
-  exprKind: "colorName";
-  tok: PToken;
+export interface Number extends Base {
+  type: `Number`
+  value: number 
 }
 
-export interface AstExprList {
-  exprKind: "list";
-  items: AstExpr[];
-  tok: PToken;
+export interface Position extends Base {
+  type: `Position`,
+  x: Node,
+  y: Node
 }
 
-export interface AstExprIndex {
-  exprKind: "index";
-  object: AstExpr;
-  index: AstExpr;  // expression, not just literal
-  tok: PToken;
+export interface Program extends Base {
+  type: `Program`,
+  body: ExpressionList,
 }
 
-export interface AstExprRange {
-  exprKind: "range";
-  start: AstExpr;
-  end: AstExpr;
-  tok: PToken;
+export interface QualifiedLValue extends Base {
+  type: `QualifiedLValue`,
+  left: Node, 
+  right: Qualifier
 }
 
-export interface AstExprFn {
-  exprKind: "fn";
-  params: PToken[];
-  body: AstStmt[];
-  tok: PToken;
+export interface QualifiedRValue extends Base {
+  type: `QualifiedRValue`,
+  left: Node, 
+  right: Qualifier
 }
 
-export interface AstExprUserCall {
-  exprKind: "userCall";
-  func: AstExpr;
-  args: AstExpr[];
-  tok: PToken;
+export interface QualifierFunctionCall  {
+  qtype: `call`,
+  qvalue: Node[],   // args
 }
 
-export interface AstExprDollarProp {
-  exprKind: "dollarProp";
-  varTok: PToken;         // the $varName token
-  propTok: PToken;        // the property name (start, end, duration)
+export interface QualifierIndex  {
+  qtype: `index`,
+  qvalue: Node   // args
 }
 
-export interface AstExprPosLiteral {
-  exprKind: "posLiteral";
-  x: AstExpr;
-  y: AstExpr;
-  tok: PToken;
+export interface QualifierAttr  {
+  qtype: `attr`,
+  qvalue: Identifier
 }
 
-export interface AstExprObjRef {
-  exprKind: "objRef";
-  object: AstObject;
-  tok: PToken;
-}
+export type Qualifier = QualifierFunctionCall | QualifierIndex | QualifierAttr
 
-// ============================================================
-// Positions
-// ============================================================
+export interface Range extends Base {
+  type: `Range`
+  start: Node, 
+  end: Node
+}
 
-export type AstPosition =
-  | AstPosAbsolute
-  | AstPosPlace
-  | AstPosRelative
-  | AstPosBetween
-  | AstPosDistDir
-  | AstPosComposite
-  | AstPosParen
+export interface Rotate extends Base {
+  type: `Rotate`
+  what: Node, 
+  angle: Node, 
+  about: Node, 
+  params: Parameters
+}
 
-export interface AstPosAbsolute {
-  posKind: "absolute";
-  x: AstExpr;
-  y: AstExpr;
+export interface Set extends Base {
+  type: `Set`
+  what: Node, 
+  value: Node, 
+  params: Parameters
 }
 
-export interface AstPosPlace {
-  posKind: "place";
-  place: AstPlace;
+export interface SetTime extends Base {
+  type: `SetTime`
+  when: string | number, 
 }
 
-export interface AstPosRelative {
-  posKind: "relative";
-  base: AstPosition;
-  sign: 1 | -1;
-  dx: AstExpr;
-  dy: AstExpr;
-  paren: boolean;  // whether offset was in parens
+export interface Shape extends Base {
+  type: `Shape`
+  shape: string,
+  args: Record<string, Node>,
+  withConstraint?: WithConstraint,
+  isChildShape?: boolean,  // true for label shapes that shouldn't become lastShape
 }
 
-export interface AstPosBetween {
-  posKind: "between";
-  fraction: AstExpr;
-  p1: AstPosition;
-  p2: AstPosition;
+export interface ShapeDefaultSetter extends Base {
+  type: `ShapeDefaultSetter`
+  shape: string, 
+  klass: string, 
+  attr: string, 
+  value: Node
 }
 
-export interface AstPosDistDir {
-  posKind: "distDir";
-  distance: AstExpr;
-  direction: "above" | "below" | "left" | "right" | "heading" | "edgept";
-  headingExpr: AstExpr | null;
-  edgeptTok: PToken | null;
-  of: AstPosition;
+export interface String extends Base {
+  type: `String`
+  value: string, 
 }
 
-export interface AstPosComposite {
-  posKind: "composite";
-  xFrom: AstPosition;
-  yFrom: AstPosition;
+export interface UnaryExpression extends Base {
+  type: `UnaryExpression`
+  operator: string, 
+  argument: Node
 }
 
-export interface AstPosParen {
-  posKind: "paren";
-  inner: AstPosition;
+export interface VariableValue extends Base {
+  type: `VariableValue`,
+  name: string, 
 }
 
-// ============================================================
-// Places and Objects
-// ============================================================
 
-export interface AstPlace {
-  object: AstObject;
-  edge: PToken | null;      // compass point or start/end
-  hasDotE: boolean;          // whether accessed via .edge syntax
+export interface ASTWithConstraint {
+  type: `ASTWithConstraint`,
+  cardinal: Cardinals,
+  place: Node
+
 }
 
-export type AstObject =
-  | AstObjThis
-  | AstObjNamed
-  | AstObjNth
-  | AstObjExpr
+export type Node
+  = ArrayExpression
+  | Assignment
+  | BinaryExpression
+  | Boolean
+  | ColorLiteralString
+  | ColorLiteralWithModel
+  | Draw
+  | ExpressionList
+  | FaceAngle
+  | FaceCardinalDirection
+  | Font
+  | FunctionExpression
+  | GetTime
+  | Group
+  | Identifier
+  | IfExpression
+  | Inspect
+  | MoveTo
+  | Number
+  | Position
+  | Program
+  | QualifiedLValue
+  | QualifiedRValue
+  | Range
+  | Rotate
+  | Set
+  | SetTime
+  | Shape
+  | ShapeDefaultSetter
+  | String
+  | UnaryExpression
+  | VariableValue
 
-export interface AstObjThis {
-  objKind: "this";
-  tok: PToken;
-}
+//   VisitWait(node: AST.Base) {
+// export interface BinaryExpression extends Base {
+//   constructor(
+//     location: Location, 
+//     left: Node, 
+//     operator: string, 
+//     right: Node
+//   ) {
+//     super(location)
+//   }
+// }
 
-export interface AstObjNamed {
-  objKind: "named";
-  names: PToken[];   // chain of PLACENAME tokens (A.B.C)
-}
 
-export interface AstObjNth {
-  objKind: "nth";
-  nth: PToken;       // T_NTH with eCode set, or T_LAST
-  classTok: PToken;  // T_CLASSNAME or T_LB or T_LAST
-  inObject: AstObject | null;  // "of" or "in" basis object
-}
+// export interface BinaryExpression extends Base {
+//   constructor(
+//     location: Location, 
+//     left: Node, 
+//     operator: string, 
+//     right: Node
+//   ) {
+//     super(location)
+//   }
+// }
 
-export interface AstObjExpr {
-  objKind: "expr";
-  expr: AstExpr;
-}
 
-// Vertex expression
-export interface AstVertexExpr {
-  nth: PToken;
-  vertex: PToken;
-  object: AstObject;
-  axis: "x" | "y";
-}

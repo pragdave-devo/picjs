@@ -1,0 +1,1 @@
+# Pygments Lexer for Myopic

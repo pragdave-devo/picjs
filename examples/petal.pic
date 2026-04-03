@@ -1,0 +1,15 @@
+petal = (color) => {
+  4.times(=> {
+    Arc stroke color
+    Arc ccw stroke color.spin(10)
+    Arc stroke color.spin(20)
+  })
+}
+
+
+petals = 13
+
+petals.times(n => {
+  Face 360/petals*n     // 0°, 45°, 90° ...
+  petal(#c7c.spin(n*30))
+})
