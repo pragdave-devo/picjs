@@ -1,18 +1,57 @@
-import { LineDirection, SvgBase, arrowDimensions } from "./_base.js"
+import { LineDirection, SvgBase, arrowDimensions, toSvgAttrNames } from "./_base.js"
 import * as Convert from "./attribute_converters.js"
 import { RenderParameters } from "../../types.js"
 import * as Shape from "../../shapes.js"
 import { XY } from "../../position.js"
+import { setAttr, svg } from "redom"
 
 
 export class Polyline extends SvgBase {
 
+  private lineEl!: SVGElement
+  private pendingMarkers!: string[]
+
   constructor(position: RenderParameters, attrs: Shape.Args) {
     super(position, attrs)
-    this.build(`path`)
+    this.buildGroup()
+  }
+
+  private buildGroup() {
+    const strokeColor = this.attrs.stroke || 'currentColor'
+    this.lineEl = svg('path', this.attrs)
+    this.el = svg('g')
+    this.el.appendChild(this.lineEl)
+    this.appendMarkers(strokeColor)
+  }
+
+  private appendMarkers(strokeColor: string) {
+    for (const d of this.pendingMarkers) {
+      this.el.appendChild(svg('path', { d, fill: strokeColor, stroke: 'none' }))
+    }
+    this.pendingMarkers = []
+  }
+
+  rerender(position: RenderParameters, attrs: Shape.Args) {
+    this.pendingMarkers = []
+    this.attrs = toSvgAttrNames(this.convertToSVG(position, attrs))
+    const strokeColor = this.attrs.stroke || 'currentColor'
+
+    setAttr(this.lineEl, this.attrs)
+    for (const attr of [`pathLength`, `stroke-dasharray`, `stroke-dashoffset`]) {
+      if (!(attr in this.attrs)) {
+        this.lineEl.removeAttribute(attr)
+      }
+    }
+
+    while (this.el.childNodes.length > 1) {
+      this.el.removeChild(this.el.lastChild!)
+    }
+    this.appendMarkers(strokeColor)
+    return this
   }
 
   convertToSVG(position: RenderParameters, attrs: Shape.Args) {
+    this.pendingMarkers = []
     this.attrs = Convert.run(position, attrs, [
       Convert.linestyle,
     ])
@@ -47,15 +86,12 @@ export class Polyline extends SvgBase {
     const waypoints: XY[] = this.attrs.waypoints || []
     const closed = this.attrs.closed
 
-    if (waypoints.length === 0) return `M ${start.x} ${-start.y}`
-
-    let pathPrefix = ``
-    let pathSuffix = ``
+    if (waypoints.length === 0) return `M ${start.x} ${start.y}`
 
     // Handle start marker
     if (this.attrs.line_start) {
       const angle = Math.atan2(waypoints[0].y - start.y, waypoints[0].x - start.x)
-      pathPrefix = this.drawMarker(this.attrs.line_start, start, -1, angle)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_start, start, -1, angle))
     }
 
     // Handle end marker (only for open polylines)
@@ -63,16 +99,16 @@ export class Polyline extends SvgBase {
       const last = waypoints[waypoints.length - 1]
       const prev = waypoints.length > 1 ? waypoints[waypoints.length - 2] : start
       const angle = Math.atan2(last.y - prev.y, last.x - prev.x)
-      pathSuffix = this.drawMarker(this.attrs.line_end, last, +1, angle)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_end, last, +1, angle))
     }
 
-    let d = `M ${start.x} ${-start.y}`
+    let d = `M ${start.x} ${start.y}`
     for (const wp of waypoints) {
-      d += ` L ${wp.x} ${-wp.y}`
+      d += ` L ${wp.x} ${wp.y}`
     }
     if (closed) d += ` Z`
 
-    return pathPrefix + d + pathSuffix
+    return d
   }
 
   roundedPolyline(r: number) {
@@ -80,31 +116,28 @@ export class Polyline extends SvgBase {
     const waypoints: XY[] = this.attrs.waypoints || []
     const closed = this.attrs.closed
 
-    if (waypoints.length === 0) return `M ${start.x} ${-start.y}`
+    if (waypoints.length === 0) return `M ${start.x} ${start.y}`
 
     const pts = [start, ...waypoints]
-    if (closed) pts.push(start)  // close the loop for iteration
-
-    let pathPrefix = ``
-    let pathSuffix = ``
+    if (closed) pts.push(start)
 
     // Handle markers
     if (this.attrs.line_start && !closed) {
       const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x)
-      pathPrefix = this.drawMarker(this.attrs.line_start, pts[0], -1, angle)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_start, pts[0], -1, angle))
     }
     if (this.attrs.line_end && !closed) {
       const last = waypoints[waypoints.length - 1]
       const prev = waypoints.length > 1 ? waypoints[waypoints.length - 2] : start
       const angle = Math.atan2(last.y - prev.y, last.x - prev.x)
-      pathSuffix = this.drawMarker(this.attrs.line_end, last, +1, angle)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_end, last, +1, angle))
     }
 
     let d = ``
 
     if (closed) {
       const mid = this.cornerOffset(pts[pts.length - 2], pts[0], r)
-      d = `M ${mid.x} ${-mid.y}`
+      d = `M ${mid.x} ${mid.y}`
 
       for (let i = 0; i < pts.length - 1; i++) {
         const prev = i === 0 ? pts[pts.length - 2] : pts[i - 1]
@@ -114,12 +147,12 @@ export class Polyline extends SvgBase {
         const after = this.cornerOffset(next, curr, r)
         const sweep = this.arcSweep(prev, curr, next)
 
-        if (i > 0) d += ` L ${before.x} ${-before.y}`
-        d += ` A ${r} ${r} 0 0 ${sweep} ${after.x} ${-after.y}`
+        if (i > 0) d += ` L ${before.x} ${before.y}`
+        d += ` A ${r} ${r} 0 0 ${sweep} ${after.x} ${after.y}`
       }
       d += ` Z`
     } else {
-      d = `M ${pts[0].x} ${-pts[0].y}`
+      d = `M ${pts[0].x} ${pts[0].y}`
 
       for (let i = 1; i < pts.length - 1; i++) {
         const prev = pts[i - 1]
@@ -130,16 +163,16 @@ export class Polyline extends SvgBase {
         const after = this.cornerOffset(next, curr, r)
         const sweep = this.arcSweep(prev, curr, next)
 
-        d += ` L ${before.x} ${-before.y}`
-        d += ` A ${r} ${r} 0 0 ${sweep} ${after.x} ${-after.y}`
+        d += ` L ${before.x} ${before.y}`
+        d += ` A ${r} ${r} 0 0 ${sweep} ${after.x} ${after.y}`
       }
 
       // Final point
       const last = pts[pts.length - 1]
-      d += ` L ${last.x} ${-last.y}`
+      d += ` L ${last.x} ${last.y}`
     }
 
-    return pathPrefix + d + pathSuffix
+    return d
   }
 
   // Point that is `radius` away from `vertex` toward `other`
@@ -161,22 +194,22 @@ export class Polyline extends SvgBase {
     return cross > 0 ? 1 : 0
   }
 
-  drawMarker(type: string, pos: XY, dir: LineDirection, angle: number) {
+  markerPath(type: string, pos: XY, dir: LineDirection, angle: number) {
     switch (type) {
       case `<`:
       case `>`:
-        return this.drawArrowMarker(pos, dir, angle)
+        return this.arrowMarkerPath(pos, dir, angle)
       case `o`:
-        return this.drawCircleMarker(pos, dir, angle)
+        return this.circleMarkerPath(pos, dir, angle)
       case `|`:
-        return this.drawBarMarker(pos, dir, angle)
+        return this.barMarkerPath(pos, dir, angle)
       default:
         throw new Error(`Invalid line end "${type}"`)
     }
   }
 
-  drawArrowMarker(pos: XY, dir: LineDirection, angle: number) {
-    const stroke_width = this.attrs[`stroke-width`]
+  arrowMarkerPath(pos: XY, dir: LineDirection, angle: number) {
+    const stroke_width = this.attrs[`stroke_width`]
     const { length: w, halfWidth: w_2 } = arrowDimensions(stroke_width)
 
     const basex = pos.x - dir * w * Math.cos(angle)
@@ -191,11 +224,11 @@ export class Polyline extends SvgBase {
     pos.x = basex
     pos.y = basey
 
-    return `M ${basex} ${-basey} ${base1x} ${-base1y} L ${pointx} ${-pointy} L ${base2x} ${-base2y} L ${basex} ${-basey}`
+    return `M ${base1x} ${base1y} L ${pointx} ${pointy} L ${base2x} ${base2y} Z`
   }
 
-  drawCircleMarker(pos: XY, dir: LineDirection, angle: number) {
-    const { length: w } = arrowDimensions(this.attrs[`stroke-width`])
+  circleMarkerPath(pos: XY, dir: LineDirection, angle: number) {
+    const { length: w } = arrowDimensions(this.attrs[`stroke_width`])
     const radius = w / 2
     const basex = pos.x - dir * w * Math.cos(angle)
     const basey = pos.y - dir * w * Math.sin(angle)
@@ -203,12 +236,12 @@ export class Polyline extends SvgBase {
     const ey = pos.y
     pos.x = basex
     pos.y = basey
-    return `M ${basex} ${-basey} A ${radius} ${radius} 0 1 0 ${ex} ${-ey}` +
-      `A ${radius} ${radius} 0 1 0 ${basex} ${-basey}`
+    return `M ${basex} ${basey} A ${radius} ${radius} 0 1 0 ${ex} ${ey}` +
+      `A ${radius} ${radius} 0 1 0 ${basex} ${basey}`
   }
 
-  drawBarMarker(pos: XY, dir: LineDirection, angle: number) {
-    const stroke_width = this.attrs[`stroke-width`]
+  barMarkerPath(pos: XY, dir: LineDirection, angle: number) {
+    const stroke_width = this.attrs[`stroke_width`]
     const { length: w, halfWidth: w_2 } = arrowDimensions(stroke_width)
     const basex = pos.x - dir * w * Math.cos(angle)
     const basey = pos.y - dir * w * Math.sin(angle)
@@ -218,6 +251,6 @@ export class Polyline extends SvgBase {
     const base2y = basey + dir * w_2 * Math.cos(angle)
     pos.x = basex
     pos.y = basey
-    return `M ${base1x} ${-base1y} L ${base2x} ${-base2y} M ${basex} ${-basey}`
+    return `M ${base1x} ${base1y} L ${base2x} ${base2y}`
   }
 }

@@ -1,3 +1,9 @@
+// A simple shape, drawn repetitively
+// try changing this number:
+petals = 17
+
+start_color = oklch(70%, .3, 0)
+
 petal = (color) => {
   4.times(=> {
     Arc stroke color
@@ -6,10 +12,7 @@ petal = (color) => {
   })
 }
 
-
-petals = 13
-
 petals.times(n => {
   Face 360/petals*n     // 0°, 45°, 90° ...
-  petal(#c7c.spin(n*30))
+  petal(start_color.spin(n*30))
 })

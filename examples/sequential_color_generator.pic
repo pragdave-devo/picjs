@@ -1,11 +1,10 @@
-stepper = (base, angle) => {
-  spin = 0
-  => { 
-    spin = spin + angle   
-    base.spin(spin)
-  }
-}
+// picjs lets you interpolate between more than just numbers. Here we're
+// using `..` to interpolate between colors, and `steps` to call
+// a function for 20 colors between the two.
 
-s = stepper(#4488cc, 15)
-
-10.times(n => Box fill s() at (n*50, n*50))
+BaseColor = oklch(60%, .35, 20)
+row = 0
+[ BaseColor..BaseColor.spin(180) ].steps(20, rowcolor => {
+   Skip to (0, row += 1)
+   [rowcolor..rowcolor.spin(90)].steps(20, color => circle rad .5  fill color)
+})

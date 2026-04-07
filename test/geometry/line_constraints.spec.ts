@@ -44,8 +44,8 @@ describe(`4. Line joins to previous`, () => {
 describe(`5. Line joins edges if shapes given`, () => {
   const [b1, b2, l] = 
     valueOf(`a = Box (100, 100) b = Box (100, 200) l = Line from a to b\n [a,b,l]`).value
-  it(`has default `, () => expect(l.start).toEqual(b1.n))
-  it(`has default `, () => expect(l.end).toEqual(b2.s))
+  it(`has default `, () => expect(l.start).toEqual(b1.s))
+  it(`has default `, () => expect(l.end).toEqual(b2.n))
   it(`has default `, () => expect(l.length).toEqual(100 - (b1.height + b2.height) / 2))
 })
 

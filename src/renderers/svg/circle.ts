@@ -15,7 +15,7 @@ export class Circle extends SvgBase {
     return Convert.run(position, attrs, [
       (position, attrs) => {
         attrs.cx = position.x
-        attrs.cy = -position.y
+        attrs.cy = position.y
       },
       Convert.rotation,
       Convert.linestyle,

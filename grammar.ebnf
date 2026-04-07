@@ -1,0 +1,123 @@
+
+Start           = _ Program _ EOF ;
+
+Program         = ExpressionList? ;
+
+ExpressionList  = Expression ( Expression )*;
+
+Expression      = ( __ |
+                    ( ShapeExpression
+                    | PositionExpression
+                    | NumericExpression
+                    | OtherExpressioni
+                    )
+                  );
+
+
+NumericExpression =
+;
+
+PositionExpression =
+                '('
+;
+
+OtherExpression =
+;
+
+
+ShapeExpression =
+                  ArcExpression
+                | BoxExpression
+                | CircleExpression
+                | EllipseExpression
+                | LineExpression
+                | TextExpression
+                ;
+
+                  ArcExpression
+                  BoxExpression
+                | CircleExpression
+                | EllipseExpression
+
+
+LineExpression  = 'line' LineOptions*;
+
+LineOptions     = (__ LineOption)+;
+
+LineOption      = (   CommonShapeOptions
+                    | Label
+                    | LineClosed
+                    | LineDeferDraw wait | nodraw
+                    | LineEndings
+                    | LineFromPosition
+                    | LineLength
+                    | LineShape
+                    | LineToPosition
+                    | LineWithEndPosition
+                    | LineWithStartPosition
+                    )*
+
+LineDeferDraw    = 'wait' | 'nodraw' ;
+
+LineEndings   = '--'
+                  | '~~'
+                  | LineEndingsEndStart LineEndingsPath LineEndingsEndEnd
+                  | LineEndingsEndStart LineEndingsPath
+                  | LineEndingsPath LineEndingsEndEnd ;
+
+LineEndingsPath        = '-'
+                | '~' ;
+
+LineEndingsEndStart  = '<' | '|' | 'o' ;
+LineEndingsEndEnd    = '>' | '|' | 'o' ;
+
+
+LineFromPosition = 'from' Position ;
+
+LineLength       = LengthAttr __ Number ;
+
+LineToPosition   = ToAttr Position;
+
+LineShape        = 'straight' | 'stepped' | 'smooth'
+
+LineThickness    =  ThicknessAttr _ NumberExpression
+
+LineWithEndPosition = 'with' __ '.end' __ ('at' __)? Position ;
+LineWithEndPosition = 'with' __ '.start' __ ('at' __)? Position ;
+
+
+
+// not line specific
+
+FillColor        = 'fill' __ Color ;
+Rotation         = RotateAttr __ (NumberExpression | 'cw' | 'ccw' );
+
+Same             = 'same';
+
+StrokeColor      = 'stroke' __ Color ;
+
+
+StrokeStyle      = 'dotted' | 'dashed' ;
+
+LengthAttr = 'length' | 'len' ;
+ThicknessAttr = 'thickness' | 'thick';
+ToAtter = ('then' __)? 'to'
+        | 'until' __ ('even' __ 'with' __)? Position;;
+
+
+CommonShapeOptions = (
+                    | Behind
+                    | Class
+                    | FillColor
+                    | Label
+                    | LineThickness
+                    | Rotation
+                    | Same
+                    | StrokeColor
+                    | StrokeStyle
+                    )
+
+
+
+
+

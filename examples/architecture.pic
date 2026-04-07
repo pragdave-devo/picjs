@@ -1,49 +1,45 @@
-right
+Line.stroke = Box.fill
 
-Pipeline: [
-  down
-  "Internal Pipeline"
-  move 20%
-  BatchWriter: box wid 150% ht 60% fill 0xe0e0e0 "Batch Writer" \
+box_around = grp => {
+  box at grp             behind grp
+       wid grp.wid*1.1   ht grp.ht*1.1
+       fill ~beige       stroke ~lightgrey
+}
 
+pipeline = Group {
+  Face s
+  Label "Internal Pipeline" .h4 fill ~green
+  Gap .2
+  self.batch_writer = box wid 150% ht 60% "Batch Writer"
+  -> ("post" fill ~darkolivegreen)  ("commit" fill ~darkolivegreen)
+  self.trigger_evaluation = box same "Trigger\nEvaluation" fill ~darkolivegreen
+  -> ("Trigger" fill ~darkolivegreen)  ("Fired" fill ~darkolivegreen)
+  self.trigger_bridge = box same "Trigger\nBridge"
+}
 
-  arrow "post" aligned "commit" aligned
-  TriggerEvaluation: box same "Trigger Evaluation"
-  arrow "Trigger" aligned "Fired" aligned
-  TriggerBridge: box same "Trigger Bridge"
-]
+box_around(pipeline)
 
-Database: cylinder "Database" with .e at Pipeline.BatchWriter.w -( 0.5, 0)
+database = circle "Database" with .e at pipeline.batch_writer.w - ( 0.5, 0)
 
-
-box at Pipeline \
-   wid Pipeline.wid*1.1 ht Pipeline.ht*1.1 \
-   fill 0xf0f0f8 color lightgrey \
-    behind Pipeline
-
-move right 0.5
-
-Services: [
-  down
-  GPTuple: \
-    box wid 150% ht 60% fill 0xe0e0e0 "Get/Put Tuple"
-  arrow <-> "Validate" aligned above
+services = Group {
+  Face s
+  Label "External API" .h4 fill ~green
+  Gap .2
+  self.get_put_tuple = box wid 150% ht 60%  "Get/Put Tuple"
+  line <-> ("Validate" fill ~darkolivegreen)  above
   box "Schemas" same
-  move down 0.2
-  box ht 0 dotted
-  move down same
-  box wid 150% ht 60% fill 0xe0e0e0 "Playbooks"
-  move down same
-  box same "Agents"
 
-]
+  Gap 0
+  line -> len .5 stroke ~black rot 90 dashed thick .02
 
-arrow from Pipeline.BatchWriter to Database chop
-arrow from Services.GPTuple.w to Pipeline.BatchWriter.e
-arrow <-> from Services.Playbooks.w to Pipeline.TriggerEvaluation.e
-arrow <-> from Services.Agents to Pipeline.TriggerBridge chop
+  self.playbooks = box wid 150% ht 60% fill ~darkolivegreen "Playbooks"
+  Gap  0.2
+  self.agents = box same "Agents"
+} with .nw at pipeline.ne + (1,0)
 
-box at Services \
-   wid Services.wid*1.1 ht Services.ht*1.1 \
-   fill 0xf0f8f0 color lightgrey \
-    behind Pipeline
+Line  -> from pipeline.batch_writer    to database
+Line  -> from services.get_put_tuple.w to pipeline.batch_writer.e
+Line <-> from services.playbooks.w     to pipeline.trigger_evaluation.e smooth
+Line <-> from services.agents          to pipeline.trigger_bridge
+
+box_around(services)

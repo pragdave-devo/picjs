@@ -2,8 +2,6 @@ import { LineLike } from "./line_like.js"
 import { TColor, TNumber, TPosition } from "../types.js"
 import { Cardinals, CardinalFactorsFromCenter, UnitVector, XY } from "../position.js"
   
-const DefaultLength = 1
-
 export class SLine extends LineLike {
 
 
@@ -11,7 +9,7 @@ export class SLine extends LineLike {
   //
   getCardinalOffsetsFromAnchor(cardinal: Cardinals) {
     const [ fx, fy ] = CardinalFactorsFromCenter[cardinal]
-    return [ fx * this.width / 2, fy * this.height / 2 ]
+    return [ fx * this.width, fy * this.height ]
   }
 
 
@@ -37,7 +35,7 @@ export class SLine extends LineLike {
   get stroke()            { return this.params.stroke          }
   get width()             { return Math.abs(this.start.x - this.end.x) }
   get height()            { return Math.abs(this.start.y - this.end.y) }
-  get default_length()    { return DefaultLength                       }
+  get default_length()    { return this.params.length ?? 1              }
   get line_path()         { return this.params.line_path               }
   get length()            {
     return Math.hypot(

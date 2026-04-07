@@ -2,13 +2,13 @@ import { AnimationStyle, TBase } from "./_base.js"
 import { TString } from "./tstring.js"
 
 interface FontAttributes  {
-  "font-family":  string
-  "font-size":    string
-  "font-stretch": string
-  "font-style":   string
-  "font-variant": string
-  "font-weight":  string
-  "line-height":  string
+  "font_family":  string
+  "font_size":    string
+  "font_stretch": string
+  "font_style":   string
+  "font_variant": string
+  "font_weight":  string
+  "line_height":  string
 }
 
 type OptionalFontAttributes = {
@@ -16,13 +16,13 @@ type OptionalFontAttributes = {
 }
 
 const FontDefaults: FontAttributes = {
-  "font-family":  `sans-serif`,
-  "font-size":    `0.14`,
-  "font-stretch": `normal`,
-  "font-style":   `normal`,
-  "font-variant": `normal`,
-  "font-weight":  `normal`,
-  "line-height":  `normal`,
+  "font_family":  `sans-serif`,
+  "font_size":    `0.14`,
+  "font_stretch": `normal`,
+  "font_style":   `normal`,
+  "font_variant": `normal`,
+  "font_weight":  `normal`,
+  "line_height":  `normal`,
 }
 
 export class TFont extends TBase<FontAttributes> {
@@ -38,24 +38,24 @@ export class TFont extends TBase<FontAttributes> {
   handle_attr_variant() { return new TString(this.variant) }
   handle_attr_weight()  { return new TString(this.weight) }
 
-  get family()  { return this.value[`font-family`] }
-  get height()  { return this.value[`line-height`] }
-  get size()    { return this.value[`font-size`] }
-  get stretch() { return this.value[`font-stretch`] }
-  get style()   { return this.value[`font-style`] }
-  get variant() { return this.value[`font-variant`] }
-  get weight()  { return this.value[`font-weight`] }
+  get family()  { return this.value[`font_family`] }
+  get height()  { return this.value[`line_height`] }
+  get size()    { return this.value[`font_size`] }
+  get stretch() { return this.value[`font_stretch`] }
+  get style()   { return this.value[`font_style`] }
+  get variant() { return this.value[`font_variant`] }
+  get weight()  { return this.value[`font_weight`] }
 
 
   injectIntoAttrs(attrs: FontAttributes) {
-    if (this.style   !== `normal`) attrs[`font-style`]   = this.style
-    if (this.variant !== `normal`) attrs[`font-variant`] = this.variant
-    if (this.stretch !== `normal`) attrs[`font-stretch`] = this.stretch
-    if (this.weight  !== `normal`) attrs[`font-weight`]  = this.weight
-    if (this.family  !== `normal`) attrs[`font-family`]  = this.family
-    if (this.height  !== `normal`) attrs[`line-height`]  = this.height
+    if (this.style   !== `normal`) attrs[`font_style`]   = this.style
+    if (this.variant !== `normal`) attrs[`font_variant`] = this.variant
+    if (this.stretch !== `normal`) attrs[`font_stretch`] = this.stretch
+    if (this.weight  !== `normal`) attrs[`font_weight`]  = this.weight
+    if (this.family  !== `normal`) attrs[`font_family`]  = this.family
+    if (this.height  !== `normal`) attrs[`line_height`]  = this.height
 
-    attrs[`font-size`] = this.size
+    attrs[`font_size`] = this.size
   }
 
   toString() {
@@ -79,7 +79,6 @@ export class TFont extends TBase<FontAttributes> {
   }
 
 }
-
 
 
 

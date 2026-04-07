@@ -74,3 +74,35 @@ testParse(
     _labels: [lineLabel(`mid`, 0.5, `outside`)]
   })
 )
+
+// Side before percentage (both orderings should work)
+testParse(
+  `line -> "label" below at 60%`,
+  line({
+    line_path: s(`straight`),
+    line_end: s(`>`),
+    _labels: [lineLabel(`label`, 0.6, `below`)]
+  })
+)
+
+testParse(
+  `line -> "label" at 60% below`,
+  line({
+    line_path: s(`straight`),
+    line_end: s(`>`),
+    _labels: [lineLabel(`label`, 0.6, `below`)]
+  })
+)
+
+// Side-first with multiple labels
+testParse(
+  `line -> "start" above at 10% "end" below at 90%`,
+  line({
+    line_path: s(`straight`),
+    line_end: s(`>`),
+    _labels: [
+      lineLabel(`start`, 0.1, `above`),
+      lineLabel(`end`, 0.9, `below`)
+    ]
+  })
+)

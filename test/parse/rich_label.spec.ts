@@ -14,7 +14,7 @@ describe(`Rich label on shapes`, () => {
     shape(`SCircle`, {
       label: richLabel({
         text: string(`hello`),
-        "font-size": string(`x-small`),
+        "font_size": string(`x-small`),
       }),
     })
   )
@@ -24,7 +24,7 @@ describe(`Rich label on shapes`, () => {
     shape(`SBox`, {
       label: richLabel({
         text: string(`title`),
-        "font-size": string(`xx-large`),
+        "font_size": string(`xx-large`),
       }),
     })
   )
@@ -40,9 +40,9 @@ describe(`Rich label with full font spec`, () => {
         font: {
           type: `Font`,
           spec: {
-            "font-weight": `bold`,
-            "font-size": `12pt`,
-            "font-family": `Roboto`,
+            "font_weight": `bold`,
+            "font_size": `12pt`,
+            "font_family": `Roboto`,
           },
         },
       }),

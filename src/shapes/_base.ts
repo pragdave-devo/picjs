@@ -89,6 +89,18 @@ export class SBase extends TBase<null> {
   protected hasMoved = false
   variableDirty = false
   visible = false   // set true when CreateShape timeline entry is processed
+  insideAside = false  // shapes created inside Aside blocks are not implicit connector targets
+
+  // When true, autolayout accounts for next shape's entry edge (Gap endpoint)
+  layoutAsEdge = false
+
+  // Draw this shape before `behind` (so it appears behind it in SVG)
+  behind?: SBase
+
+  // Relative positioning within a parent group (see sgroup.ts)
+  parentGroup?: any       // SGroup — typed as any to avoid circular import
+  relativeX?: number      // X offset from parent group anchor
+  relativeY?: number      // Y offset from parent group anchor
 
   // Original AST args for re-evaluation when variables change
   astArgs?: Record<string, any>
@@ -155,7 +167,7 @@ export class SBase extends TBase<null> {
 
   setRotationVector() {
     const radians = this.rotation * DegreesToRadians
-    this.sinR = -Math.sin(radians)   // negated: positive rotation = CW in Y-up model
+    this.sinR = Math.sin(radians)
     this.cosR = Math.cos(radians)
   }
 
@@ -218,6 +230,8 @@ export class SBase extends TBase<null> {
     }
     // Allow multiple children (for multiple line labels)
     child.parentShape = this
+    child.params._parentWidth = this.width
+    child.params._parentHeight = this.height
   }
 
   isChild() {
@@ -241,6 +255,7 @@ export class SBase extends TBase<null> {
   handle_attr_fill()      { return new TColor(this.params.fill)       }
   handle_attr_stroke()    { return new TColor(this.params.stroke)     }
 
+  handle_attr_opacity()   { return new TNumber(this.params.opacity ?? 1) }
   handle_attr_rotation()  { return new TNumber(this.rotation)         }
   handle_attr_thickness() { return new TNumber(this.params.thickness) }
 

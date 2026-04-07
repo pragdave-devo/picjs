@@ -14,10 +14,6 @@ export class LineLike extends SBase {
   // Used by geometry.positionLine to avoid relying on stale lastShape state.
   predecessorShape?: SBase
   successorShape?:   SBase
-
-  // Direction that was active when this line was first positioned.
-  // Used during re-rendering so that lines without explicit endpoints
-  // keep their original direction instead of using stale geometry state.
   _layoutDirection?: XY
 
   // Implemented by subclasses to enable start/end access in geometry

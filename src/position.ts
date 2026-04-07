@@ -22,9 +22,9 @@ export const CardinalFactorsFromNW: Record<Cardinals, Offsets> = {
 
 // the offsets off all cardinal points from the center
 export const CardinalFactorsFromCenter: Record<Cardinals, Offsets> = {
-  nw:  [ -0.5,  0.5 ],   n: [  0.0,  0.5 ],   ne: [  0.5,  0.5 ],
+  nw:  [ -0.5, -0.5 ],   n: [  0.0, -0.5 ],   ne: [  0.5, -0.5 ],
   w:   [ -0.5,  0.0 ],   c: [  0.0,  0.0 ],   e:  [  0.5,  0.0 ],
-  sw:  [ -0.5, -0.5 ],   s: [  0.0, -0.5 ],   se: [  0.5, -0.5 ],
+  sw:  [ -0.5,  0.5 ],   s: [  0.0,  0.5 ],   se: [  0.5,  0.5 ],
 }
 
 // And cardinal unit vectors
@@ -32,9 +32,9 @@ export const CardinalFactorsFromCenter: Record<Cardinals, Offsets> = {
 const r2 = 1.0 / Math.sqrt(2.0)   // r2^2 + r2^2 = 1
 
 export const CardinalVectors: Record<Cardinals, XY> = {
-  nw:  { x:  -r2, y:  r2 },   n: { x: 0.0, y:  1.0 },   ne: { x:  r2, y:  r2 },
+  nw:  { x:  -r2, y: -r2 },   n: { x: 0.0, y: -1.0 },   ne: { x:  r2, y: -r2 },
   w:   { x: -1.0, y: 0.0 },   c: { x: 0.0, y:  0.0 },   e:  { x: 1.0, y: 0.0 },
-  sw:  { x:  -r2, y: -r2 },   s: { x: 0.0, y: -1.0 },   se: { x:  r2, y: -r2 },
+  sw:  { x:  -r2, y:  r2 },   s: { x: 0.0, y:  1.0 },   se: { x:  r2, y:  r2 },
 }
 
 export interface Position {

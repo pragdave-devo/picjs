@@ -165,6 +165,22 @@ export class RegenerateSource extends Visitor{
     return `[${start}..${end}]`
   }
 
+  VisitShapeDefaultGetter(node: AST.ShapeDefaultGetter) {
+    return `${node.shape}.${node.attr}`
+  }
+
+  VisitShapeDefaultSetter(node: AST.ShapeDefaultSetter) {
+    return [ `${node.shape}.${node.attr} = `, this.accept(node.value) ]
+  }
+
+  VisitLayoutGap(node: AST.LayoutGap) {
+    return node.same ? `Gap same` : `Gap`
+  }
+
+  VisitLayoutGoto(_node: AST.LayoutGoto) {
+    return `Goto`
+  }
+
   VisitShape(node: AST.Shape) {
     return [ 
       node.shape,

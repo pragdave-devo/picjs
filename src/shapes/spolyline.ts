@@ -18,7 +18,7 @@ export class SPolyline extends LineLike {
   get end(): XY     { const wp = this.waypoints; return wp.length > 0 ? wp[wp.length - 1] : this.start }
   set end(_val: XY) { /* computed from waypoints */ }
 
-  get closed(): boolean { return this.hidden._closed || false }
+  get closed(): boolean { return this.params.closed || this.hidden._closed || false }
   get thickness()       { return this.params.thickness }
   get stroke()          { return this.params.stroke }
   get line_path()       { return this.params.line_path }
@@ -59,7 +59,7 @@ export class SPolyline extends LineLike {
 
   getCardinalOffsetsFromAnchor(cardinal: Cardinals) {
     const [fx, fy] = CardinalFactorsFromCenter[cardinal]
-    return [fx * this.width / 2, fy * this.height / 2]
+    return [fx * this.width, fy * this.height]
   }
 
   cropStrategy() {

@@ -53,13 +53,18 @@ const errorLineField = StateField.define<DecorationSet>({
 // selection time.  Add, remove, or reorder entries here to change the dropdown.
 
 const examples: { file: string; description: string }[] = [
-  { file: "petal.pic",                     description: "Petal — turtle graphics" },
-  { file: "hanoi.pic",                     description: "Towers of Hanoi" },
-  { file: "closure.pic",                   description: "Closures" },
-  { file: "fib.pic",                       description: "Fibonacci" },
-  { file: "sequential_color_generator.pic", description: "Color generator" },
-  { file: "911.pic",                       description: "911 — arcs & circles" },
-  { file: "line-labels.pic",               description: "Line labels" },
+{ file: "911.pic",                        description: "A state machine" },
+{ file: "architecture.pic",               description: "Basic Aerchitecturen diagram" },
+{ file: "economy.pic",                    description: "Simple model of supply and demand" },
+{ file: "gear.pic",                       description: "Prametric gear" },
+{ file: "hanoi.pic",                      description: "Hanoi animation" },
+{ file: "kernighan.pic",                  description: "Diagram from Kernighan's PIC paper" },
+{ file: "line-labels.pic",                description: "Demo of labelling on lines" },
+{ file: "petal.pic",                      description: "Petals/Pattens" },
+{ file: "sequential_color_generator.pic", description: "Color interpolation" },
+{ file: "snail.pic",                      description: "Spiral with sequential colors" },
+{ file: "spiro.picjs",                    description: "Spirograph" },
+
 ]
 
 // ─── DOM elements ──────────────────────────────────────────────────────────
@@ -368,7 +373,7 @@ function preview() {
       // Compute viewBox from shape geometry. Use a preliminary viewBox
       // first so font-size in user units maps to reasonable pixels,
       // then measure with getBBox for accurate text bounds.
-      svgHolder.setAttribute(`viewBox`, `0 -7 10 7`)
+      svgHolder.setAttribute(`viewBox`, `0 0 10 7`)
       // Force a layout so the preliminary viewBox takes effect
       svgHolder.getBoundingClientRect()
       const bbox = svgHolder.getBBox()

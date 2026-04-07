@@ -1,9 +1,9 @@
-import { SvgBase, LineDirection, arrowDimensions } from "./_base.js"
+import { SvgBase, LineDirection, arrowDimensions, toSvgAttrNames } from "./_base.js"
 import * as Convert from "./attribute_converters.js"
 import * as Shape from "../../shapes.js"
 import { XY } from "../../position.js"
-import { RenderParameters     } from "../../types.js"
-
+import { RenderParameters } from "../../types.js"
+import { setAttr, svg } from "redom"
 
 
 const two_cos_45 = 2.0 * Math.cos(Math.PI / 4.0)
@@ -11,13 +11,50 @@ const two_cos_45 = 2.0 * Math.cos(Math.PI / 4.0)
 export class Arc extends SvgBase {
 
   cropped = false
+  private lineEl!: SVGElement
+  private pendingMarkers!: string[]
 
   constructor(position: RenderParameters, attrs: Shape.Args) {
     super(position, attrs)
-    this.build(`path`)
+    this.buildGroup()
+  }
+
+  private buildGroup() {
+    const strokeColor = this.attrs.stroke || 'currentColor'
+    this.lineEl = svg('path', this.attrs)
+    this.el = svg('g')
+    this.el.appendChild(this.lineEl)
+    this.appendMarkers(strokeColor)
+  }
+
+  private appendMarkers(strokeColor: string) {
+    for (const d of this.pendingMarkers) {
+      this.el.appendChild(svg('path', { d, fill: strokeColor, stroke: 'none' }))
+    }
+    this.pendingMarkers = []
+  }
+
+  rerender(position: RenderParameters, attrs: Shape.Args) {
+    this.pendingMarkers = []
+    this.attrs = toSvgAttrNames(this.convertToSVG(position, attrs))
+    const strokeColor = this.attrs.stroke || 'currentColor'
+
+    setAttr(this.lineEl, this.attrs)
+    for (const attr of [`pathLength`, `stroke-dasharray`, `stroke-dashoffset`]) {
+      if (!(attr in this.attrs)) {
+        this.lineEl.removeAttribute(attr)
+      }
+    }
+
+    while (this.el.childNodes.length > 1) {
+      this.el.removeChild(this.el.lastChild!)
+    }
+    this.appendMarkers(strokeColor)
+    return this
   }
 
   convertToSVG(position: RenderParameters, attrs: Shape.Args) {
+    this.pendingMarkers = []
     this.normalizeAttrs()
     this.attrs = Convert.run(position, attrs, [
       Convert.anchorToSvgNW,
@@ -34,9 +71,9 @@ export class Arc extends SvgBase {
     return this.attrs
   }
 
-  requiredPosition() {                    //
-    return null                           //
-  }                                       //
+  requiredPosition() {
+    return null
+  }
 
   normalizeAttrs() {
   }
@@ -53,120 +90,83 @@ export class Arc extends SvgBase {
     const rx = Math.hypot(end.x - start.x, end.y - start.y) / two_cos_45
     const ry = rx
 
-    let pathPrefix = ``
-    let pathSuffix = ``
-
     if (this.attrs.line_start) {
-      pathPrefix = this.drawMarker(this.attrs.line_start, start, -1, angle)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_start, start, -1, angle))
     }
 
     if (this.attrs.line_end) {
-      pathSuffix = this.drawMarker(this.attrs.line_end, end, +1, angle)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_end, end, +1, angle))
     }
 
     // turn can be plain string "cw" or AST node { type: "String", value: "cw" }
     const turnValue = typeof this.attrs.turn === `string` ? this.attrs.turn : this.attrs.turn?.value
-    const turn = turnValue === `cw` ? 0 : 1   // flipped: Y-negation reverses visual rotation
+    const turn = turnValue === `cw` ? 1 : 0
 
-    return pathPrefix +
-    ` M ${start.x} ${-start.y}` +
-    ` A ${rx} ${ry} ${-angle} 0 ${turn} ${end.x} ${-end.y} `
-    + pathSuffix
+    return ` M ${start.x} ${start.y}` +
+    ` A ${rx} ${ry} ${angle} 0 ${turn} ${end.x} ${end.y} `
   }
 
-
-  drawMarker(type: string, pos: XY , dir: LineDirection, angle: number) {
+  markerPath(type: string, pos: XY, dir: LineDirection, angle: number) {
     switch (type) {
       case `<`:
       case `>`:
-        return this.drawArrowMarker(pos, dir, angle)
-
+        return this.arrowMarkerPath(pos, dir, angle)
       case `o`:
-        return this.drawCircleMarker(pos, dir, angle)
-
+        return this.circleMarkerPath(pos, dir, angle)
       case `|`:
-        return this.drawBarMarker(pos, dir, angle)
-
+        return this.barMarkerPath(pos, dir, angle)
       default:
         throw new Error(`Invalid line end "${type}"`)
     }
   }
 
-  drawArrowMarker(pos: XY, dir: LineDirection, angle: number) {
-    const stroke_width = this.attrs[`stroke-width`]
+  arrowMarkerPath(pos: XY, dir: LineDirection, angle: number) {
+    const stroke_width = this.attrs[`stroke_width`]
     const { length: w, halfWidth: w_2 } = arrowDimensions(stroke_width)
 
     const basex = pos.x - dir * w * Math.cos(angle)
     const basey = pos.y - dir * w * Math.sin(angle)
-
     const base1x = basex + dir * w_2 * Math.sin(angle)
     const base1y = basey - dir * w_2 * Math.cos(angle)
-
     const base2x = basex - dir * w_2 * Math.sin(angle)
     const base2y = basey + dir * w_2 * Math.cos(angle)
-
     const pointx = pos.x - dir * 1.5 * stroke_width * Math.cos(angle)
     const pointy = pos.y - dir * 1.5 * stroke_width * Math.sin(angle)
 
     pos.x = basex
     pos.y = basey
 
-    return `M ${basex} ${-basey} ${base1x} ${-base1y} L ${pointx} ${-pointy} L ${base2x} ${-base2y} L ${basex} ${-basey}`
-
+    return `M ${base1x} ${base1y} L ${pointx} ${pointy} L ${base2x} ${base2y} Z`
   }
 
   drawCircleMarker(pos: XY, dir: -1 | 1, angle: number) {
-    const { length: w } = arrowDimensions(this.attrs[`stroke-width`])
+    const { length: w } = arrowDimensions(this.attrs[`stroke_width`])
     const radius = w / 2
-
     const basex = pos.x - dir * w * Math.cos(angle)
     const basey = pos.y - dir * w * Math.sin(angle)
-
     const ex = pos.x
     const ey = pos.y
-
     pos.x = basex
     pos.y = basey
-
-    return `M ${basex} ${-basey} A ${radius} ${radius} 0 1 0 ${ex} ${-ey}` +
-      `A ${radius} ${radius} 0 1 0 ${basex} ${-basey}`
-
+    return `M ${basex} ${basey} A ${radius} ${radius} 0 1 0 ${ex} ${ey}` +
+      `A ${radius} ${radius} 0 1 0 ${basex} ${basey}`
   }
 
-  drawBarMarker(pos: XY, dir: LineDirection, angle: number) {
-    const stroke_width = this.attrs[`stroke-width`]
-    const { length: w, halfWidth: w_2 } = arrowDimensions(stroke_width)
+  circleMarkerPath(pos: XY, dir: -1 | 1, angle: number) {
+    return this.drawCircleMarker(pos, dir, angle)
+  }
 
+  barMarkerPath(pos: XY, dir: LineDirection, angle: number) {
+    const stroke_width = this.attrs[`stroke_width`]
+    const { length: w, halfWidth: w_2 } = arrowDimensions(stroke_width)
     const basex = pos.x - dir * w * Math.cos(angle)
     const basey = pos.y - dir * w * Math.sin(angle)
-
     const base1x = basex + dir * w_2 * Math.sin(angle)
     const base1y = basey - dir * w_2 * Math.cos(angle)
-
     const base2x = basex - dir * w_2 * Math.sin(angle)
     const base2y = basey + dir * w_2 * Math.cos(angle)
-
     pos.x = basex
     pos.y = basey
-
-    return `M ${base1x} ${-base1y} L ${base2x} ${-base2y} M ${basex} ${-basey}`
-
+    return `M ${base1x} ${base1y} L ${base2x} ${base2y}`
   }
-
-
-  angleToCenter(start: XY, end: XY, deltaX: number, deltaY: number) {
-    if (deltaX > deltaY) { // horizontal
-      if (start.x < end.x)
-        return -Math.PI
-      else
-        return 0
-    }
-    if (start.y < end.y)
-      return Math.PI / 2
-    return -Math.PI / 2
-  }
-
-
 }
-
-

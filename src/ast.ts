@@ -139,9 +139,15 @@ export interface GetTime extends Base {
   type: `GetTime`
 }
 
+export interface Aside extends Base {
+  type: `Aside`
+  body: ExpressionList | Node
+}
+
 export interface Group extends Base {
   type: `Group`
   body: ExpressionList | Node
+  args?: Record<string, any>
   withConstraint?: WithConstraint
 }
 
@@ -162,10 +168,35 @@ export interface Inspect extends Base {
   value: Node, 
 }
 
+export interface DirectionalWaypoint extends Base {
+  type: `DirectionalWaypoint`
+  components: { direction: XY, distance: Node }[]
+}
+
+export interface DirectionalUntilWaypoint extends Base {
+  type: `DirectionalUntilWaypoint`
+  direction: XY
+  target: Node
+}
+
+export interface LayoutGoto extends Base {
+  type: `LayoutGoto`
+  direction?: XY       // unit vector from cardinal
+  distance?: Node      // expression for distance
+  place?: Node         // absolute position
+}
+
+export interface LayoutGap extends Base {
+  type: `LayoutGap`
+  direction?: XY       // unit vector from cardinal
+  distance?: Node      // expression for distance
+  same?: boolean       // repeat previous Gap
+}
+
 export interface MoveTo extends Base {
   type: `MoveTo`
-  what: QualifiedLValue | VariableValue, 
-  place: Node, 
+  what: QualifiedLValue | VariableValue,
+  place: Node,
   params: { [name: string]: any }
 }
 
@@ -235,9 +266,16 @@ export interface Set extends Base {
   params: Parameters
 }
 
+export interface ShapeDefaultGetter extends Base {
+  type: `ShapeDefaultGetter`
+  shape: string,
+  klass: string,
+  attr: string,
+}
+
 export interface SetTime extends Base {
   type: `SetTime`
-  when: string | number, 
+  when: string | number,
 }
 
 export interface Shape extends Base {
@@ -281,11 +319,14 @@ export interface ASTWithConstraint {
 }
 
 export type Node
-  = ArrayExpression
+  = Aside
+  | ArrayExpression
   | Assignment
   | BinaryExpression
   | Boolean
   | ColorLiteralString
+  | DirectionalUntilWaypoint
+  | DirectionalWaypoint
   | ColorLiteralWithModel
   | Draw
   | ExpressionList
@@ -298,6 +339,8 @@ export type Node
   | Identifier
   | IfExpression
   | Inspect
+  | LayoutGap
+  | LayoutGoto
   | MoveTo
   | Number
   | Position
@@ -309,6 +352,7 @@ export type Node
   | Set
   | SetTime
   | Shape
+  | ShapeDefaultGetter
   | ShapeDefaultSetter
   | String
   | UnaryExpression

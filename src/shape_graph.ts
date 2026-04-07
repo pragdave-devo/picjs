@@ -30,6 +30,9 @@ export class ShapeGraph {
     shape.astArgs = astArgs
     shape.id = `${name}-${this.sno++}`
 
+    if (this.dispatcher.asideDepth > 0)
+      shape.insideAside = true
+
     this.allShapes.push(shape)
 
     if (withConstraint)
@@ -57,6 +60,14 @@ export class ShapeGraph {
   //
   shapes(): Shapes.SBase[] {
     return this.allShapes
+  }
+
+  findLastOfType(shapeName: string): Shapes.SBase | undefined {
+    for (let i = this.allShapes.length - 1; i >= 0; i--) {
+      if (this.allShapes[i].shapeName === shapeName)
+        return this.allShapes[i]
+    }
+    return undefined
   }
 
   recordDependency(dependent: Shapes.SBase, dependency: Shapes.SBase) {
@@ -96,10 +107,10 @@ export class ShapeGraph {
       }
 
       if (!shape._end) {
-        // Walk forwards to find the nearest non-connector, non-child shape
+        // Walk forwards to find the nearest non-connector, non-child, non-aside shape
         for (let j = i + 1; j < this.allShapes.length; j++) {
           const candidate = this.allShapes[j]
-          if (!(candidate instanceof Shapes.LineLike) && !candidate.isChild()) {
+          if (!(candidate instanceof Shapes.LineLike) && !candidate.isChild() && !candidate.insideAside) {
             shape.successorShape = candidate
             this.dependencyGraph.add(shape, candidate)
             break
@@ -131,7 +142,35 @@ export class ShapeGraph {
       }
     }
 
-    const renderList = this.allShapes.filter(shape => shape.visible)
+    const renderList = this.applyBehindConstraints(
+      this.allShapes.filter(shape => shape.visible)
+    )
     return renderer.render(renderList)
+  }
+
+  // Reorder shapes so that any shape with `behind X` appears before X.
+  applyBehindConstraints(shapes: Shapes.SBase[]): Shapes.SBase[] {
+    const result = [...shapes]
+    for (let i = 0; i < result.length; i++) {
+      const shape = result[i]
+      if (!shape.behind) continue
+
+      // If targeting a group, resolve to its first *visible* child — the group itself
+      // sits after its children in allShapes and has no SVG element.
+      let target: Shapes.SBase = shape.behind
+      if (target instanceof Shapes.SGroup && target.groupChildren.length > 0) {
+        target = target.groupChildren.find(c => result.includes(c)) ?? target.groupChildren[0]
+      }
+
+      const targetIdx = result.indexOf(target)
+      if (targetIdx < 0 || targetIdx > i) continue  // target not found or already after us
+
+      // Move shape to just before target (which is currently before us)
+      result.splice(i, 1)
+      const newTargetIdx = result.indexOf(target)
+      result.splice(newTargetIdx, 0, shape)
+      i--  // re-check this index since we shifted elements
+    }
+    return result
   }
 }

@@ -81,7 +81,7 @@ describe(`4. change default direction to "down"`, () => {
   it(`is at the correct X`, () => expect(b1.x).toBe(defaultX))
   it(`is at the correct X`, () => expect(b1.y).toBe(defaultY))
   it(`Box 2 is at the correct X`, () => expect(b2.x).toBe(b1.x))
-  it(`Box 2 is at the correct X`, () => expect(b2.y).toBe(b1.y - b1.height / 2 - b2.height / 2))
+  it(`Box 2 is at the correct X`, () => expect(b2.y).toBe(b1.y + b1.height / 2 + b2.height / 2))
 })
 
 

@@ -1,24 +1,76 @@
-import { LineDirection, SvgBase, arrowDimensions } from "./_base.js"
-// import { attr_linestyle, attr_start_end } from "./attribute_setters.js"
+import { LineDirection, SvgBase, arrowDimensions, toSvgAttrNames } from "./_base.js"
 import * as Convert from "./attribute_converters.js"
 import { RenderParameters } from "../../types.js"
 import * as Shape from "../../shapes.js"
 import { XY } from "../../position.js"
+import { setAttr, svg } from "redom"
 
 
 export class Line extends SvgBase {
 
   cropped = true
+  private lineEl!: SVGElement
+  private pendingMarkers!: string[]
 
   constructor(position: RenderParameters, attrs: Shape.Args) {
     super(position, attrs)
-    this.build(`path`)
+    this.buildGroup()
+  }
+
+  private buildGroup() {
+    const strokeColor = this.attrs.stroke || 'currentColor'
+    // Extract transform for the group so it applies to both line and markers
+    const groupAttrs: Shape.Args = {}
+    if (this.attrs.transform) {
+      groupAttrs.transform = this.attrs.transform
+      delete this.attrs.transform
+    }
+    this.el = svg('g', groupAttrs)
+    this.lineEl = svg('path', this.attrs)
+    this.el.appendChild(this.lineEl)
+    this.appendMarkers(strokeColor)
+  }
+
+  private appendMarkers(strokeColor: string) {
+    for (const d of this.pendingMarkers) {
+      this.el.appendChild(svg('path', { d, fill: strokeColor, stroke: 'none' }))
+    }
+    this.pendingMarkers = []
+  }
+
+  rerender(position: RenderParameters, attrs: Shape.Args) {
+    this.pendingMarkers = []
+    this.attrs = toSvgAttrNames(this.convertToSVG(position, attrs))
+    const strokeColor = this.attrs.stroke || 'currentColor'
+
+    // Extract transform for the group
+    const groupAttrs: Shape.Args = {}
+    if (this.attrs.transform) {
+      groupAttrs.transform = this.attrs.transform
+      delete this.attrs.transform
+    }
+    setAttr(this.el, groupAttrs)
+    if (!this.attrs.transform) this.el.removeAttribute('transform')
+
+    setAttr(this.lineEl, this.attrs)
+    for (const attr of [`pathLength`, `stroke-dasharray`, `stroke-dashoffset`]) {
+      if (!(attr in this.attrs)) {
+        this.lineEl.removeAttribute(attr)
+      }
+    }
+
+    // Remove old markers, rebuild
+    while (this.el.childNodes.length > 1) {
+      this.el.removeChild(this.el.lastChild!)
+    }
+    this.appendMarkers(strokeColor)
+    return this
   }
 
   convertToSVG(position: RenderParameters, attrs: Shape.Args) {
+    this.pendingMarkers = []
     this.attrs = Convert.run(position, attrs, [
       Convert.rotation,
-      // Convert.anchorToSvgNW,
       Convert.linestyle,
     ])
     this.attrs.d = this.pathForLine()
@@ -29,37 +81,13 @@ export class Line extends SvgBase {
     delete this.attrs.line_path
     delete this.attrs.line_start
     delete this.attrs.line_end
+    delete this.attrs.length
     return this.attrs
   }
 
-  requiredPosition() {                    //
-    return null                           //
-  }                                       //
-
-  // fixup_linestyle() {
-  //   const lineThickness = this.attrs[`stroke-width`]
-  //   let wanted
-
-  //   switch (this.attrs.linestyle) {
-  //     case `dotted`:
-  //       const dotLen = Math.max(1, 0.75 * lineThickness)
-  //       wanted = [ dotLen, 4 * dotLen ]
-  //       break
-  //     case `dashed`:
-  //       const gapLen = Math.max(4, lineThickness)
-  //       wanted = [ 2 * gapLen, gapLen ]
-  //       break
-  //     case `solid`:
-  //     default:
-  //       wanted = undefined
-  //   }
-
-  //   if (wanted) 
-  //     this.attrs[`stroke-dasharray`] = wanted
-  //   else
-  //     delete this.attrs[`stroke-dasharray`]
-    
-  // }
+  requiredPosition() {
+    return null
+  }
 
   pathForLine() {
     switch (this.attrs.line_path) {
@@ -81,18 +109,15 @@ export class Line extends SvgBase {
 
     const angle = Math.atan2(deltaY, deltaX)
 
-    let pathPrefix = ``
-    let pathSuffix = ``
-
     if (this.attrs.line_start) {
-      pathPrefix = this.drawMarker(this.attrs.line_start, start, -1, angle)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_start, start, -1, angle))
     }
 
     if (this.attrs.line_end) {
-      pathSuffix = this.drawMarker(this.attrs.line_end, end, +1, angle)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_end, end, +1, angle))
     }
 
-    return `${pathPrefix} M ${start.x} ${-start.y} L ${end.x} ${-end.y} ${pathSuffix}`
+    return `M ${start.x} ${start.y} L ${end.x} ${end.y}`
   }
 
   steppedLine() {
@@ -101,44 +126,40 @@ export class Line extends SvgBase {
 
     let deltaX = Math.abs(start.x - end.x)
     let deltaY = Math.abs(start.y - end.y)
-    let angle
 
     if (deltaX < 5 || deltaY < 5) {
       return this.straightLine()
     }
 
     let cmds: string[] = []
+    let angle
 
     if (deltaX > deltaY) {
       let split = start.x + (end.x - start.x) / 2
-      cmds = cmds.concat(`L ${split} ${-start.y}`)
-      cmds = cmds.concat(`L ${split} ${-end.y}`)
+      cmds = cmds.concat(`L ${split} ${start.y}`)
+      cmds = cmds.concat(`L ${split} ${end.y}`)
       angle = 0
       if (start.x > end.x)
         angle += Math.PI
     }
     else {
       let split = start.y + (end.y - start.y) / 2
-      cmds = cmds.concat(`L ${start.x} ${-split}`)
-      cmds = cmds.concat(`L ${end.x} ${-split}`)
+      cmds = cmds.concat(`L ${start.x} ${split}`)
+      cmds = cmds.concat(`L ${end.x} ${split}`)
       angle = Math.PI / 2
       if (start.y > end.y)
         angle += Math.PI
     }
 
     if (this.attrs.line_start) {
-      cmds.unshift(this.drawMarker(this.attrs.line_start, start, -1, angle))
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_start, start, -1, angle))
     }
-    cmds.unshift(`M ${start.x} ${-start.y}`)
+    cmds.unshift(`M ${start.x} ${start.y}`)
 
     if (this.attrs.line_end) {
-      const marker = this.drawMarker(this.attrs.line_end, end, +1, angle)
-      cmds.push(`L ${end.x} ${-end.y}`)  // need to create the marker to get the updated end position
-      cmds.push(marker)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_end, end, +1, angle))
     }
-    else {
-      cmds.push(`L ${end.x} ${-end.y}`)
-    }
+    cmds.push(`L ${end.x} ${end.y}`)
 
     return cmds.join(` `)
   }
@@ -154,55 +175,53 @@ export class Line extends SvgBase {
       return this.straightLine()
     }
 
-    let linePrefix = ``
-    let lineSuffix = ``
-
     if (this.attrs.line_start) {
       const angle = -this.angleToCenter(start, end, deltaX, deltaY)
-      linePrefix = this.drawMarker(this.attrs.line_start, start, 1, angle)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_start, start, 1, angle))
     }
 
     if (this.attrs.line_end) {
       const angle = -this.angleToCenter(end, start, deltaX, deltaY)
-      lineSuffix = this.drawMarker(this.attrs.line_end, end, 1, angle)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_end, end, 1, angle))
     }
 
-
-    let head = `M ${start.x} ${-start.y}`
+    let head = `M ${start.x} ${start.y}`
     let mid
-    let tail = `, ${end.x} ${-end.y}`
+    let tail = `, ${end.x} ${end.y}`
 
     if (deltaX > deltaY) {
       let split = start.x + (end.x - start.x) / 2
-      mid = `C ${split} ${-start.y}, ${split} ${-end.y}`
+      mid = `C ${split} ${start.y}, ${split} ${end.y}`
     }
     else {
       let split = start.y + (end.y - start.y) / 2
-      mid = `C ${start.x} ${-split}, ${end.x} ${-split}`
+      mid = `C ${start.x} ${split}, ${end.x} ${split}`
     }
 
-    return linePrefix + head + mid + tail + lineSuffix
+    return head + mid + tail
   }
 
-  drawMarker(type: string, pos: XY, dir: LineDirection, angle: number) {
+  // Marker methods: modify pos (to shorten the line) and return a closed path string
+
+  markerPath(type: string, pos: XY, dir: LineDirection, angle: number) {
     switch (type) {
       case `<`:
       case `>`:
-        return this.drawArrowMarker(pos, dir, angle)
+        return this.arrowMarkerPath(pos, dir, angle)
 
       case `o`:
-        return this.drawCircleMarker(pos, dir, angle)
+        return this.circleMarkerPath(pos, dir, angle)
 
       case `|`:
-        return this.drawBarMarker(pos, dir, angle)
+        return this.barMarkerPath(pos, dir, angle)
 
       default:
         throw new Error(`Invalid line end "${type}"`)
     }
   }
 
-  drawArrowMarker(pos: XY, dir: LineDirection, angle: number) {
-    const stroke_width = this.attrs[`stroke-width`]
+  arrowMarkerPath(pos: XY, dir: LineDirection, angle: number) {
+    const stroke_width = this.attrs[`stroke_width`]
     const { length: w, halfWidth: w_2 } = arrowDimensions(stroke_width)
 
     const basex = pos.x - dir * w * Math.cos(angle)
@@ -220,12 +239,11 @@ export class Line extends SvgBase {
     pos.x = basex
     pos.y = basey
 
-    return `M ${basex} ${-basey} ${base1x} ${-base1y} L ${pointx} ${-pointy} L ${base2x} ${-base2y} L ${basex} ${-basey}`
-
+    return `M ${base1x} ${base1y} L ${pointx} ${pointy} L ${base2x} ${base2y} Z`
   }
 
-  drawCircleMarker(pos: XY, dir: LineDirection, angle: number) {
-    const { length: w } = arrowDimensions(this.attrs[`stroke-width`])
+  circleMarkerPath(pos: XY, dir: LineDirection, angle: number) {
+    const { length: w } = arrowDimensions(this.attrs[`stroke_width`])
     const radius = w / 2
 
     const basex = pos.x - dir * w * Math.cos(angle)
@@ -237,13 +255,12 @@ export class Line extends SvgBase {
     pos.x = basex
     pos.y = basey
 
-    return `M ${basex} ${-basey} A ${radius} ${radius} 0 1 0 ${ex} ${-ey}` +
-      `A ${radius} ${radius} 0 1 0 ${basex} ${-basey}`
-
+    return `M ${basex} ${basey} A ${radius} ${radius} 0 1 0 ${ex} ${ey}` +
+      `A ${radius} ${radius} 0 1 0 ${basex} ${basey}`
   }
 
-  drawBarMarker(pos: XY, dir: LineDirection, angle: number) {
-    const stroke_width = this.attrs[`stroke-width`]
+  barMarkerPath(pos: XY, dir: LineDirection, angle: number) {
+    const stroke_width = this.attrs[`stroke_width`]
     const { length: w, halfWidth: w_2 } = arrowDimensions(stroke_width)
 
     const basex = pos.x - dir * w * Math.cos(angle)
@@ -258,8 +275,7 @@ export class Line extends SvgBase {
     pos.x = basex
     pos.y = basey
 
-    return `M ${base1x} ${-base1y} L ${base2x} ${-base2y} M ${basex} ${-basey}`
-
+    return `M ${base1x} ${base1y} L ${base2x} ${base2y}`
   }
 
 
@@ -277,4 +293,3 @@ export class Line extends SvgBase {
 
 
 }
-

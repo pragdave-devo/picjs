@@ -12,12 +12,12 @@ export class SvgBase implements RedomComponent {
 
   constructor(position: RenderParameters, attrs: Shape.Args) {
     this.position = position
-    this.attrs = this.convertToSVG(position, attrs)
+    this.attrs = toSvgAttrNames(this.convertToSVG(position, attrs))
   }
 
 
   rerender(position: RenderParameters, attrs: Shape.Args) {
-    this.attrs = this.convertToSVG(position, attrs)
+    this.attrs = toSvgAttrNames(this.convertToSVG(position, attrs))
     setAttr(this.el, this.attrs)
     // redom's setAttr only adds/updates attributes, never removes.
     // Clean up draw-animation attributes when no longer active.
@@ -45,17 +45,26 @@ export class SvgBase implements RedomComponent {
 
     if (drawProgress !== undefined && drawProgress < 1) {
       attrs.pathLength = 1
-      attrs[`stroke-dasharray`] = 1
-      attrs[`stroke-dashoffset`] = 1 - drawProgress
+      attrs[`stroke_dasharray`] = 1
+      attrs[`stroke_dashoffset`] = 1 - drawProgress
     }
   }
+}
+
+// Convert internal underscore attribute names to SVG hyphenated names
+export function toSvgAttrNames(attrs: Shape.Args): Shape.Args {
+  const result: Shape.Args = {}
+  for (const [k, v] of Object.entries(attrs)) {
+    result[k.replace(/_/g, '-')] = v
+  }
+  return result
 }
 
 export function arrowDimensions(strokeWidth: number) {
   const ratio = strokeWidth <= 0.05 ? 2
               : strokeWidth >= 0.25 ? 0.7
               : 2 - 6.5 * (strokeWidth - 0.05)
-  const width = ratio * strokeWidth
+  const width = ratio * strokeWidth * 1.5
   const length = 1.8 * width
   return { length, halfWidth: width / 2 }
 }

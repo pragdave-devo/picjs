@@ -1,6 +1,6 @@
 // import { RTE } from "./runtime_error.js"
 import { TPosition } from "./types.js"
-import { LineLike, SArc, SBase, SLine, SPoint, SPolyline } from "./shapes.js"
+import { LineLike, SArc, SBase, SGroup, SLine, SPoint, SPolyline } from "./shapes.js"
 import { Cardinals, XY } from "./position.js"
 import { Dispatcher } from "./dispatcher.js"
 
@@ -91,6 +91,21 @@ export class Geometry {
         this.positionPolyline(shape as SPolyline)
         break
 
+      case `SGroup`: {
+        const group = shape as SGroup
+        if (shape.withConstraint) {
+          this.constrainedLayout(shape)
+          // constrainedLayout → positionCardinalToPoint → setAnimatablePosition
+          // SGroup override repositions children from relative offsets
+        }
+        else if (group.needsFlowLayout && group.predecessorShape) {
+          this.lastShape = group.predecessorShape
+          this.autolayout(shape)
+          group.repositionChildren()
+        }
+        break
+      }
+
       default:
         if (shape.missingDimensions())
           this.dispatcher.calculateDimensions(shape)
@@ -130,12 +145,22 @@ export class Geometry {
   // Now set the center of the target shape to zero, and project a line back 
   // in the reciprocal of the current direction. Where is intersects the shape is the
   // offset to the center. Position the new shape at (constraint - offset)
+  autolayoutCount = 0
+
   autolayout(shape: SBase) {
+    this.autolayoutCount++
     const c = this.lastShape.c
 
-    if (this.lastShape.width === 0 && this.lastShape.height === 0) {
+    if (this.lastShape.width === 0 && this.lastShape.height === 0 && !this.lastShape.layoutAsEdge) {
       shape.anchorX = this.lastShape.x
       shape.anchorY = this.lastShape.y
+    }
+    else if (this.lastShape.width === 0 && this.lastShape.height === 0 && this.lastShape.layoutAsEdge) {
+      // Gap endpoint: place next shape's entry edge at this point
+      shape.anchorX = shape.anchorY = 0
+      const offset = shape.cropLineTo(null, { x: -this.direction.x, y: -this.direction.y })
+      shape.anchorX = this.lastShape.x - offset.x
+      shape.anchorY = this.lastShape.y - offset.y
     }
     else {
       const projection = { x: c.x + this.direction.x, y: c.y + this.direction.y }
@@ -156,6 +181,8 @@ export class Geometry {
 
     // Handle line label constraints specially
     if (constraint.type === `LineLabelConstraint`) {
+      if (shape.missingDimensions())
+        this.dispatcher.calculateDimensions(shape)
       this.positionLineLabel(shape, constraint)
       return
     }
@@ -209,15 +236,16 @@ export class Geometry {
     let targetY = y
 
     if (side !== `center`) {
-      // Offset = (line thickness + font height) / 2
-      const strokeWidth = line.params[`stroke-width`] || 0.04
-      const fontSize = label.params[`font-size`] || 0.14
-      const offsetDistance = (strokeWidth + fontSize) / 2
+      // Offset = half the line thickness + gap + half the label height
+      const strokeWidth = Number(line.params[`stroke_width`]) || 0.04
+      const labelHeight = Number(label.height) || Number(label.params[`font_size`]) || 0.14
+      const gap = strokeWidth * 0.5
+      const offsetDistance = strokeWidth / 2 + gap + labelHeight / 2
 
-      // The perpendicular at (displayAngle + π/2) points northward (positive Y)
-      // because sin(displayAngle + π/2) = cos(displayAngle) ≥ 0
+      // The perpendicular at (displayAngle - π/2) points northward (negative Y)
+      // because sin(displayAngle - π/2) = -cos(displayAngle) ≤ 0
       // for displayAngle ∈ [-π/2, π/2]
-      const northPerpAngle = displayAngle + Math.PI / 2
+      const northPerpAngle = displayAngle - Math.PI / 2
 
       if (side === `above` || side === `outside`) {
         targetX += offsetDistance * Math.cos(northPerpAngle)
@@ -231,8 +259,7 @@ export class Geometry {
     label.setAnimatablePosition(targetX, targetY)
 
     // Rotate label to match line direction (never upside-down)
-    // Negated: positive model rotation = CW, but displayAngle is CCW from x-axis
-    const rotationDegrees = -displayAngle * (180 / Math.PI)
+    const rotationDegrees = displayAngle * (180 / Math.PI)
     label.params.rotation = rotationDegrees
     label.setRotationVector()
   }
@@ -281,11 +308,57 @@ export class Geometry {
 
   positionPolyline(poly: SPolyline) {
     // Resolve start
-    let startAsType = poly.valueOfAttr(`_start`)
-    if (startAsType instanceof SBase)
-      this.dispatcher.recordDependency(poly, startAsType)
+    let startAsType: any = undefined
+    let startXY: XY = { x: 0, y: 0 }
+    let cropStart = false
 
-    let [startXY, cropStart] = this.convertToPosition(startAsType)
+    if (poly._start) {
+      startAsType = poly.valueOfAttr(`_start`)
+      if (startAsType instanceof SBase)
+        this.dispatcher.recordDependency(poly, startAsType)
+      ;[startXY, cropStart] = this.convertToPosition(startAsType)
+    }
+
+    // Handle implicit start (no `from`) — resolve from predecessor/lastShape
+    if (!startAsType) {
+      if (poly.predecessorShape) {
+        // Re-resolve from predecessor (it may have moved during animation)
+        const fromShape = poly.predecessorShape
+        if (fromShape instanceof LineLike) {
+          startXY = { ...fromShape.end }
+        } else {
+          const c = fromShape.c
+          const firstWP = poly._waypoints?.[0]
+          if (firstWP?.type === 'DirectionalWaypoint') {
+            const dir = firstWP.components[0].direction
+            const projection = { x: c.x + dir.x, y: c.y + dir.y }
+            startXY = fromShape.cropLineTo(poly, projection)
+          } else {
+            startXY = { ...c }
+          }
+        }
+      } else if (poly.start?.x !== undefined) {
+        // Already resolved during initial layout with no dynamic dependency — keep it
+        startXY = poly.start
+      } else {
+        // Initial layout: resolve from lastShape
+        const fromShape = this.lastShape
+        if (fromShape instanceof LineLike) {
+          startXY = { ...fromShape.end }
+        } else {
+          const c = fromShape.c
+          const firstWP = poly._waypoints?.[0]
+          if (firstWP?.type === 'DirectionalWaypoint') {
+            const dir = firstWP.components[0].direction
+            const projection = { x: c.x + dir.x, y: c.y + dir.y }
+            startXY = fromShape.cropLineTo(poly, projection)
+          } else {
+            startXY = { ...c }
+          }
+        }
+      }
+      cropStart = false
+    }
 
     // Resolve each waypoint
     const waypoints: XY[] = []
@@ -293,13 +366,47 @@ export class Geometry {
     const cropFlags: boolean[] = []
 
     for (const wpThunk of poly._waypoints || []) {
-      const wpType = poly.valueOfTree(wpThunk)
-      if (wpType instanceof SBase)
-        this.dispatcher.recordDependency(poly, wpType)
-      const [xy, crop] = this.convertToPosition(wpType)
-      waypoints.push(xy)
-      waypointTypes.push(wpType)
-      cropFlags.push(crop)
+      if (wpThunk.type === 'DirectionalWaypoint') {
+        // Directional waypoint: resolve relative to previous point
+        const prev = waypoints.length > 0 ? waypoints[waypoints.length - 1] : startXY
+        let x = prev.x, y = prev.y
+        for (const comp of wpThunk.components) {
+          const dist = poly.valueOfTree(comp.distance).toNative()
+          x += comp.direction.x * dist
+          y += comp.direction.y * dist
+        }
+        waypoints.push({ x, y })
+        waypointTypes.push(null)
+        cropFlags.push(false)
+      } else if (wpThunk.type === 'DirectionalUntilWaypoint') {
+        // "then west until even with target" — go in direction until aligned
+        const prev = waypoints.length > 0 ? waypoints[waypoints.length - 1] : startXY
+        const targetType = poly.valueOfTree(wpThunk.target)
+        if (targetType instanceof SBase)
+          this.dispatcher.recordDependency(poly, targetType)
+        const [targetXY] = this.convertToPosition(targetType)
+        const dir = wpThunk.direction
+        if (dir.x !== 0 && dir.y === 0) {
+          // Horizontal movement: go until x matches target
+          waypoints.push({ x: targetXY.x, y: prev.y })
+        } else if (dir.x === 0 && dir.y !== 0) {
+          // Vertical movement: go until y matches target
+          waypoints.push({ x: prev.x, y: targetXY.y })
+        } else {
+          // Diagonal: use whichever axis the direction is primarily along
+          waypoints.push({ x: targetXY.x, y: targetXY.y })
+        }
+        waypointTypes.push(null)
+        cropFlags.push(false)
+      } else {
+        const wpType = poly.valueOfTree(wpThunk)
+        if (wpType instanceof SBase)
+          this.dispatcher.recordDependency(poly, wpType)
+        const [xy, crop] = this.convertToPosition(wpType)
+        waypoints.push(xy)
+        waypointTypes.push(wpType)
+        cropFlags.push(crop)
+      }
     }
 
     // Crop start to first waypoint's direction
@@ -316,11 +423,15 @@ export class Geometry {
 
     poly.start = startXY
     poly.waypoints = waypoints
+    poly.params.closed = poly.closed
 
-    // Set anchor to centroid of all points
+    // Set anchor to bounding-box center (not centroid) so cardinal
+    // offsets (width/2, height/2) align with the actual extents.
     const allPts = poly.allPoints
-    const cx = allPts.reduce((s, p) => s + p.x, 0) / allPts.length
-    const cy = allPts.reduce((s, p) => s + p.y, 0) / allPts.length
+    const xs = allPts.map(p => p.x)
+    const ys = allPts.map(p => p.y)
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2
+    const cy = (Math.min(...ys) + Math.max(...ys)) / 2
     poly.setAnimatablePosition(cx, cy)
   }
 
@@ -328,20 +439,19 @@ export class Geometry {
     let startAsType, startAsXY
     let endAsType, endAsXY
     let cropStart = false, cropEnd = false
-    let newDirection = this.direction
+    const dir = line._layoutDirection ?? this.direction
+    let newDirection = dir
 
     if (!line._start) {
       // Use the stored predecessor shape if available (set by resolveImplicitConnectorDependencies),
       // falling back to lastShape during the initial layout pass when it hasn't been set yet.
       const fromShape = line.predecessorShape ?? this.lastShape
-      if (!line.predecessorShape)
-        line.predecessorShape = fromShape   // remember for re-rendering
       if (fromShape instanceof LineLike) {
         // Line-to-line chaining: start at the predecessor's end point
         startAsType = { ...fromShape.end }
       } else {
         const c = fromShape.c
-        const projection = { x: c.x + this.direction.x, y: c.y + this.direction.y }
+        const projection = { x: c.x + dir.x, y: c.y + dir.y }
         startAsType = fromShape.cropLineTo(line, projection)
       }
     }
@@ -361,8 +471,7 @@ export class Geometry {
         ;[endAsXY, cropEnd] = this.convertToPosition(endAsType)
       }
       else {
-        const dir = line._layoutDirection ?? this.direction
-        ;[endAsXY, newDirection] = line.getEndAndNewDirection(startAsXY, dir)
+        [endAsXY, newDirection] = line.getEndAndNewDirection(startAsXY, dir)
       }
     }
     else {
@@ -381,10 +490,10 @@ export class Geometry {
 
     // OK to use updated startAsXY because it's colinear
 
-    if (!line._layoutDirection)
-      line._layoutDirection = newDirection
-
-    this.direction = newDirection
+    if (!line._layoutDirection) {
+      line._layoutDirection = dir
+      this.direction = newDirection
+    }
 
     return [startAsXY, endAsXY]
   }

@@ -25,6 +25,7 @@ export class Dispatcher {
   // Set while evaluating a shape's AST args/constraints, so the interpreter
   // can record variable→shape dependencies.
   currentEvaluatingShape: SBase | null = null
+  asideDepth = 0
 
   constructor(
     private logger: LoggerInterface, 
@@ -84,6 +85,10 @@ export class Dispatcher {
 
   shapes() {
     return this.shapeGraph.shapes()
+  }
+
+  findLastShapeOfType(shapeName: string) {
+    return this.shapeGraph.findLastOfType(shapeName)
   }
 
   renderUpdatedShapes() {
@@ -208,12 +213,20 @@ export class Dispatcher {
     return this.geometry.lastShape
   }
 
+  setLastShape(shape: SBase) {
+    this.geometry.lastShape = shape
+  }
+
   getDirection(): XY {
     return { ...this.geometry.direction }
   }
 
   restoreDirection(direction: XY) {
     this.geometry.setDefaultDirection(direction)
+  }
+
+  getAutolayoutCount() {
+    return this.geometry.autolayoutCount
   }
 
   addShapeToGeometry(shape: SBase) {

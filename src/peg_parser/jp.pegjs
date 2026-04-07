@@ -83,7 +83,21 @@ function buildCompoundAssignment(lvalue, operator, rvalue) {
   }
 
   function mergeAttributes(attrs) {
-    return attrs.reduce((result, next) => Object.assign(result, next), {})
+    const labels = []
+    const result = {}
+    for (const attr of attrs) {
+      if (attr.label) {
+        labels.push(attr.label)
+      } else {
+        Object.assign(result, attr)
+      }
+    }
+    if (labels.length === 1) {
+      result.label = labels[0]
+    } else if (labels.length > 1) {
+      result._shapeLabels = labels
+    }
+    return result
   }
 
   // Like mergeAttributes but collects _lineLabel entries into a labels array
@@ -117,7 +131,7 @@ Reserved
   = AlwaysReserved // AttrName
 
 AlwaysReserved
-  = Arc / Box / Circle / Ellipse / Face / Group / Line / Label / Oval / Skip  // shapes
+  = Arc / Aside / Box / Circle / Ellipse / Face / Gap / Goto / Group / Line / Label / Oval / Skip  // shapes
   / move /rotate / set / then / wait / draw   // animations
   / else / if                          // keywords
   / true / false                       // constants
@@ -131,10 +145,19 @@ AttrName
     / dotted
     / ease
     / fill
+    / font_family
+    / font_size
+    / font_stretch
+    / font_style
+    / font_variant
+    / font_weight
     / font
     / from
     / height
     / length
+    / line_height
+    / maxwidth
+    / opacity
     / radius
     / rotation
     / rx
@@ -143,6 +166,7 @@ AttrName
     / solid
     / stepped
     / straight
+    / stroke_width
     / stroke
     / take
     / thickness
@@ -156,6 +180,7 @@ AttrName
   { return { type: "Identifier", name: text() } }
 
 // Shape
+Aside   = "Aside"  ! IdentifierPart  { return text() }
 Arc     = ("Arc" / "arc")       ! IdentifierPart  { return "Arc" }
 Box     = ("Box" / "box")       ! IdentifierPart  { return "Box" }
 Circle  = ("Circle" / "circle") ! IdentifierPart  { return "Circle" }
@@ -164,6 +189,8 @@ Face    = "Face"    ! IdentifierPart  { return text() }
 Group   = "Group"   ! IdentifierPart  { return text() }
 Line    = ("Line" / "line")    ! IdentifierPart  { return "Line" }
 Label   = "Label"   ! IdentifierPart  { return text() }
+Gap     = "Gap"    ! IdentifierPart  { return text() }
+Goto    = "Goto"   ! IdentifierPart  { return text() }
 Oval    = "Oval"    ! IdentifierPart  { return text() }
 Skip    = "Skip"    ! IdentifierPart  { return text() }
 
@@ -189,6 +216,7 @@ above     = "above"        ! IdentifierPart { return text() }
 close     = "close"        ! IdentifierPart { return text() }
 about     = "about"        ! IdentifierPart { return text() }
 align     = "align"        ! IdentifierPart { return text() }
+behind    = "behind"       ! IdentifierPart { return text() }
 below     = "below"        ! IdentifierPart { return text() }
 at        = "at"           ! IdentifierPart { return text() }
 by        = "by"           ! IdentifierPart { return text() }
@@ -196,14 +224,23 @@ dashed    = "dashed"       ! IdentifierPart { return text() }
 dotted    = "dotted"       ! IdentifierPart { return text() }
 ease      = ("ease" / "each") ! IdentifierPart { return text() }
 fill      = "fill"         ! IdentifierPart { return text() }
+font_family  = "font_family"   ! IdentifierPart { return text() }
+font_size    = "font_size"     ! IdentifierPart { return text() }
+font_stretch = "font_stretch"  ! IdentifierPart { return text() }
+font_style   = "font_style"    ! IdentifierPart { return text() }
+font_variant = "font_variant"  ! IdentifierPart { return text() }
+font_weight  = "font_weight"   ! IdentifierPart { return text() }
 font      = "font"         ! IdentifierPart { return text() }
 from      = "from"         ! IdentifierPart { return text() }
 rx        = "rx"           ! IdentifierPart { return text() }
 ry        = "ry"           ! IdentifierPart { return text() }
 inside    = "inside"       ! IdentifierPart { return text() }
+opacity   = "opacity"      ! IdentifierPart { return text() }
 outside   = "outside"      ! IdentifierPart { return text() }
+same      = "same"         ! IdentifierPart { return text() }
 solid     = "solid"        ! IdentifierPart { return text() }
 straight  = "straight"     ! IdentifierPart { return text() }
+stroke_width = "stroke_width"  ! IdentifierPart { return text() }
 stroke    = "stroke"       ! IdentifierPart { return text() }
 take      = "take"         ! IdentifierPart { return text() }
 to        = "to"           ! IdentifierPart { return text() }
@@ -212,6 +249,8 @@ with      = "with"         ! IdentifierPart { return text() }
 x         = "x"            ! IdentifierPart { return text() }
 y         = "y"            ! IdentifierPart { return text() }
 
+line_height = "line_height" ! IdentifierPart { return text() }
+maxwidth    = "maxwidth"    ! IdentifierPart { return text() }
 height    = ( "height"    / "ht" )        ! IdentifierPart { return "height" }
 length    = ( "length"    / "len" )       ! IdentifierPart { return "length" }
 radius    = ( "radius"    / "rad" / "r" ) ! IdentifierPart { return "radius" }
@@ -555,9 +594,28 @@ Primary
   / Position
   / String
   / TimelineValue
+  / ShapeDefaultGetter
   / VariableValue
   / ArrayOrRange
   / "(" _ expression:Expression _ ")" { return expression; }
+
+ShapeDefaultGetter
+  = shape:ShapeName klass:SEClass "." attr:AttrName {
+      return ast({
+        type: "ShapeDefaultGetter",
+        shape,
+        klass: klass._class,
+        attr: attr.name,
+      })
+    }
+  / shape:ShapeName "." attr:AttrName {
+      return ast({
+        type: "ShapeDefaultGetter",
+        shape,
+        klass: ".normal",
+        attr: attr.name,
+      })
+    }
 
 TimelineValue
   = "@" ! [.(\[]
@@ -716,12 +774,24 @@ HexByte
 // -------------------------------------------------------------------- String
 
 String
-  = '"' chars:DoubleStringCharacter* '"' {
+  = '"""' chars:TripleDoubleStringCharacter* '"""' {
+      return ast(string(chars.join("")) )
+    }
+  / "'''" chars:TripleSingleStringCharacter* "'''" {
+      return ast(string(chars.join("")) )
+    }
+  / '"' chars:DoubleStringCharacter* '"' {
       return ast(string(chars.join("")) )
     }
   / "'" chars:SingleStringCharacter* "'" {
       return ast(string(chars.join("")) )
     }
+
+TripleDoubleStringCharacter
+  = !('"""') char:. { return char; }
+
+TripleSingleStringCharacter
+  = !("'''") char:. { return char; }
 
 DoubleStringCharacter
   = !('"' / "\\" / LineTerminator) . { return text(); }
@@ -930,11 +1000,19 @@ AnimationParam
 // ==================================================================== GROUPS
 
 GroupExpression "group"
-  = Group __ "{" _ body:ExpressionList _ "}" withConstraint:( __ WithConstraint )?
+  = Aside _ "{" _ body:ExpressionList _ "}"
+    {
+      return ast({
+        type: "Aside",
+        body: body,
+      })
+    }
+  / Group __ "{" _ body:ExpressionList _ "}" args:( __ ( SECommon ))* withConstraint:( __ WithConstraint )? post:( __ ( SECommon ))*
     {
       return ast({
         type: "Group",
         body: body,
+        args: mergeAttributes([...extractList(args, 1), ...extractList(post, 1)]),
         withConstraint: extractOptional(withConstraint, 1),
       })
     }
@@ -968,8 +1046,8 @@ ShapeDefaultSetter "shape"
         value,
       }
     }
-  / shape:ShapeName "." ........
-    { expected("only known attributes of a shape can be set and read") }
+  / shape:ShapeName "." ........ _ "="
+    { expected("only known attributes of a shape can be set") }
 
 Shape "shape"
   = Arc __ start:FromPosition __ end:ToPosition args:( _ ( SELineEndings / SELineDraw / SELineLabel / SECommon / SETurn ))*  {
@@ -997,7 +1075,7 @@ Shape "shape"
       })
     }
 
-  / Arc args:( __ ( SELineEndings / SELineDraw / SELineLabel / SECommon / SETurn ))*  {
+  / Arc !"." args:( __ ( SELineEndings / SELineDraw / SELineLabel / SECommon / SETurn ))*  {
       const attrs = mergeLineAttributes(extractList(args, 1))
 
       return ast({
@@ -1007,20 +1085,22 @@ Shape "shape"
       })
     }
 
-  / Box !"(" args: ( __ ( SECommon / SESize / SERadii ))* withConstraint:( __ WithConstraint )? {
+  / Box !"." !"(" pre: ( __ ( SECommon / SESize / SERadii ))* withConstraint:( __ WithConstraint )? post:( __ ( SECommon / SESize / SERadii ))* {
+      const args = mergeAttributes([...extractList(pre, 1), ...extractList(post, 1)])
       return ast({
         type: "Shape",
         shape: "SBox",
-        args: mergeAttributes(extractList(args, 1)),
+        args,
         withConstraint: extractOptional(withConstraint, 1),
       })
     }
 
-  / subtype:( Circle / Ellipse / Oval ) !"(" args:( __ ( SECommon / SERadius ))* withConstraint:( __ WithConstraint )? {
+  / subtype:( Circle / Ellipse / Oval ) !"." !"(" pre:( __ ( SECommon / SERadius ))* withConstraint:( __ WithConstraint )? post:( __ ( SECommon / SERadius ))* {
+      const args = mergeAttributes([...extractList(pre, 1), ...extractList(post, 1)])
       return ast({
         type: "Shape",
         shape: "S" + subtype,
-        args: mergeAttributes(extractList(args, 1)),
+        args,
         withConstraint: extractOptional(withConstraint, 1),
       })
     }
@@ -1060,6 +1140,42 @@ Shape "shape"
       // Line -> from A to B then to C
       const attrs = { line_path: string("straight"), ...endings, ...mergeLineAttributes(extractList(args, 1)) }
       attrs._start = start
+      attrs._waypoints = [first, ...extractList(waypoints, 1)]
+      if (closed) attrs._closed = true
+      return ast({ type: "Shape", shape: "SPolyline", args: attrs })
+    }
+
+  // ---- Polyline: line from A south 2 east 3 then ... (from + directional waypoints)
+  / line:LineOrAbbrev __ start:FromPosition __ first:DirectionalWaypoint waypoints:( __ ThenToPosition )+ closed:( __ close )?
+    args:( _ ( SELineEndings / SELineDraw / SELineShape / SELineLabel / SECommon / SERadii ))* {
+      const attrs = { ...line, ...mergeLineAttributes(extractList(args, 1)) }
+      attrs._start = start
+      attrs._waypoints = [first, ...extractList(waypoints, 1)]
+      if (closed) attrs._closed = true
+      return ast({ type: "Shape", shape: "SPolyline", args: attrs })
+    }
+
+  / Line __ endings:SELineEndings __ start:FromPosition __ first:DirectionalWaypoint waypoints:( __ ThenToPosition )+ closed:( __ close )?
+    args:( _ ( SELineDraw / SELineShape / SELineLabel / SECommon / SERadii ))* {
+      const attrs = { line_path: string("straight"), ...endings, ...mergeLineAttributes(extractList(args, 1)) }
+      attrs._start = start
+      attrs._waypoints = [first, ...extractList(waypoints, 1)]
+      if (closed) attrs._closed = true
+      return ast({ type: "Shape", shape: "SPolyline", args: attrs })
+    }
+
+  // ---- Polyline: line direction distance [direction distance] then ... (directional waypoints, no from)
+  / line:LineOrAbbrev __ first:DirectionalWaypoint waypoints:( __ ThenToPosition )+ closed:( __ close )?
+    args:( _ ( SELineEndings / SELineDraw / SELineShape / SELineLabel / SECommon / SERadii ))* {
+      const attrs = { ...line, ...mergeLineAttributes(extractList(args, 1)) }
+      attrs._waypoints = [first, ...extractList(waypoints, 1)]
+      if (closed) attrs._closed = true
+      return ast({ type: "Shape", shape: "SPolyline", args: attrs })
+    }
+
+  / Line __ endings:SELineEndings __ first:DirectionalWaypoint waypoints:( __ ThenToPosition )+ closed:( __ close )?
+    args:( _ ( SELineDraw / SELineShape / SELineLabel / SECommon / SERadii ))* {
+      const attrs = { line_path: string("straight"), ...endings, ...mergeLineAttributes(extractList(args, 1)) }
       attrs._waypoints = [first, ...extractList(waypoints, 1)]
       if (closed) attrs._closed = true
       return ast({ type: "Shape", shape: "SPolyline", args: attrs })
@@ -1109,7 +1225,7 @@ Shape "shape"
       })
     }
 
-  / Line __ endings:SELineEndings __ start:FromPosition args:( _ ( SELineDraw / SELineShape / SELineLabel / SECommon ))*  {
+  / Line __ endings:SELineEndings __ start:FromPosition args:( _ ( SELineDraw / SELineShape / SELineLabel / SECommon / SELineLength ))*  {
       // line -> from X (arrow endings before from, no to)
       const attrs = { line_path: string("straight"), ...endings, ...mergeLineAttributes(extractList(args, 1)) }
       attrs._start = start
@@ -1121,7 +1237,7 @@ Shape "shape"
       })
     }
 
-  / Line __ endings:SELineEndings __ end:ToPosition args:( _ ( SELineDraw / SELineShape / SELineLabel / SECommon ))*  {
+  / Line __ endings:SELineEndings __ end:ToPosition args:( _ ( SELineDraw / SELineShape / SELineLabel / SECommon / SELineLength ))*  {
       // line -> to X (arrow endings before to, no from)
       const attrs = { line_path: string("straight"), ...endings, ...mergeLineAttributes(extractList(args, 1)) }
       attrs._end = end
@@ -1133,7 +1249,7 @@ Shape "shape"
       })
     }
 
-  / line:LineOrAbbrev __ start:FromPosition args:( _ ( SELineEndings / SELineDraw / SELineShape / SELineLabel / SECommon ))*  {
+  / line:LineOrAbbrev __ start:FromPosition args:( _ ( SELineEndings / SELineDraw / SELineShape / SELineLabel / SECommon / SELineLength ))*  {
       const attrs = { ...line, ...mergeLineAttributes(extractList(args, 1)) }
       attrs._start = start
 
@@ -1144,7 +1260,7 @@ Shape "shape"
       })
     }
 
-  / line:LineOrAbbrev __ end:ToPosition args:( _ ( SELineEndings / SELineDraw / SELineShape / SELineLabel / SECommon ))*  {  // from current position to point
+  / line:LineOrAbbrev __ end:ToPosition args:( _ ( SELineEndings / SELineDraw / SELineShape / SELineLabel / SECommon / SELineLength ))*  {  // from current position to point
       const attrs = { ...line, ...mergeLineAttributes(extractList(args, 1)) }
       attrs._end = end
 
@@ -1155,7 +1271,7 @@ Shape "shape"
       })
     }
 
-  / line:LineOrAbbrev args:( __ ( SELineEndings / SELineDraw / SELineLabel / SECommon / SELineShape / SELineLength ))*  {   // from current position in current direction
+  / line:LineOrAbbrev !"." args:( __ ( SELineEndings / SELineDraw / SELineLabel / SECommon / SELineShape / SELineLength ))*  {   // from current position in current direction
       const attrs = { ...line, ...mergeLineAttributes(extractList(args, 1)) }
 
       return ast({
@@ -1196,6 +1312,50 @@ Shape "shape"
     throw new Error(`"Face" must be followed by an angle or a cardinal (n, ne, …)`)
   }
 
+  / Gap __ same {
+      return ast({ type: "LayoutGap", same: true })
+    }
+
+  / Gap __ direction:CardinalVector __ distance:MoveDistance {
+      return ast({ type: "LayoutGap", direction, distance })
+    }
+
+  / Gap __ direction:CardinalVector {
+      return ast({ type: "LayoutGap", direction })
+    }
+
+  / Gap __ distance:MoveDistance {
+      return ast({ type: "LayoutGap", distance })
+    }
+
+  / Gap {
+      return ast({ type: "LayoutGap" })
+    }
+
+  / Goto SameLineSpace direction:CardinalVector SameLineSpace distance:MoveDistance {
+      return ast({ type: "LayoutGoto", direction, distance })
+    }
+
+  / Goto SameLineSpace direction:CardinalVector {
+      return ast({ type: "LayoutGoto", direction })
+    }
+
+  / Goto SameLineSpace place:Position {
+      return ast({ type: "LayoutGoto", place })
+    }
+
+  / Goto SameLineSpace place:PositionValue {
+      return ast({ type: "LayoutGoto", place })
+    }
+
+  / Goto SameLineSpace distance:MoveDistance {
+      return ast({ type: "LayoutGoto", distance })
+    }
+
+  / Goto {
+      return ast({ type: "LayoutGoto" })
+    }
+
   / Skip __ args:SkipArgs
     {
       return ast({
@@ -1204,6 +1364,11 @@ Shape "shape"
         args,
       })
     }
+
+MoveDistance
+  = "-" n:Number { n.value = -n.value; return n }
+  / Number
+  / "(" _ expr:ConditionalExpression _ ")" { return expr }
 
 SkipArgs
   = to __ at:Expression
@@ -1235,7 +1400,23 @@ ToPosition
   / Position
 
 ThenToPosition
-  = then __ ("to" __)? pos:PositionValue { return pos }
+  = then __ dir:CardinalVector __ "until" __ (("even" / "level") __ "with" __)? target:PositionValue {
+      return ast({ type: "DirectionalUntilWaypoint", direction: dir, target })
+    }
+  / then __ wp:DirectionalWaypoint { return wp }
+  / then __ ("to" __)? pos:PositionValue { return pos }
+
+DirectionalWaypoint
+  = first:DirectionalComponent __ second:DirectionalComponent {
+      return ast({ type: "DirectionalWaypoint", components: [first, second] })
+    }
+  / comp:DirectionalComponent {
+      return ast({ type: "DirectionalWaypoint", components: [comp] })
+    }
+
+DirectionalComponent
+  = direction:CardinalVector __ distance:ConditionalExpression
+    { return { direction, distance } }
 
 PositionValue "a position: (x,y) or place.nw"
   = position:Expression {
@@ -1252,6 +1433,9 @@ SECommon
   / SEFill
   / SEStroke
   / SEStrokeAttr
+  / SEOpacity
+  / SEBehind
+  / SESame
   / SEClass
 
 // IN a perfect example of features creeping into a parser that belong elsewhere,
@@ -1274,7 +1458,7 @@ SELabel
   }
 
 RichLabel
-  = "(" _ label:String attrs:LabelTextAttr* _ ")" {
+  = "(" _ label:NonShapeExpression attrs:LabelTextAttr* _ ")" {
       const args = { text: label }
       for (const a of attrs) Object.assign(args, a)
       return ast({
@@ -1285,7 +1469,9 @@ RichLabel
 
 LabelTextAttr
   = __ attr:SEText   { return attr }
-  / __ fs:ActualFontSize { return { "font-size": ast({ type: "String", value: fs }) } }
+  / __ attr:SEFill   { return attr }
+  / __ attr:SEStroke  { return attr }
+  / __ fs:ActualFontSize { return { "font_size": ast({ type: "String", value: fs }) } }
 
 SEPos
   = at __ pos:Expression {
@@ -1337,7 +1523,7 @@ SEStrokeAttr
   }
 
   / thickness __ exp:NonShapeExpression {
-      return { "stroke-width": exp }
+      return { "stroke_width": exp }
     }
 
   / linestyle:(solid / dotted / dashed) {
@@ -1424,22 +1610,55 @@ SELineShape
     { return { line_path: { type: "String", value: "smooth" }}}
 
 // Line labels with optional path position (at <percent>) and side (above/below/inside/outside)
+// Both orderings are accepted: "label" above at 60%  OR  "label" at 60% above
 // Returns { _lineLabel: { text, pathPercent, side } } which gets merged into shape args
 SELineLabel
-  = label:RichLabel pct:( __ at __ Number )? side:( __ (above / below / inside / outside) )? {
+  = label:RichLabel side:( __ (above / below / inside / outside) ) pct:( __ at __ Number )? {
       const pathPercent = pct ? pct[3].value : 0.5
+      return {
+        _lineLabel: { text: label.args.text, pathPercent, side: side[1], _labelArgs: label.args }
+      }
+    }
+  / label:RichLabel pct:( __ at __ Number ) side:( __ (above / below / inside / outside) )? {
       const sideValue = side ? side[1] : null
       return {
-        _lineLabel: { text: label.args.text, pathPercent, side: sideValue, _labelArgs: label.args }
+        _lineLabel: { text: label.args.text, pathPercent: pct[3].value, side: sideValue, _labelArgs: label.args }
       }
     }
-  / label:String pct:( __ at __ Number )? side:( __ (above / below / inside / outside) )? {
-      const pathPercent = pct ? pct[3].value : 0.5  // default to 50%
-      const sideValue = side ? side[1] : null       // null means centered on path
+  / label:RichLabel {
       return {
-        _lineLabel: { text: label, pathPercent, side: sideValue }
+        _lineLabel: { text: label.args.text, pathPercent: 0.5, side: null, _labelArgs: label.args }
       }
     }
+  / label:String side:( __ (above / below / inside / outside) ) pct:( __ at __ Number )? {
+      const pathPercent = pct ? pct[3].value : 0.5
+      return {
+        _lineLabel: { text: label, pathPercent, side: side[1] }
+      }
+    }
+  / label:String pct:( __ at __ Number ) side:( __ (above / below / inside / outside) )? {
+      const sideValue = side ? side[1] : null
+      return {
+        _lineLabel: { text: label, pathPercent: pct[3].value, side: sideValue }
+      }
+    }
+  / label:String {
+      return {
+        _lineLabel: { text: label, pathPercent: 0.5, side: null }
+      }
+    }
+
+SEOpacity
+  = opacity __ value:Number
+    { return { opacity: value } }
+
+SEBehind
+  = behind __ target:NonShapeExpression
+    { return { _behind: target } }
+
+SESame
+  = same
+    { return { _same: true } }
 
 SEClass
   = "." cls:Identifier
@@ -1447,11 +1666,15 @@ SEClass
 
 SEText
   = align __ cardinal:Cardinal
-    { return { align: cardinal } }
+    { return { align: string(cardinal) } }
+  / maxwidth __ n:Number
+    { return { maxwidth: n } }
   / font __ font:FontSpec
     { return { font } }
   / font __ ........
     { expected('a css font specification to follow "font"') }
+  / fs:ActualFontSize
+    { return { "font_size": ast({ type: "String", value: fs }) } }
 
 SETurn
   = (turn __)? turn:( ccw / cw )
@@ -1476,12 +1699,20 @@ Cardinal "cardinal"
   { return point }
 
 CardinalVector
-  = "nw" !IdentifierPart { return { x:  -1, y:   1 } }
-  / "ne" !IdentifierPart { return { x:   1, y:   1 } }
-  / "n"  !IdentifierPart { return { x:   0, y:   1 } }
-  / "sw" !IdentifierPart { return { x:  -1, y:  -1 } }
-  / "se" !IdentifierPart { return { x:   1, y:  -1 } }
-  / "s"  !IdentifierPart { return { x:   0, y:  -1 } }
+  = "northwest" !IdentifierPart { return { x: -1, y: -1 } }
+  / "northeast" !IdentifierPart { return { x:  1, y: -1 } }
+  / "north"     !IdentifierPart { return { x:  0, y: -1 } }
+  / "southwest" !IdentifierPart { return { x: -1, y:  1 } }
+  / "southeast" !IdentifierPart { return { x:  1, y:  1 } }
+  / "south"     !IdentifierPart { return { x:  0, y:  1 } }
+  / "west"      !IdentifierPart { return { x: -1, y:  0 } }
+  / "east"      !IdentifierPart { return { x:  1, y:  0 } }
+  / "nw" !IdentifierPart { return { x:  -1, y:  -1 } }
+  / "ne" !IdentifierPart { return { x:   1, y:  -1 } }
+  / "n"  !IdentifierPart { return { x:   0, y:  -1 } }
+  / "sw" !IdentifierPart { return { x:  -1, y:   1 } }
+  / "se" !IdentifierPart { return { x:   1, y:   1 } }
+  / "s"  !IdentifierPart { return { x:   0, y:   1 } }
   / "w"  !IdentifierPart { return { x:  -1, y:   0 } }
   / "e"  !IdentifierPart { return { x:   1, y:   0 } }
 
@@ -1604,23 +1835,23 @@ BeforeSizeProperty
 FontStyle
   = IgnoreNormal
   / ("italic" !IdentifierPart / "oblique" _ ObliqueAngle / "oblique" !IdentifierPart)
-    { return ast({ "font-style": text() }) }
+    { return ast({ "font_style": text() }) }
 
 FontVariant
   = IgnoreNormal
   / "small-caps" !IdentifierPart
-    { return ast({ "font-variant": text() })}
+    { return ast({ "font_variant": text() })}
 
 FontWeight
   = IgnoreNormal
   / ("bold" / "lighter" / "darker" / [0-9] "00")
-    { return ast({ "font-weight": text() })}
+    { return ast({ "font_weight": text() })}
 
 FontStretch
   = IgnoreNormal
   / ("ultra-condensed" / "extra-condensed" / "condensed" / "semi-condensed" /
     "semi-expanded" / "expanded" / "extra-expanded" / "ultra-expanded" / Percent)
-    { return ast({ "font-stretch": text() })}
+    { return ast({ "font_stretch": text() })}
 
 Percent
   = SimpleDecimalNumber "%"
@@ -1629,9 +1860,9 @@ Percent
 
 FontSize
   = fs:ActualFontSize "/" lh:LineHeight
-    { return ast({ "font-size": fs, "line-height": lh }) }
+    { return ast({ "font_size": fs, "line_height": lh }) }
   / ActualFontSize
-    { return ast({ "font-size": text() }) }
+    { return ast({ "font_size": text() }) }
 
 ActualFontSize
   = (
@@ -1658,7 +1889,7 @@ SizeUnit
 
 FontFamilyNames
   = FontFamilyName (_ "," _ FontFamilyName)*
-    { return ast({ "font-family": text() })}
+    { return ast({ "font_family": text() })}
 
 FontFamilyName
   = '"' (!'"'.)+ '"'
@@ -1693,6 +1924,8 @@ _
 __ "space"
   = WhiteSpace+
 
+SameLineSpace "space"
+  = ( "\t" / "\v" / "\f" / " " / "\u00A0" / "\uFEFF" / Zs )+
 
 EOF
   = !.

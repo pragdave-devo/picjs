@@ -72,10 +72,10 @@ describe(`Arc pointAtPercent`, () => {
     expect(Math.abs(pt.y)).toBeGreaterThan(10)
   })
 
-  it(`CW arc bulges upward (positive Y in Y-up model)`, () => {
+  it(`CW arc bulges upward (negative Y in Y-down model)`, () => {
     const pt = arc.pointAtPercent(0.5)
-    // CW (visual clockwise) horizontal left-to-right arc bulges UP (positive Y)
-    expect(pt.y).toBeGreaterThan(0)
+    // CW (visual clockwise) horizontal left-to-right arc bulges UP (negative Y)
+    expect(pt.y).toBeLessThan(0)
   })
 })
 
@@ -83,10 +83,10 @@ describe(`CCW Arc pointAtPercent`, () => {
   // Horizontal arc from (0,0) to (100,0) counterclockwise
   const arc = valueOf(`Arc from (0, 0) to (100, 0) ccw`)
 
-  it(`CCW arc bulges downward (negative Y in Y-up model)`, () => {
+  it(`CCW arc bulges downward (positive Y in Y-down model)`, () => {
     const pt = arc.pointAtPercent(0.5)
-    // CCW (visual counterclockwise) horizontal left-to-right arc bulges DOWN (negative Y)
-    expect(pt.y).toBeLessThan(0)
+    // CCW (visual counterclockwise) horizontal left-to-right arc bulges DOWN (positive Y)
+    expect(pt.y).toBeGreaterThan(0)
   })
 })
 
@@ -98,9 +98,9 @@ describe(`Default Arc turn`, () => {
     expect(arc.turn).toBe(`cw`)
   })
 
-  it(`midpoint is above chord (positive Y)`, () => {
+  it(`midpoint is above chord (negative Y)`, () => {
     const pt = arc.pointAtPercent(0.5)
-    expect(pt.y).toBeGreaterThan(0)
+    expect(pt.y).toBeLessThan(0)
   })
 })
 
@@ -112,9 +112,9 @@ describe(`Arc with arrow syntax`, () => {
     expect(arc.turn).toBe(`cw`)
   })
 
-  it(`midpoint is above chord (positive Y)`, () => {
+  it(`midpoint is above chord (negative Y)`, () => {
     const pt = arc.pointAtPercent(0.5)
-    expect(pt.y).toBeGreaterThan(0)
+    expect(pt.y).toBeLessThan(0)
   })
 })
 

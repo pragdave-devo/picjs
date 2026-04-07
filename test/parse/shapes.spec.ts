@@ -29,10 +29,13 @@ testParse(`Box width 10`,    shape(`SBox`, { width:  number(10) }))
 testParse(`Box height 10`,   shape(`SBox`, { height: number(10) }))
 testParse(`Box 10×20`,       shape(`SBox`, { width:  number(10), height: number(20) }))
 testParse(`Box fill rgb(1,2,3)`, shape(`SBox`, { fill: colorModel(`rgb`, n1, n2, n3) }))
+testParse(`Box opacity 0.5`,    shape(`SBox`, { opacity: number(0.5) }))
+testParse(`Circle opacity 0`,   shape(`SCircle`, { opacity: number(0) }))
+testParse(`Line opacity 0.8`,   line({ line_path: s(`straight`), opacity: number(0.8) }))
 
 testParse(`Box stroke #010203 thick 3 dotted`,
   shape(`SBox`, 
-    { stroke: colorString(`#010203`), "stroke-width": n3, linestyle: string(`dotted`) }))
+    { stroke: colorString(`#010203`), "stroke_width": n3, linestyle: string(`dotted`) }))
 
 testParse(
   `Box with .c at (20, 30)`, 
@@ -70,8 +73,8 @@ testParse(`Line stepped`,   line({ line_path: s(`stepped`) }))
 testParse(`Line step`,      line({ line_path: s(`stepped`) }))
 
 testParse(`Line thickness 99`,
-                                line({ line_path: s(`straight`), "stroke-width": n99 }))
-testParse(`Line thick 99`,  line({ line_path: s(`straight`), "stroke-width": n99 }))
+                                line({ line_path: s(`straight`), "stroke_width": n99 }))
+testParse(`Line thick 99`,  line({ line_path: s(`straight`), "stroke_width": n99 }))
 
 testParse(`Line solid`,  line({ line_path: s(`straight`), "linestyle": s(`solid`) }))
 testParse(`Line dashed`,  line({ line_path: s(`straight`), "linestyle": s(`dashed`) }))
@@ -98,6 +101,19 @@ testParse(`Box rotation 45 about (1, 2)`,
 // labels
 
 testParse(`Label "hello"`, label(string(`hello`)))
+
+// single label on a shape stays as `label` (not `_shapeLabels`)
+testParse(`Box "hello"`, shape(`SBox`, { label: label(string(`hello`)) }))
+
+// multiple labels on a shape become `_shapeLabels` array
+testParse(`Box "A" "B"`, shape(`SBox`, { _shapeLabels: [label(string(`A`)), label(string(`B`))] }))
+testParse(`Box "X" "Y" "Z"`, shape(`SBox`, { _shapeLabels: [label(string(`X`)), label(string(`Y`)), label(string(`Z`))] }))
+
+// multiple labels on circle
+testParse(`Circle "top" "bot"`, shape(`SCircle`, { _shapeLabels: [label(string(`top`)), label(string(`bot`))] }))
+
+// multiple labels interleaved with other attrs
+testParse(`Box "A" width 5 "B"`, shape(`SBox`, { _shapeLabels: [label(string(`A`)), label(string(`B`))], width: number(5) }))
 
 // all the funky lines 
 

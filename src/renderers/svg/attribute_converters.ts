@@ -10,16 +10,41 @@ export function run(position: RenderParameters, incomingAttrs: Shape.Args, conve
   for (let converter of converters) {
     converter(position, result)
   }
+  if (result.opacity !== undefined)
+    result.opacity = Number(result.opacity)
   return result
 }
 
 export function anchorToSvgNW(position: RenderParameters, attrs: Shape.Args) {
   const [ fx, fy ] = CardinalFactorsFromNW[position.cardinal]
   attrs.x = position.x - fx * position.width
-  attrs.y = -position.y - fy * position.height
+  attrs.y = position.y - fy * position.height
 }
 
 //------------------------------------------------------------ font
+
+const BASE_FONT_SIZE = 0.14
+
+// CSS named sizes as multipliers of medium (≈ base)
+const NamedFontSizes: Record<string, number> = {
+  'xx-small':  0.6,
+  'x-small':   0.75,
+  'small':     0.89,
+  'medium':    1.0,
+  'large':     1.2,
+  'x-large':   1.5,
+  'xx-large':  2.0,
+  'xxx-large': 3.0,
+  'smaller':   0.83,
+  'larger':    1.2,
+}
+
+export function fontSize(_position: RenderParameters, attrs: Shape.Args) {
+  const fs = String(attrs.font_size || ``)
+  const multiplier = NamedFontSizes[fs]
+  if (multiplier !== undefined)
+    attrs.font_size = BASE_FONT_SIZE * multiplier
+}
 
 export function font(_position: RenderParameters, attrs: Shape.Args) {
   const fontSpec = attrs.font
@@ -30,7 +55,7 @@ export function font(_position: RenderParameters, attrs: Shape.Args) {
 //------------------------------------------------------------ linestyle
 
 export function linestyle(_position: RenderParameters, attrs: Shape.Args) {
-  const lineThickness = attrs[`stroke-width`] || 1
+  const lineThickness = attrs[`stroke_width`] || 1
   let dashSpec 
 
   switch (attrs.linestyle) {
@@ -48,10 +73,10 @@ export function linestyle(_position: RenderParameters, attrs: Shape.Args) {
   }
 
   if (dashSpec) {
-    attrs[`stroke-dasharray`] = dashSpec
+    attrs[`stroke_dasharray`] = dashSpec
   }
   else {
-    delete attrs[`stroke-dasharray`]
+    delete attrs[`stroke_dasharray`]
   }
   delete attrs.linestyle
 }
@@ -63,10 +88,10 @@ export function rotation(position: RenderParameters, attrs: Shape.Args) {
     return
 
   const center = position.rotationCenter
-  if (!center || !center.x)
+  if (!center || center.x === undefined)
     throw new Error(`the rotation center does not look like a position: ${JSON.stringify(center)}`)
 
-  attrs.transform = `rotate(${attrs.rotation}, ${center.x}, ${-center.y})`
+  attrs.transform = `rotate(${attrs.rotation}, ${center.x}, ${center.y})`
   delete attrs.rotation
 }
 

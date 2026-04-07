@@ -8,7 +8,7 @@ export class SArc extends LineLike {
 
   getCardinalOffsetsFromAnchor(cardinal: Cardinals) {
     const [ fx, fy ] = CardinalFactorsFromCenter[cardinal]
-    return [ fx * this.width / 2, fy * this.height / 2 ]
+    return [ fx * this.width, fy * this.height ]
   }
 
 
@@ -56,8 +56,8 @@ export class SArc extends LineLike {
     let endX, endY
     const len = this.default_length
 
-    // rotate the direction vector (Y-up: CW on screen = negative math rotation)
-    if (this.turn === `cw`) {
+    // rotate the direction vector
+    if (this.turn === `ccw`) {
       endX =   len * dx + len * dy
       endY =   len * dy - len * dx
       dx =  direction.y
@@ -116,9 +116,8 @@ export class SArc extends LineLike {
     const halfChord = chord / 2
     const d = Math.sqrt(r * r - halfChord * halfChord)
 
-    // Center position depends on turn direction (Y-up model)
-    // CW arc center is to the right of travel → negative perpendicular
-    const sign = this.turn === `cw` ? -1 : 1
+    // Center position depends on turn direction
+    const sign = this.turn === `cw` ? 1 : -1
     const cx = midX + sign * px * d
     const cy = midY + sign * py * d
 
@@ -126,12 +125,11 @@ export class SArc extends LineLike {
     const startAngle = Math.atan2(start.y - cy, start.x - cx)
     let endAngle = Math.atan2(end.y - cy, end.x - cx)
 
-    // Adjust end angle for correct arc direction (Y-up model)
-    // CW = decreasing angle (negative rotation), CCW = increasing angle
+    // Adjust end angle for correct arc direction
     if (this.turn === `cw`) {
-      while (endAngle > startAngle) endAngle -= 2 * Math.PI
-    } else {
       while (endAngle < startAngle) endAngle += 2 * Math.PI
+    } else {
+      while (endAngle > startAngle) endAngle -= 2 * Math.PI
     }
 
     // Interpolate angle
@@ -141,14 +139,12 @@ export class SArc extends LineLike {
     const x = cx + r * Math.cos(angle)
     const y = cy + r * Math.sin(angle)
 
-    // Tangent is perpendicular to radius, in direction of travel (Y-up model)
-    // CW (decreasing angle): tangent = radius angle - 90°
-    // CCW (increasing angle): tangent = radius angle + 90°
+    // Tangent is perpendicular to radius, in direction of travel
     let tangentAngle
     if (this.turn === `cw`) {
-      tangentAngle = angle - Math.PI / 2
-    } else {
       tangentAngle = angle + Math.PI / 2
+    } else {
+      tangentAngle = angle - Math.PI / 2
     }
 
     // Also return the radius angle (from center to point) for offset calculations

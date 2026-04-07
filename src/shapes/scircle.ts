@@ -6,9 +6,9 @@ const R2 = 1.0 / Math.sqrt(2.0)
 
 // For a circle, diagonal cardinals sit on the circumference, not the bounding box corner
 const CircleCardinalFactors: Record<Cardinals, [number, number]> = {
-  nw: [-R2,  R2],   n: [ 0,  1],   ne: [R2,  R2],
+  nw: [-R2, -R2],   n: [ 0, -1],   ne: [R2, -R2],
   w:  [-1,   0 ],   c: [ 0,  0],   e:  [1,   0 ],
-  sw: [-R2, -R2],   s: [ 0, -1],   se: [R2, -R2],
+  sw: [-R2,  R2],   s: [ 0,  1],   se: [R2,  R2],
 }
 
 export class SCircle extends SBase {
