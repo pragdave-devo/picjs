@@ -80,6 +80,8 @@ export class SGroup extends SBase {
         child.parentGroup = this
         child.relativeX = (child.anchorX ?? 0) - this.anchorX!
         child.relativeY = (child.anchorY ?? 0) - this.anchorY!
+        // Store child's original rotation for group rotation composition
+        child.params._baseRotation = child.params.rotation ?? 0
       }
     }
   }
@@ -93,15 +95,25 @@ export class SGroup extends SBase {
         child.rememberRenderNeeded()
       }
     }
+    if (attr === `rotation`) {
+      this.repositionChildren()
+    }
   }
 
   repositionChildren() {
     for (const child of this.groupChildren) {
       if (child.parentGroup !== this) continue  // owned by a nested group
-      const newX = this.anchorX! + (child.relativeX ?? 0)
-      const newY = this.anchorY! + (child.relativeY ?? 0)
-      child.anchorX = newX
-      child.anchorY = newY
+      const rx = child.relativeX ?? 0
+      const ry = child.relativeY ?? 0
+      // Apply group rotation to relative offset
+      const rotatedX = rx * this.cosR - ry * this.sinR
+      const rotatedY = rx * this.sinR + ry * this.cosR
+      child.anchorX = this.anchorX! + rotatedX
+      child.anchorY = this.anchorY! + rotatedY
+      // Also rotate the child itself by the group's rotation
+      child.params.rotation = (child.params._baseRotation ?? 0) + this.params.rotation
+      child.setRotationVector()
+      child.rememberRenderNeeded()
       if (child instanceof SGroup) {
         child.repositionChildren()
       }
