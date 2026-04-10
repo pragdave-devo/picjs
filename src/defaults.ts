@@ -153,6 +153,20 @@ export function getThemeNames(): string[] {
   return Object.keys(Themes)
 }
 
+/**
+ * Update theme colors based on palette colors.
+ * Called when Palette.current is set.
+ */
+export function applyPaletteToTheme(b1: string, f1: string): void {
+  // Update the current theme's colors
+  Theme.BoxFill0 = b1
+  Theme.ShapeStroke = b1
+  Theme.LineStroke = b1
+  Theme.BodyTextColor = f1
+  // Re-parse defaults to pick up new theme values
+  Defaults.Shapes = parseShapeDefaults(ShapeDefaults)
+}
+
 function convertValue(value: string) {
   const firstChar = value[0]
   if (firstChar === `=`) {  // assume always ThemeVariable (rest of expression)

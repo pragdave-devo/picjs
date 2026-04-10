@@ -3,6 +3,7 @@ import { TBase, TA } from "./_base.js"
 import { TString } from "./tstring.js"
 import { TList } from "./tlist.js"
 import { Palette } from "../palette.js"
+import { applyPaletteToTheme } from "../defaults.js"
 
 export class TPalette extends TBase<null> {
   constructor() {
@@ -40,6 +41,10 @@ export class TPalette extends TBase<null> {
         throw new RTE(`Palette.current must be a string, got ${typeof paletteName}`)
       }
       Palette.setCurrent(paletteName)
+      // Update theme defaults to use palette colors
+      const b1 = Palette.getColor(`b1`)!
+      const f1 = Palette.getColor(`f1`)!
+      applyPaletteToTheme(b1, f1)
       return this
     }
 

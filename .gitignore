@@ -5,3 +5,4 @@ dist/
 docs/_html/
 .tuplecode.cache
 npm-access
+.vite/

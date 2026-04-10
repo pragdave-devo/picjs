@@ -1,6 +1,8 @@
 // Color Palette System
 // Provides WCAG-compliant background/foreground color pairs
 
+import { RTE } from "./runtime_error.js"
+
 export interface PaletteColors {
   b1: string; f1: string
   b2: string; f2: string
@@ -261,7 +263,7 @@ export const Palette = {
    */
   setCurrent(name: string): void {
     if (!Palettes[name]) {
-      throw new Error(`Unknown palette: "${name}". Available: ${Object.keys(Palettes).join(`, `)}`)
+      throw new RTE(`Unknown palette: "${name}". Available: ${Object.keys(Palettes).join(`, `)}`)
     }
     currentPaletteName = name
     localOverrides = {}  // Clear overrides when switching palettes
