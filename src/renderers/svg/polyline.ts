@@ -10,6 +10,7 @@ export class Polyline extends SvgBase {
 
   private lineEl!: SVGElement
   private pendingMarkers!: string[]
+  private hideMarkers!: boolean
 
   constructor(position: RenderParameters, attrs: Shape.Args) {
     super(position, attrs)
@@ -18,13 +19,23 @@ export class Polyline extends SvgBase {
 
   private buildGroup() {
     const strokeColor = this.attrs.stroke || 'currentColor'
+    // Extract opacity for the group so it applies to both line and markers
+    const groupAttrs: Shape.Args = {}
+    if (this.attrs.opacity !== undefined) {
+      groupAttrs.opacity = this.attrs.opacity
+      delete this.attrs.opacity
+    }
     this.lineEl = svg('path', this.attrs)
-    this.el = svg('g')
+    this.el = svg('g', groupAttrs)
     this.el.appendChild(this.lineEl)
     this.appendMarkers(strokeColor)
   }
 
   private appendMarkers(strokeColor: string) {
+    if (this.hideMarkers) {
+      this.pendingMarkers = []
+      return
+    }
     for (const d of this.pendingMarkers) {
       this.el.appendChild(svg('path', { d, fill: strokeColor, stroke: 'none' }))
     }
@@ -35,6 +46,14 @@ export class Polyline extends SvgBase {
     this.pendingMarkers = []
     this.attrs = toSvgAttrNames(this.convertToSVG(position, attrs))
     const strokeColor = this.attrs.stroke || 'currentColor'
+
+    // Extract opacity for the group
+    if (this.attrs.opacity !== undefined) {
+      setAttr(this.el, { opacity: this.attrs.opacity })
+      delete this.attrs.opacity
+    } else {
+      this.el.removeAttribute('opacity')
+    }
 
     setAttr(this.lineEl, this.attrs)
     for (const attr of [`pathLength`, `stroke-dasharray`, `stroke-dashoffset`]) {
@@ -61,6 +80,10 @@ export class Polyline extends SvgBase {
       this.attrs.fill = `none`
     }
 
+    // Hide markers when line is not fully drawn
+    const dp = this.attrs.draw_progress
+    const dpValue = typeof dp === 'object' && dp !== null ? (dp.value ?? dp.toNative?.()) : dp
+    this.hideMarkers = dpValue !== undefined && dpValue < 1
     this.applyDrawProgress(this.attrs)
     delete this.attrs.start
     delete this.attrs.waypoints
@@ -136,19 +159,31 @@ export class Polyline extends SvgBase {
     let d = ``
 
     if (closed) {
-      const mid = this.cornerOffset(pts[pts.length - 2], pts[0], r)
+      // For the starting mid-point, compute effective radius for first corner
+      const firstPrev = pts[pts.length - 2]
+      const firstCurr = pts[0]
+      const firstNext = pts[1]
+      const firstLen1 = Math.hypot(firstPrev.x - firstCurr.x, firstPrev.y - firstCurr.y)
+      const firstLen2 = Math.hypot(firstNext.x - firstCurr.x, firstNext.y - firstCurr.y)
+      const firstEffectiveR = Math.min(r, firstLen1 / 2, firstLen2 / 2)
+      const mid = this.cornerOffsetWithRadius(firstPrev, firstCurr, firstEffectiveR)
       d = `M ${mid.x} ${mid.y}`
 
       for (let i = 0; i < pts.length - 1; i++) {
         const prev = i === 0 ? pts[pts.length - 2] : pts[i - 1]
         const curr = pts[i]
         const next = pts[i + 1]
-        const before = this.cornerOffset(prev, curr, r)
-        const after = this.cornerOffset(next, curr, r)
+
+        const len1 = Math.hypot(prev.x - curr.x, prev.y - curr.y)
+        const len2 = Math.hypot(next.x - curr.x, next.y - curr.y)
+        const effectiveR = Math.min(r, len1 / 2, len2 / 2)
+
+        const before = this.cornerOffsetWithRadius(prev, curr, effectiveR)
+        const after = this.cornerOffsetWithRadius(next, curr, effectiveR)
         const sweep = this.arcSweep(prev, curr, next)
 
         if (i > 0) d += ` L ${before.x} ${before.y}`
-        d += ` A ${r} ${r} 0 0 ${sweep} ${after.x} ${after.y}`
+        d += ` A ${effectiveR} ${effectiveR} 0 0 ${sweep} ${after.x} ${after.y}`
       }
       d += ` Z`
     } else {
@@ -159,12 +194,17 @@ export class Polyline extends SvgBase {
         const curr = pts[i]
         const next = pts[i + 1]
 
-        const before = this.cornerOffset(prev, curr, r)
-        const after = this.cornerOffset(next, curr, r)
+        // Compute effective radius: minimum of r and half of each adjacent segment
+        const len1 = Math.hypot(prev.x - curr.x, prev.y - curr.y)
+        const len2 = Math.hypot(next.x - curr.x, next.y - curr.y)
+        const effectiveR = Math.min(r, len1 / 2, len2 / 2)
+
+        const before = this.cornerOffsetWithRadius(prev, curr, effectiveR)
+        const after = this.cornerOffsetWithRadius(next, curr, effectiveR)
         const sweep = this.arcSweep(prev, curr, next)
 
         d += ` L ${before.x} ${before.y}`
-        d += ` A ${r} ${r} 0 0 ${sweep} ${after.x} ${after.y}`
+        d += ` A ${effectiveR} ${effectiveR} 0 0 ${sweep} ${after.x} ${after.y}`
       }
 
       // Final point
@@ -173,6 +213,18 @@ export class Polyline extends SvgBase {
     }
 
     return d
+  }
+
+  // Point that is `radius` away from `vertex` toward `other` (no clamping)
+  private cornerOffsetWithRadius(other: XY, vertex: XY, radius: number): XY {
+    const dx = other.x - vertex.x
+    const dy = other.y - vertex.y
+    const len = Math.hypot(dx, dy)
+    if (len < 0.01) return vertex
+    return {
+      x: vertex.x + (dx / len) * radius,
+      y: vertex.y + (dy / len) * radius,
+    }
   }
 
   // Point that is `radius` away from `vertex` toward `other`

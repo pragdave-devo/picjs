@@ -58,6 +58,33 @@ describe(`groups`, () => {
       expect(group.anchorX).toBe(2)
       expect(group.anchorY).toBe(0)
     })
+
+    it(`bare { } creates a group without Group keyword`, () => {
+      const dispatcher = runProgram(`
+        g = {
+          box at (1, 0)
+          box at (3, 0)
+        }
+      `)
+      const shapes = dispatcher.shapes()
+      const group = shapes.find(s => s instanceof SGroup) as SGroup
+      expect(group).toBeDefined()
+      expect(group.groupChildren.length).toBe(2)
+      expect(group.anchorX).toBe(2)
+    })
+
+    it(`bare { } supports with constraint`, () => {
+      const dispatcher = runProgram(`
+        g = {
+          box at (0, 0)
+          box at (2, 0)
+        } with .nw at (10, 10)
+      `)
+      const shapes = dispatcher.shapes()
+      const group = shapes.find(s => s instanceof SGroup) as SGroup
+      expect(group.nw.x).toBeCloseTo(10, 1)
+      expect(group.nw.y).toBeCloseTo(10, 1)
+    })
   })
 
   describe(`scoped defaults`, () => {

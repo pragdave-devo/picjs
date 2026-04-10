@@ -80,6 +80,8 @@ const logArea     = el(`div.log-area`)
 const controlsBar  = el(`div.controls-bar`) as HTMLElement
 const playBtn      = el(`button.ctrl-icon`, `▶`, { title: `Play / Pause` }) as HTMLButtonElement
 const restartBtn   = el(`button.ctrl-icon`, `⏮`, { title: `Restart` }) as HTMLButtonElement
+const skipBackBtn  = el(`button.ctrl-icon`, `⏪`, { title: `Skip to previous event` }) as HTMLButtonElement
+const skipFwdBtn   = el(`button.ctrl-icon`, `⏩`, { title: `Skip to next event` }) as HTMLButtonElement
 const scrubber     = el(`input`, { type: `range`, min: `0`, max: `1000`, value: `0` }) as HTMLInputElement
 const speedBtns    = [
   el(`button`, `¼`,  { 'data-speed': `0.25` }),
@@ -90,7 +92,9 @@ const speedBtns    = [
 ] as HTMLButtonElement[]
 const speedsDiv    = el(`div.ctrl-speeds`, speedBtns)
 const timeDisplay  = el(`span.ctrl-time`, `0.0s / 0.0s`) as HTMLElement
-setChildren(controlsBar, [playBtn, restartBtn, scrubber, speedsDiv, timeDisplay])
+setChildren(controlsBar, [playBtn, restartBtn, skipBackBtn, skipFwdBtn, scrubber, speedsDiv, timeDisplay])
+const pauseOverlay = el(`div.pause-overlay`) as HTMLElement
+pauseOverlay.style.display = `none`
 
 setChildren(svgHolder, [])
 
@@ -146,7 +150,7 @@ const leftPanel   = el(`div.left-panel`, [ editorTitle ])
 leftPanel.appendChild(editorView.dom)
 
 setChildren(svgContainer, [svgHolder])
-const rightPanel = el(`div.right-panel`, [ svgContainer, controlsBar, errorHolder, logArea ])
+const rightPanel = el(`div.right-panel`, [ svgContainer, controlsBar, pauseOverlay, errorHolder, logArea ])
 
 const playpen = el(`div.playpen`, [
   extraStyles,
@@ -237,18 +241,23 @@ function webBacktrace(e: RTE, sourceCode?: string) {
 }
 
 function consoleBacktrace(e: RTE) {
+  console.log(`[backtrace start]`)
   let msg = e.message
   if (e.context) {
-    e.context.forEach(({ loc, interpreter }) => {
+    e.context.forEach(({ loc, interpreter }, i) => {
+      console.log(`[frame ${i}]`)
       console.log(e.showLocation(loc, msg))
       msg = `called from`
+      const table = interpreter.bindingAsTable()
+      console.log(`[table ready, ${Object.keys(table).length} entries]`)
       console.table(
-        Object.entries<any>(interpreter.bindingAsTable()).map(([k, val]) => [ k, val.toString() ])
+        Object.entries<any>(table).map(([k, val]) => [ k, val.toString() ])
       )
     })
   } else {
     console.error(msg)
   }
+  console.log(`[backtrace done]`)
 }
 
 export function consoleLogger(loc: Location | undefined, result: any, src?: string) {
@@ -288,8 +297,22 @@ function stripLocation(k: string, v: any) {
   return v
 }
 
-function statusCallback(...args: any[]) {
-  console.log(`STATUS:`, ...args)
+function showPauseMessage(msg: string) {
+  pauseOverlay.textContent = msg
+  pauseOverlay.style.display = `flex`
+}
+
+function hidePauseMessage() {
+  pauseOverlay.style.display = `none`
+}
+
+function statusCallback(status: string, _time: number, message?: string | null) {
+  console.log(`STATUS:`, status, message ?? ``)
+  if (status === `paused` && message) {
+    showPauseMessage(message)
+  } else {
+    hidePauseMessage()
+  }
 }
 
 // ─── Result rendering ──────────────────────────────────────────────────────
@@ -304,6 +327,14 @@ let runNumber  = 0
 let lastOutput: any = null
 let shapeMap   = new Map<string, any>()
 
+function getEventTimes(dispatcher: Dispatcher): number[] {
+  const times = new Set<number>()
+  for (const entry of dispatcher.getTimeline().entries()) {
+    times.add(entry.element.start)
+  }
+  return [...times].sort((a, b) => a - b)
+}
+
 function onSeek(t: number): void {
   controller.cancel()  // re-entrant seek protection: cancel any in-flight runners first
   const src = editorView.state.doc.toString()
@@ -315,7 +346,8 @@ function onSeek(t: number): void {
     seekDispatcher.start(parsed.ast)
     seekDispatcher.applyTimelineUpTo(t)
     const seekRunner = seekDispatcher.runTimelineFrom(t, statusCallback)
-    controller.attach(seekDispatcher.totalDuration(), seekRunner, seekDispatcher.getAnimationRunner(), t)
+    const eventTimes = getEventTimes(seekDispatcher)
+    controller.attach(seekDispatcher.totalDuration(), seekRunner, seekDispatcher.getAnimationRunner(), t, null, eventTimes)
   } catch (e) {
     if (e instanceof RTE) {
       // seek failed — leave display where it was
@@ -326,7 +358,7 @@ function onSeek(t: number): void {
 }
 
 const controller = new PlaybackController(
-  playBtn, restartBtn, scrubber, timeDisplay,
+  playBtn, restartBtn, skipBackBtn, skipFwdBtn, scrubber, timeDisplay,
   controlsBar.querySelectorAll(`.ctrl-speeds button`) as NodeListOf<HTMLButtonElement>,
   controlsBar,
   onSeek,
@@ -362,12 +394,13 @@ function preview() {
       extraStyles.textContent = stylesheets.join(`\n`)
 
       const duration = dispatcher.totalDuration()
+      const startFrom = Number(dispatcher.getTimeline().startFrom) || 0
 
       // Pause animation runner before applying timeline to prevent auto-start
       const animRunner = dispatcher.getAnimationRunner()
       animRunner.pause()
 
-      // Render shapes at t=0 without starting animations
+      // Render shapes at t=0
       dispatcher.applyTimelineUpTo(0)
 
       // Compute viewBox from shape geometry. Use a preliminary viewBox
@@ -384,12 +417,18 @@ function preview() {
       if (duration > 0) {
         // Has animations — show controls bar, set up for playback
         const runner = dispatcher.runTimelineFrom(0, statusCallback)
-        controller.attach(duration, runner, animRunner, 0)
+        const eventTimes = getEventTimes(dispatcher)
+        controller.attach(duration, runner, animRunner, 0, startFrom > 0 ? startFrom : null, eventTimes)
       } else {
         // No animations — hide controls bar
         controlsBar.style.display = `none`
       }
     } catch (e) {
+      // Ensure any animation runners are stopped on error
+      try {
+        dispatcher.getAnimationRunner().stop()
+      } catch { /* ignore cleanup errors */ }
+
       if (e instanceof RTE) {
         const errorLine = e.context?.[0]?.loc?.start?.line ?? null
         highlightErrorLine(errorLine)

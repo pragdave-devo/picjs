@@ -12,6 +12,8 @@ export function run(position: RenderParameters, incomingAttrs: Shape.Args, conve
   }
   if (result.opacity !== undefined)
     result.opacity = Number(result.opacity)
+  delete result.reveal_time
+  delete result.hide_time
   return result
 }
 

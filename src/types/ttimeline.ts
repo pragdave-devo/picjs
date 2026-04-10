@@ -75,13 +75,20 @@ export class TTimeline extends TBase<Timeline> {
     return new TNumber(this.value.lastAnimationEnd())
   }
 
+  handle_attr_start_from() {
+    return new TNumber(this.value.startFrom ?? 0)
+  }
+
   setAtAttr(name: string, value: any) {
     switch (name) {
       case `now`:
         this.value.setAtTime(value.toNative())
         return this
+      case `start_from`:
+        this.value.startFrom = value.toNative()
+        return this
       default:
-        throw new RTE(`The only assignable attribute of the timeline is "@.now"`)
+        throw new RTE(`The assignable attributes of the timeline are "@.now" and "@.start_from"`)
     }
   }
 

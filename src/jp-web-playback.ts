@@ -11,10 +11,14 @@ export class PlaybackController {
   private rafHandle = 0
   private runner: TimelineRunner | null = null
   private animRunner: AnimationRunner | null = null
+  private stopAt: number | null = null  // auto-stop time for start_from feature
+  private eventTimes: number[] = []     // sorted unique event start times
 
   constructor(
     private playBtn:     HTMLButtonElement,
     private restartBtn:  HTMLButtonElement,
+    private skipBackBtn: HTMLButtonElement,
+    private skipFwdBtn:  HTMLButtonElement,
     private scrubber:    HTMLInputElement,
     private timeDisplay: HTMLElement,
     private speedBtns:   NodeListOf<HTMLButtonElement>,
@@ -24,6 +28,8 @@ export class PlaybackController {
   ) {
     this.playBtn.addEventListener(`click`, () => this.togglePlayPause())
     this.restartBtn.addEventListener(`click`, () => this.restart())
+    this.skipBackBtn.addEventListener(`click`, () => this.skipBackward())
+    this.skipFwdBtn.addEventListener(`click`, () => this.skipForward())
     this.scrubber.addEventListener(`input`, () => this.scrubTo(parseInt(this.scrubber.value, 10)))
     this.speedBtns.forEach(btn => {
       btn.addEventListener(`click`, () => this.setSpeed(parseFloat(btn.dataset.speed!) as 0.25 | 0.5 | 1 | 2 | 4))
@@ -31,14 +37,21 @@ export class PlaybackController {
     this.setSpeed(1)
   }
 
-  attach(totalDuration: number, runner: TimelineRunner | null, animRunner: AnimationRunner | null, startTime = 0): void {
+  attach(totalDuration: number, runner: TimelineRunner | null, animRunner: AnimationRunner | null, startTime = 0, stopAt: number | null = null, eventTimes: number[] = []): void {
     this.totalDuration = totalDuration
     this.runner = runner
     this.animRunner = animRunner
     if (this.animRunner) this.animRunner.setSpeed(this.speed)
     this.currentAnimTime = startTime
+    this.stopAt = stopAt
+    this.eventTimes = eventTimes
     this.bar.style.display = `flex`
     this.updateDisplay(startTime)
+
+    // Auto-play to stopAt if specified
+    if (stopAt !== null && stopAt > 0) {
+      this.play()
+    }
   }
 
   cancel(): void {
@@ -98,6 +111,54 @@ export class PlaybackController {
     this.onRun()
   }
 
+  skipForward(): void {
+    const wasPlaying = this.isPlaying
+    const currentTime = this.getCurrentAnimTime()
+
+    // Find next event time after current time
+    const nextTime = this.eventTimes.find(t => t > currentTime + 0.001)
+    if (nextTime !== undefined) {
+      this.seekTo(nextTime, wasPlaying)
+    } else {
+      // No more events, skip to end
+      this.seekTo(this.totalDuration, false)
+    }
+  }
+
+  skipBackward(): void {
+    const wasPlaying = this.isPlaying
+    const currentTime = this.getCurrentAnimTime()
+
+    // Find previous event times, but skip events within 0.5s of current time
+    // to avoid getting stuck on the current event
+    let targetTime: number | undefined
+    for (let i = this.eventTimes.length - 1; i >= 0; i--) {
+      const t = this.eventTimes[i]
+      if (t < currentTime - 0.001) {
+        targetTime = t
+        // If we'd only move back < 0.5s, keep looking for an earlier event
+        if (currentTime - t >= 0.5) break
+      }
+    }
+
+    if (targetTime !== undefined) {
+      this.seekTo(targetTime, wasPlaying)
+    } else {
+      // No earlier events, skip to start
+      this.seekTo(0, wasPlaying)
+    }
+  }
+
+  private seekTo(t: number, andPlay: boolean): void {
+    this.cancel()
+    this.currentAnimTime = t
+    this.onSeek(t)
+    this.updateDisplay(t)
+    if (andPlay && t < this.totalDuration) {
+      this.play()
+    }
+  }
+
   scrubTo(rangeValue: number): void {
     const t = (rangeValue / 1000) * this.totalDuration
     this.cancel()
@@ -135,6 +196,17 @@ export class PlaybackController {
   private tick(): void {
     const t = this.getCurrentAnimTime()
     this.updateDisplay(t)
+
+    // Check if we've reached the auto-stop point (start_from feature)
+    if (this.stopAt !== null && t >= this.stopAt) {
+      this.currentAnimTime = this.stopAt
+      this.stopAt = null  // clear so we don't stop again on resume
+      this.rafHandle = 0
+      this.pause()
+      this.updateDisplay(this.currentAnimTime)
+      return
+    }
+
     if (t >= this.totalDuration && !(this.animRunner?.running)) {
       this.currentAnimTime = this.totalDuration
       this.rafHandle = 0   // clear before pause() so pause() doesn't try to cancel it again

@@ -11,6 +11,7 @@ export class Line extends SvgBase {
   cropped = true
   private lineEl!: SVGElement
   private pendingMarkers!: string[]
+  private hideMarkers!: boolean
 
   constructor(position: RenderParameters, attrs: Shape.Args) {
     super(position, attrs)
@@ -19,11 +20,15 @@ export class Line extends SvgBase {
 
   private buildGroup() {
     const strokeColor = this.attrs.stroke || 'currentColor'
-    // Extract transform for the group so it applies to both line and markers
+    // Extract transform and opacity for the group so they apply to both line and markers
     const groupAttrs: Shape.Args = {}
     if (this.attrs.transform) {
       groupAttrs.transform = this.attrs.transform
       delete this.attrs.transform
+    }
+    if (this.attrs.opacity !== undefined) {
+      groupAttrs.opacity = this.attrs.opacity
+      delete this.attrs.opacity
     }
     this.el = svg('g', groupAttrs)
     this.lineEl = svg('path', this.attrs)
@@ -32,6 +37,10 @@ export class Line extends SvgBase {
   }
 
   private appendMarkers(strokeColor: string) {
+    if (this.hideMarkers) {
+      this.pendingMarkers = []
+      return
+    }
     for (const d of this.pendingMarkers) {
       this.el.appendChild(svg('path', { d, fill: strokeColor, stroke: 'none' }))
     }
@@ -43,14 +52,19 @@ export class Line extends SvgBase {
     this.attrs = toSvgAttrNames(this.convertToSVG(position, attrs))
     const strokeColor = this.attrs.stroke || 'currentColor'
 
-    // Extract transform for the group
+    // Extract transform and opacity for the group
     const groupAttrs: Shape.Args = {}
     if (this.attrs.transform) {
       groupAttrs.transform = this.attrs.transform
       delete this.attrs.transform
     }
+    if (this.attrs.opacity !== undefined) {
+      groupAttrs.opacity = this.attrs.opacity
+      delete this.attrs.opacity
+    }
     setAttr(this.el, groupAttrs)
-    if (!this.attrs.transform) this.el.removeAttribute('transform')
+    if (!groupAttrs.transform) this.el.removeAttribute('transform')
+    if (groupAttrs.opacity === undefined) this.el.removeAttribute('opacity')
 
     setAttr(this.lineEl, this.attrs)
     for (const attr of [`pathLength`, `stroke-dasharray`, `stroke-dashoffset`]) {
@@ -75,6 +89,10 @@ export class Line extends SvgBase {
     ])
     this.attrs.d = this.pathForLine()
     this.attrs.fill = `none`
+    // Hide markers when line is not fully drawn
+    const dp = this.attrs.draw_progress
+    const dpValue = typeof dp === 'object' && dp !== null ? (dp.value ?? dp.toNative?.()) : dp
+    this.hideMarkers = dpValue !== undefined && dpValue < 1
     this.applyDrawProgress(this.attrs)
     delete this.attrs.start
     delete this.attrs.end

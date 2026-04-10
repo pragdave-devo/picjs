@@ -1,7 +1,8 @@
 // todo: make this switchable
 import { MinPriorityQueue, PriorityQueueItem } from "@datastructures-js/priority-queue"
 import { AnimationRunner } from "./animation_runner.js"
-import { AnimatorBase } from "./animators/_base.js"
+import { AnimatorBase, createAttributeAnimator } from "./animators/_base.js"
+import { TNumber } from "./types.js"
 import { XY } from "./position.js"
 
 // import { Geometry } from "./geometry.js"
@@ -21,6 +22,9 @@ export class Timeline {
 
   lastAnimation: TLE.Animation | null = null
   frozen = false
+  pauseRequested = false
+  pauseMessage: string | null = null
+  startFrom: number | null = null
 
   constructor(public dispatcher: Dispatcher) {
     this.timeline = new MinPriorityQueue({ priority: (entry) => entry.key })
@@ -66,6 +70,15 @@ export class Timeline {
   //
   addShape(shape: SBase) {
     this.addToTimeline(new TLE.CreateShape(shape, this.recordingTime))
+
+    const revealTime = shape.params.reveal_time
+    if (revealTime && revealTime > 0 && this.recordingTime > 0) {
+      const animator = createAttributeAnimator(
+        shape, `opacity`, new TNumber(1), { take: revealTime, ease: `linear` }
+      )
+      this.addToTimeline(new TLE.Animation(animator, this.recordingTime))
+    }
+
     return shape
   }
 
@@ -98,6 +111,10 @@ export class Timeline {
     else {
       this.recordingTime = time
     }
+  }
+
+  addPause(message: string | null) {
+    this.addToTimeline(new TLE.Pause(message, this.recordingTime))
   }
 
   addToTimeline(thing: any) {

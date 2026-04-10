@@ -16,7 +16,7 @@ export class TimelineRunner {
     private timeline: Timeline, 
     private dispatcher: Dispatcher, 
     private animationRunner: AnimationRunner,
-    private statusCallback: (status: string, time: number) => void
+    private statusCallback: (status: string, time: number, message?: string | null) => void
   ) {
     this.entries = timeline.entries()
   }
@@ -57,8 +57,20 @@ export class TimelineRunner {
 
     let next = this.peek()
 
-    while (next && next.start <= nextTime) { 
+    while (next && next.start <= nextTime) {
       next.process(this.timeline)
+      if (this.timeline.pauseRequested) {
+        const msg = this.timeline.pauseMessage
+        this.timeline.pauseRequested = false
+        this.timeline.pauseMessage = null
+        this.paused = true
+        this.resumeWithContext = () => {
+          this.processUpToNextTime(renderer, nextTime)
+        }
+        this.dispatcher.renderUpdatedShapes()
+        this.statusCallback(`paused`, 0, msg)
+        return
+      }
       next = this.peekNext()
     }
 
@@ -71,6 +83,8 @@ export class TimelineRunner {
   }
 
   waitForNextEvent(next: TLEntry, currentTime: number, renderer: RenderCallback) {
+    // Update resumeWithContext in case we're externally paused before the timeout fires
+    this.resumeWithContext = () => this.processUpToNextTime(renderer, next.start)
     const interval = next.start - currentTime
     const speed = this.animationRunner.speed || 1
     setTimeout(() => {

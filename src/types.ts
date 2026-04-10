@@ -14,6 +14,21 @@ export { TRange, Easing } from "./types/trange.js"
 export { TString } from "./types/tstring.js"
 export { TTimeline } from "./types/ttimeline.js"
 
+import { registerHasMethodFactory } from "./types/_base.js"
+import { TNative } from "./types/tnative.js"
+import { TBool } from "./types/tbool.js"
+
+registerHasMethodFactory((host) =>
+  new TNative(`has`, [`attr_name`],
+    `return true if the object has the named attribute`,
+    (_interpreter, attr_name) => {
+      const name = String(attr_name)
+      if (name in host.attrs) return new TBool(true)
+      if ((`handle_attr_` + name) in host) return new TBool(true)
+      return new TBool(false)
+    })
+)
+
 import { Location } from "./parser.js"
 import { XY } from "./position.js"
 

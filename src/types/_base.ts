@@ -1,5 +1,12 @@
 import { RTE } from "../runtime_error.js"
 
+// Late-bound factory for the `has()` method — avoids circular imports
+// (TNative → Interpreter → TBase). Registered once from types.ts.
+let _hasMethodFactory: ((host: TBase<any>) => any) | null = null
+export function registerHasMethodFactory(factory: (host: TBase<any>) => any) {
+  _hasMethodFactory = factory
+}
+
 export enum AnimationStyle  {
   none = `none`,
   continuous = `continuous`,
@@ -55,6 +62,10 @@ export class TBase<ValueType, > {
   getAtAttr(name: string, _args = []) {
     if (name in this.attrs) {
       return this.getUserDefinedAttribute(name)
+    }
+    if (name === `has` && _hasMethodFactory) {
+      this.attrs.has = _hasMethodFactory(this)
+      return this.attrs.has
     }
     return this.handleBuiltInAttribute(name)
   }

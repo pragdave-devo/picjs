@@ -1,50 +1,50 @@
 
 /* eslint-disable max-len */
 const ShapeDefaults = `
-SArc    | stroke      | stroke_width     | linestyle | turn  | rotation
+SArc    | stroke      | stroke_width     | linestyle | turn  | rotation | reveal_time | hide_time
 -----------------------------------------------------------------------
-.normal | LineStroke  | LineStrokeWidth  | solid     | cw    | 0
+.normal | LineStroke  | LineStrokeWidth  | solid     | cw    | 0        | 0.3         | 0.3
 
-SLabel   | align | fill           | font_family | font_size | font_style | font_variant | font_weight | font_stretch | rotation
-------------------------------------------------------------------------------------------------------------------------
-.normal  |   c   | BodyTextColor  | BodyFont    | FS        | normal     | normal       | normal      | normal       | 0
+SLabel   | align | fill           | font_family | font_size | font_style | font_variant | font_weight | font_stretch | line_height | rotation | reveal_time | hide_time
+---------------------------------------------------------------------------------------------------------------------------
+.normal  |   c   | BodyTextColor  | BodyFont    | FS        | normal     | normal       | normal      | normal       | 0           | 0        | 0.3         | 0.3
 .h1      |   w   | H1Color        | HeadingFont | =FS*4.5   |
 .h2      |   w   | H2Color        | HeadingFont | =FS*3     |
 .h3      |   w   | H3Color        | HeadingFont | =FS*2     |
 .h4      |   w   | H4Color        | HeadingFont | =FS*1.5   |
 .p       |   w
 
-SBox     | width      | height      | fill           | stroke      | stroke_width     | linestyle  | rx      | ry      | rotation
+SBox     | width      | height      | fill           | stroke      | stroke_width     | linestyle  | rx      | ry      | rotation | reveal_time | hide_time
 ---------------------------------------------------------------------------------------------------------------------------------
-.normal  | ShapeWidth | ShapeHeight | BoxFill0       | ShapeStroke | ShapeStrokeWidth | LineStyle  | ShapeRX | ShapeRY | 0
+.normal  | ShapeWidth | ShapeHeight | BoxFill0       | ShapeStroke | ShapeStrokeWidth | LineStyle  | ShapeRX | ShapeRY | 0        | 0.3         | 0.3
 .v1      |            |             | BoxFill1
 .v2      |            |             | BoxFill2
 .v3      |            |             | BoxFill3
 .v4      |            |             | BoxFill4
 
-SLine   | stroke      | stroke_width     | linestyle | length | rotation
+SLine   | stroke      | stroke_width     | linestyle | length | rotation | reveal_time | hide_time
 -----------------------------------------------------------------------
-.normal | LineStroke  | LineStrokeWidth  | solid     | 1      | 0
+.normal | LineStroke  | LineStrokeWidth  | solid     | 1      | 0        | 0.3         | 0.3
 
-SPolyline | stroke      | stroke_width     | linestyle | fill     | rotation
+SPolyline | stroke      | stroke_width     | linestyle | fill     | rotation | reveal_time | hide_time
 --------------------------------------------------------------------------
-.normal   | LineStroke  | LineStrokeWidth  | solid     | none     | 0
+.normal   | LineStroke  | LineStrokeWidth  | solid     | none     | 0        | 0.3         | 0.3
 .v1       |            |                  |           | BoxFill1
 .v2       |            |                  |           | BoxFill2
 .v3       |            |                  |           | BoxFill3
 .v4       |            |                  |           | BoxFill4
 
-SPoint  | rotation
+SPoint  | rotation | reveal_time | hide_time
 ---------------------------------------------------------------
-.normal | 0
+.normal | 0        | 0           | 0
 
-SGroup  | rotation
+SGroup  | rotation | reveal_time | hide_time
 ---------------------------------------------------------------
-.normal | 0
+.normal | 0        | 0           | 0
 
-SCircle  | r            | fill           | stroke      | stroke_width     | linestyle  | rotation
+SCircle  | r            | fill           | stroke      | stroke_width     | linestyle  | rotation | reveal_time | hide_time
 -------------------------------------------------------------------------------------------------
-.normal  | CircleRadius | BoxFill0       | ShapeStroke | ShapeStrokeWidth | LineStyle  | 0
+.normal  | CircleRadius | BoxFill0       | ShapeStroke | ShapeStrokeWidth | LineStyle  | 0        | 0.3         | 0.3
 .v1      |              | BoxFill1
 .v2      |              | BoxFill2
 .v3      |              | BoxFill3

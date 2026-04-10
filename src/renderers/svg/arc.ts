@@ -13,6 +13,7 @@ export class Arc extends SvgBase {
   cropped = false
   private lineEl!: SVGElement
   private pendingMarkers!: string[]
+  private hideMarkers!: boolean
 
   constructor(position: RenderParameters, attrs: Shape.Args) {
     super(position, attrs)
@@ -21,13 +22,23 @@ export class Arc extends SvgBase {
 
   private buildGroup() {
     const strokeColor = this.attrs.stroke || 'currentColor'
+    // Extract opacity for the group so it applies to both line and markers
+    const groupAttrs: Shape.Args = {}
+    if (this.attrs.opacity !== undefined) {
+      groupAttrs.opacity = this.attrs.opacity
+      delete this.attrs.opacity
+    }
     this.lineEl = svg('path', this.attrs)
-    this.el = svg('g')
+    this.el = svg('g', groupAttrs)
     this.el.appendChild(this.lineEl)
     this.appendMarkers(strokeColor)
   }
 
   private appendMarkers(strokeColor: string) {
+    if (this.hideMarkers) {
+      this.pendingMarkers = []
+      return
+    }
     for (const d of this.pendingMarkers) {
       this.el.appendChild(svg('path', { d, fill: strokeColor, stroke: 'none' }))
     }
@@ -38,6 +49,14 @@ export class Arc extends SvgBase {
     this.pendingMarkers = []
     this.attrs = toSvgAttrNames(this.convertToSVG(position, attrs))
     const strokeColor = this.attrs.stroke || 'currentColor'
+
+    // Extract opacity for the group
+    if (this.attrs.opacity !== undefined) {
+      setAttr(this.el, { opacity: this.attrs.opacity })
+      delete this.attrs.opacity
+    } else {
+      this.el.removeAttribute('opacity')
+    }
 
     setAttr(this.lineEl, this.attrs)
     for (const attr of [`pathLength`, `stroke-dasharray`, `stroke-dashoffset`]) {
@@ -62,6 +81,10 @@ export class Arc extends SvgBase {
     ])
     this.attrs.d = this.pathForLine()
     this.attrs.fill = `none`
+    // Hide markers when line is not fully drawn
+    const dp = this.attrs.draw_progress
+    const dpValue = typeof dp === 'object' && dp !== null ? (dp.value ?? dp.toNative?.()) : dp
+    this.hideMarkers = dpValue !== undefined && dpValue < 1
     this.applyDrawProgress(this.attrs)
     delete this.attrs.start
     delete this.attrs.end

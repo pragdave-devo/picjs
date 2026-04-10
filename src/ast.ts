@@ -202,7 +202,12 @@ export interface MoveTo extends Base {
 
 export interface Number extends Base {
   type: `Number`
-  value: number 
+  value: number
+}
+
+export interface Pause extends Base {
+  type: `Pause`
+  message: Node | null
 }
 
 export interface Position extends Base {
@@ -343,6 +348,7 @@ export type Node
   | LayoutGoto
   | MoveTo
   | Number
+  | Pause
   | Position
   | Program
   | QualifiedLValue

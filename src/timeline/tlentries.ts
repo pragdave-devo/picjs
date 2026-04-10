@@ -54,6 +54,10 @@ export class CreateShape extends TLEntry {
   }
 
   process(_timeline: Timeline) {
+    const revealTime = this.thing.params.reveal_time
+    if (revealTime && revealTime > 0 && this.start > 0) {
+      this.thing.params.opacity = 0
+    }
     this.thing.visible = true
     this.thing.rememberRenderNeeded()
   }
@@ -102,6 +106,19 @@ export class PositionShapeNoAnimation extends TLEntry {
   }
 }
 
+
+export class Pause extends TLEntry {
+  constructor(public message: string | null, start: number) {
+    super(message, start, start)  // instantaneous
+  }
+
+  process(timeline: Timeline) {
+    timeline.pauseRequested = true
+    timeline.pauseMessage = this.message
+  }
+
+  name() { return `Pause` }
+}
 
 export class Animation extends TLEntry {
   constructor(animation: AnimatorBase, start: number) {

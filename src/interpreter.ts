@@ -627,6 +627,12 @@ VisitColorLiteralString(node: AST.ColorLiteralString) {
     return new TNumber(this.dispatcher.currentRecordingTime())
   }
 
+  VisitPause(node: AST.Pause) {
+    const message = node.message ? String(this.accept(node.message)) : null
+    this.dispatcher.addPause(message)
+    return new TNumber(0)
+  }
+
 
   VisitShape(node: AST.Shape) {
     const label = <AST.Shape>node.args.label
@@ -736,16 +742,18 @@ VisitColorLiteralString(node: AST.ColorLiteralString) {
     this.addShapeToGeometry(slabel)
     this.addCreateShapeToTimeline(slabel)
 
-    // Grow parent to fit the label (with padding)
-    const fontSize = Number(slabel.params.font_size) || 0.14
-    const padding = fontSize
-    const neededWidth  = (Number(slabel.width)  || 0) + padding * 2
-    const neededHeight = (Number(slabel.height) || 0) + padding * 2
+    // Grow parent to fit the label (with padding) — only if `fit` is set
+    if (parent.params.fit) {
+      const fontSize = Number(slabel.params.font_size) || 0.14
+      const padding = fontSize
+      const neededWidth  = (Number(slabel.width)  || 0) + padding * 2
+      const neededHeight = (Number(slabel.height) || 0) + padding * 2
 
-    if (neededWidth > Number(parent.width))
-      parent.params.width = neededWidth
-    if (neededHeight > Number(parent.height))
-      parent.params.height = neededHeight
+      if (neededWidth > Number(parent.width))
+        parent.params.width = neededWidth
+      if (neededHeight > Number(parent.height))
+        parent.params.height = neededHeight
+    }
   }
 
   // Create labels for lines/arcs with path-based positioning
@@ -821,6 +829,12 @@ VisitColorLiteralString(node: AST.ColorLiteralString) {
     const value = defaults[attr]
     if (value === undefined)
       throw new RTE(`${node.shape}.${node.attr} is not defined`)
+    if (value instanceof TBase)
+      return value
+    if (typeof value === `number`)
+      return new TNumber(value)
+    if (typeof value === `string`)
+      return value.startsWith(`#`) ? TColor.fromString(value) : new TString(value)
     return value
   }
 

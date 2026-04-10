@@ -329,7 +329,9 @@ Animation       = 'move' __ Expression _ ( 'to' __ )? Expression _ AnimationPara
                 | 'rotate' __ Expression __ 'by' __ Expression _ 'about' __ PositionValue _ AnimationParams
                 | 'rotate' __ Expression __ 'by' __ Expression _ AnimationParams
                 | 'set' __ LValue ( _ ',' _ | __ ( 'to' __ )? ) Expression _ AnimationParams
-                | 'draw' __ Expression _ AnimationParams ;
+                | 'draw' __ Expression _ AnimationParams
+                | 'pause' __ ConditionalExpression
+                | 'pause' ;
 
 AnimationParams = AnimationParam* ;
 
@@ -759,7 +761,7 @@ Reserved        = AlwaysReserved ;
 AlwaysReserved  = 'Arc' | 'arc' | 'Aside' | 'Box' | 'box' | 'Circle' | 'circle'
                 | 'Ellipse' | 'Face' | 'Gap' | 'Goto' | 'Group'
                 | 'Line' | 'line' | 'Label' | 'Oval' | 'Skip'
-                | 'move' | 'rotate' | 'set' | 'then' | 'wait' | 'draw'
+                | 'move' | 'pause' | 'rotate' | 'set' | 'then' | 'wait' | 'draw'
                 | 'else' | 'if'
                 | 'true' | 'false' ;
 ```
@@ -849,6 +851,7 @@ standalone EBNF rules.
 | Skip | (terminal, in Shape) |
 | draw | (terminal) |
 | move | (terminal) |
+| pause | (terminal) |
 | set | (terminal) |
 | then | (terminal) |
 | wait | (terminal) |

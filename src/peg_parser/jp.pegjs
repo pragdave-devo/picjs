@@ -132,7 +132,7 @@ Reserved
 
 AlwaysReserved
   = Arc / Aside / Box / Circle / Ellipse / Face / Gap / Goto / Group / Line / Label / Oval / Skip  // shapes
-  / move /rotate / set / then / wait / draw   // animations
+  / move / pause / rotate / set / then / wait / draw   // animations
   / else / if                          // keywords
   / true / false                       // constants
 
@@ -199,6 +199,7 @@ draw   = "draw"   ! IdentifierPart { return text() }
 move   = "move"   ! IdentifierPart { return text() }
 set    = "set"    ! IdentifierPart { return text() }
 then   = "then"   ! IdentifierPart { return text() }
+pause  = "pause"  ! IdentifierPart { return text() }
 wait   = "wait"   ! IdentifierPart { return text() }
 rotate = "rotate" ! IdentifierPart { return text() }
 
@@ -235,6 +236,7 @@ from      = "from"         ! IdentifierPart { return text() }
 rx        = "rx"           ! IdentifierPart { return text() }
 ry        = "ry"           ! IdentifierPart { return text() }
 inside    = "inside"       ! IdentifierPart { return text() }
+fit       = "fit"           ! IdentifierPart { return text() }
 opacity   = "opacity"      ! IdentifierPart { return text() }
 outside   = "outside"      ! IdentifierPart { return text() }
 same      = "same"         ! IdentifierPart { return text() }
@@ -946,6 +948,21 @@ Animation
        expected(`"draw" takes a shape and optional animation parameters`)
     }
 
+  / pause __ message:ConditionalExpression
+    {
+      return ast({
+        type: "Pause",
+        message,
+      })
+    }
+  / pause
+    {
+      return ast({
+        type: "Pause",
+        message: null,
+      })
+    }
+
   /* / wait (__ for)? __ until:Waitable */
   /*   { */
   /*     return ast({ */
@@ -1008,6 +1025,15 @@ GroupExpression "group"
       })
     }
   / Group __ "{" _ body:ExpressionList _ "}" args:( __ ( SECommon ))* withConstraint:( __ WithConstraint )? post:( __ ( SECommon ))*
+    {
+      return ast({
+        type: "Group",
+        body: body,
+        args: mergeAttributes([...extractList(args, 1), ...extractList(post, 1)]),
+        withConstraint: extractOptional(withConstraint, 1),
+      })
+    }
+  / "{" _ body:ExpressionList _ "}" args:( __ ( SECommon ))* withConstraint:( __ WithConstraint )? post:( __ ( SECommon ))*
     {
       return ast({
         type: "Group",
@@ -1281,9 +1307,9 @@ Shape "shape"
       })
     }
 
-  / Label _ string:Expression args:( __ ( SEText / SECommon ))* withConstraint:( __ WithConstraint )?
+  / Label _ string:Expression pre:( __ ( SEText / SECommon ))* withConstraint:( __ WithConstraint )? post:( __ ( SEText / SECommon ))*
     {
-      args = mergeAttributes(extractList(args, 1))
+      const args = mergeAttributes([...extractList(pre, 1), ...extractList(post, 1)])
       args.text = string
       return ast({
         type: "Shape",
@@ -1325,6 +1351,10 @@ Shape "shape"
     }
 
   / Gap __ distance:MoveDistance {
+      return ast({ type: "LayoutGap", distance })
+    }
+
+  / Gap SameLineSpace distance:VariableValue {
       return ast({ type: "LayoutGap", distance })
     }
 
@@ -1434,6 +1464,7 @@ SECommon
   / SEStroke
   / SEStrokeAttr
   / SEOpacity
+  / SEFit
   / SEBehind
   / SESame
   / SEClass
@@ -1652,6 +1683,10 @@ SEOpacity
   = opacity __ value:Number
     { return { opacity: value } }
 
+SEFit
+  = fit
+    { return { fit: true } }
+
 SEBehind
   = behind __ target:NonShapeExpression
     { return { _behind: target } }
@@ -1669,6 +1704,8 @@ SEText
     { return { align: string(cardinal) } }
   / maxwidth __ n:Number
     { return { maxwidth: n } }
+  / line_height __ n:Number
+    { return { line_height: n } }
   / font __ font:FontSpec
     { return { font } }
   / font __ ........

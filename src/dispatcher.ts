@@ -185,6 +185,10 @@ export class Dispatcher {
     this.timeline.addAnimation(mover)
   }
 
+  addPause(message: string | null) {
+    this.timeline.addPause(message)
+  }
+
   addCreateShapeToTimeline(shape: SBase) {
     this.timeline.addShape(shape)
   }

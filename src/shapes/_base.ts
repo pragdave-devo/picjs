@@ -1,5 +1,5 @@
 import { RTE } from "../runtime_error.js"
-import { RenderParameters, TBase, TColor, TNumber, TPosition } from "../types.js"
+import { RenderParameters, TBase, TBool, TColor, TNumber, TPosition, TNative } from "../types.js"
 import { DegreesToRadians } from "../geometry.js"
 import { CardinalFactorsFromCenter, Cardinals, XY } from "../position.js"
 import { Dispatcher } from "../dispatcher.js"
@@ -113,6 +113,21 @@ export class SBase extends TBase<null> {
     this.dispatcher = dispatcher
     this.bindingAtCreation = dispatcher.getCurrentBinding()
     this.setupParams(args)
+
+    this.attrs.has = new TNative(`has`, [`attr_name`],
+      `return true if this shape has the named attribute`,
+      (_interpreter, attr_name) => {
+        const name = String(attr_name)
+        const resolved = AbbreviatedAttrNames[name] || name
+        if (resolved in this.attrs) return new TBool(true)
+        if (resolved in this.params) return new TBool(true)
+        if (resolved in this.hidden) return new TBool(true)
+        if (CardinalAttributes.hasOwnProperty(resolved)) return new TBool(true)
+        if (OtherGeometryAttributes.hasOwnProperty(resolved)) return new TBool(true)
+        if (StyleAttributes.hasOwnProperty(resolved)) return new TBool(true)
+        if ((`handle_attr_` + resolved) in this) return new TBool(true)
+        return new TBool(false)
+      })
   }
 
   reEvaluateArgs() {
