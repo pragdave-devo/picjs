@@ -247,6 +247,8 @@ export class SBase extends TBase<null> {
     child.parentShape = this
     child.params._parentWidth = this.width
     child.params._parentHeight = this.height
+    // Pass fill for auto-text coloring with palette colors
+    child.params._parentFill = this.params.fill
   }
 
   isChild() {

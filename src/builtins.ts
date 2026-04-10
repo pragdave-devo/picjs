@@ -1,5 +1,6 @@
 import { RTE } from "./runtime_error.js"
 import { TA, TNative, TNumber, TPosition } from "./types.js"
+import { TPalette } from "./types/tpalette.js"
 
 const D2R = 2*Math.PI/360.0
 const R2D = 1 / D2R
@@ -25,8 +26,9 @@ function arcFunction(name: string, fn: (x:number) => number, ratio: number) {
 }
 
 
-export const BuiltinConstants: {[name: string]: TNumber} = {
+export const BuiltinConstants: {[name: string]: TA} = {
   PI: new TNumber(Math.PI),
+  Palette: new TPalette(),
 }
 
 export const BuiltinFunctions: {[name: string]: TNative} = {

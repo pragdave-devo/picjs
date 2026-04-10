@@ -7,6 +7,7 @@
 import { SBase, ShapeArgs } from "./_base.js"
 import { TFont, TString, RenderParameters } from "../types.js"
 import { ShapeToRenderer } from "../render.js"
+import { Palette } from "../palette.js"
 
 // const DefaultsForShape = { 
 //     fill: `pink`,
@@ -21,6 +22,15 @@ export class SLabel extends SBase {
     super.setupParams(args)
     if (this.params.font)
       this.params.font = new TFont(this.params.font)
+
+    // Auto-text coloring: if parent has palette background and no explicit fill was set,
+    // use the matching foreground color
+    if (!args.fill && this.params._parentFill) {
+      const autoFg = Palette.getForegroundFor(this.params._parentFill)
+      if (autoFg) {
+        this.params.fill = autoFg
+      }
+    }
   }
 
 

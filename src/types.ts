@@ -13,6 +13,7 @@ export { TPosition } from "./types/tposition.js"
 export { TRange, Easing } from "./types/trange.js"
 export { TString } from "./types/tstring.js"
 export { TTimeline } from "./types/ttimeline.js"
+export { TPalette } from "./types/tpalette.js"
 
 import { registerHasMethodFactory } from "./types/_base.js"
 import { TNative } from "./types/tnative.js"

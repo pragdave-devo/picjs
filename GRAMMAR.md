@@ -233,6 +233,53 @@ HexNibble       = [0-9a-fA-F] ;
 HexByte         = HexNibble HexNibble ;
 ```
 
+### Palette Colors
+
+Colors can also be specified using WCAG-compliant palette names. Each palette
+contains 8 background colors (`b1`-`b8`) paired with readable foreground
+colors (`f1`-`f8`). The foreground color `f_n` is guaranteed to have at least
+4.5:1 contrast ratio against its corresponding background `b_n`.
+
+```
+// Direct palette colors (prefixed with ~)
+Box fill ~b1            // Dark blue-grey background
+Box fill ~f1            // Light foreground color
+
+// Via Palette object
+Box fill Palette.b3     // Access palette color
+
+// Auto text coloring: labels inside palette-colored shapes
+// automatically use the matching foreground color
+Box "Hello" fill ~b2    // Text is automatically white (f2)
+```
+
+**Palette management:**
+```
+Palette.current = "ocean"   // Switch palette
+$names = Palette.names      // List available palettes
+Palette.b1 = ~navy          // Override a color locally
+```
+
+**Available palettes:**
+| Name | Description |
+|------|-------------|
+| `default` | Balanced colors with good contrast |
+| `misty` | Soft pastels with dark text |
+| `ocean` | Blues and teals |
+| `forest` | Greens and browns |
+| `warm` | Reds, oranges, and earth tones |
+| `mono` | Grayscale |
+| `starfish` | PNW-inspired: forest to coral |
+| `shuksan` | PNW-inspired: purples and pinks |
+| `bay` | PNW-inspired: deep blue and gold |
+| `lake` | PNW-inspired: earth to sky |
+| `cascades` | PNW-inspired: forest and lime |
+| `sunset` | PNW-inspired: purple to gold |
+
+The PNW-inspired palettes (starfish, shuksan, bay, lake, cascades, sunset) are
+adapted from [PNWColors](https://github.com/jakelawlor/PNWColors), an R package
+by Jake Lawlor featuring color palettes inspired by the Pacific Northwest.
+
 ## String
 
 ```ebnf

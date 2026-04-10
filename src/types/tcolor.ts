@@ -6,6 +6,7 @@ import { RTE } from "../runtime_error.js"
 import { AnimationStyle, TBase, TA } from "./_base.js"
 import { TBool } from "./tbool.js"
 import { TNative } from "./tnative.js"
+import { Palette } from "../palette.js"
 
 const toOklch = converter('oklch')
 const toRgb   = converter('rgb')
@@ -40,6 +41,16 @@ export class TColor extends TBase<Color> {
   }
 
   static fromString(spec: string): TColor {
+    // Check palette colors first (b1-b8, f1-f8)
+    if (Palette.isPaletteColor(spec)) {
+      const hex = Palette.getColor(spec)
+      if (hex) {
+        const color = parse(hex)
+        if (color) return new TColor(color)
+      }
+    }
+
+    // Fall back to culori parsing (CSS named colors, hex, etc.)
     const color = parse(spec)
     if (!color)
       throw new RTE(`Invalid color specification: "${spec}"`)
