@@ -1723,13 +1723,25 @@ SETurn
 // constraints
 
 WithConstraint
-  = with __ cardinal:(_ Cardinal)? (_ "at")? _ place:Expression
+  = with __ selfAnchor:SelfAnchor (_ "at")? _ place:Expression
+    { return ast({
+        type: `WithConstraint`,
+        selfElement: selfAnchor.element,
+        cardinal: selfAnchor.cardinal,
+        place,
+      })
+    }
+  / with __ cardinal:(_ Cardinal)? (_ "at")? _ place:Expression
     { return ast({
         type: `WithConstraint`,
         cardinal: extractOptional(cardinal, 1, "c"),
         place,
       })
     }
+
+SelfAnchor
+  = "self." name:Identifier cardinal:Cardinal?
+    { return { element: name.name, cardinal: cardinal || "c" } }
 
 Cardinal "cardinal"
   = "." point:("nw" / "ne" / "n" / "sw" / "se" / "s" / "w" / "e" / "c") !IdentifierPart

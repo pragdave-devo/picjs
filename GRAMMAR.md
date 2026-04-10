@@ -719,7 +719,10 @@ SETurn          = ( 'turn' __ )? ( 'ccw' | 'cw' )
 ## Constraints
 
 ```ebnf
-WithConstraint  = 'with' __ ( _ Cardinal )? ( _ 'at' )? _ Expression ;
+WithConstraint  = 'with' __ SelfAnchor ( _ 'at' )? _ Expression
+                | 'with' __ ( _ Cardinal )? ( _ 'at' )? _ Expression ;
+
+SelfAnchor      = 'self.' Identifier Cardinal? ;
 
 Cardinal        = '.' ( 'nw' | 'ne' | 'n' | 'sw' | 'se' | 's' | 'w' | 'e' | 'c' ) !IdentifierPart ;
 
@@ -740,6 +743,24 @@ CardinalVector  = 'northwest' !IdentifierPart
                 | 'w'  !IdentifierPart
                 | 'e'  !IdentifierPart ;
 ```
+
+### Group Element Constraints
+
+Groups can be positioned so that a named internal element lands at a specific point:
+
+```
+g = { Face s; box; self.middle = box; box }
+
+// Position group so middle's center is at g.c
+{ self.m = box } with self.m at g.c
+
+// Position group so middle's south edge is at g.c's north edge
+{ self.m = box } with self.m.s at g.c.n
+```
+
+The `self.element` form specifies which child element's position should be
+constrained, and the optional cardinal (`.n`, `.s`, etc.) specifies which
+point on that element.
 
 ## Font Specification (subset of CSS)
 

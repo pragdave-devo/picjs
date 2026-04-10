@@ -318,6 +318,7 @@ export interface VariableValue extends Base {
 
 export interface ASTWithConstraint {
   type: `ASTWithConstraint`,
+  selfElement?: string,  // For "with self.element" syntax
   cardinal: Cardinals,
   place: Node
 

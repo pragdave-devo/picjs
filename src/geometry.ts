@@ -1,4 +1,4 @@
-// import { RTE } from "./runtime_error.js"
+import { RTE } from "./runtime_error.js"
 import { TPosition } from "./types.js"
 import { LineLike, SArc, SBase, SGroup, SLine, SPoint, SPolyline } from "./shapes.js"
 import { Cardinals, XY } from "./position.js"
@@ -208,7 +208,27 @@ export class Geometry {
       target = target.handle_attr_c()
     }
 
-    Geometry.positionCardinalToPoint(shape, myAnchorName, target.x, target.y)
+    // Handle "with self.element" syntax for groups
+    if (constraint.selfElement && shape instanceof SGroup) {
+      const child = shape.attrs[constraint.selfElement]
+      if (!(child instanceof SBase)) {
+        throw new RTE(`self.${constraint.selfElement} is not a shape`)
+      }
+
+      // Get child's cardinal point (absolute position after group body executed)
+      const childCardinal = child.corner(myAnchorName)
+
+      // Offset from group anchor to child's cardinal
+      const offsetX = childCardinal.x - shape.anchorX!
+      const offsetY = childCardinal.y - shape.anchorY!
+
+      // Position group so child's cardinal lands at target
+      shape.setAnimatablePosition(target.x - offsetX, target.y - offsetY)
+    }
+    else {
+      // Standard behavior: position shape's own cardinal at target
+      Geometry.positionCardinalToPoint(shape, myAnchorName, target.x, target.y)
+    }
   }
 
   // Position a label along a line/arc path with perpendicular offset.
