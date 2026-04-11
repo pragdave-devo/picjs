@@ -24,7 +24,7 @@ it down.
   tagged with class `pole` will be brown.
 
   The `~brown` is the name of a color. Picjs has all web colors built in, along with `transparent`.
-  It also has 24 theme colors, but I don't use them here.ghten()` ligghtens the color, and `5%` is
+  It also has 24 theme colors, but I don't use them here. `lighten()` lightens the color, and `5%` is
   just syntactic sugar for `0.05`. 
 
 
@@ -32,11 +32,12 @@ it down.
   DiskColor = rgb(220,180,140)
   ~~~
 
-  As well as named colors, you can create colors using `rgb()`, `hsl()`, `oklch()`, as well as good
+  As well as named colors, you can create colors using `rgb()`, `hsl()`, `oklch()`, along with good
   old hex. Opacity can be set using an optional fourth parameter.
 
 * Every value in picjs can have attributes. Some are predefined (a box has `.width`), but you can
-  also add new attributes by assigning to them. 
+  also add new attributes by assigning to them. Perhaps surprisingly, we can use that simple idea to
+  implement a kind of mixin: a function that adds state and functionality to another object.
 
   ``` js
   canHaveDisks = (aPole) => {
@@ -54,16 +55,16 @@ it down.
 
   In the Hanoi project, we have three poles, and each pole has a stack of disks. We want each pole
   to be able to push and pop onto and from those stacks, so we write a function that takes a pole
-  and
+  and;
 
   * associates a list `disks` with it. Because the `push` and `pop` functions reference `disks`, it
-    becomes a closure, and so each pole gets its own `disks` list.
+    becomes a closure; each pole gets its own `disks` list.
 
   * create `push` and `pop` proerties on the pole. Each is a function that delegates to the disk
-    stack. The push function also returns the position of the bottom of the disk (which is simple
-    the number of disks on the pole times the height of each disk (with a little padding).
+    stack. The push function also returns the position of the bottom of the disk (which is simply
+    the number of disks on the pole times the height of each disk, with a little padding).
 
-* Pole constructor.
+* Here's the function that creates a pole.
 
   ``` js
   drawPole = (number) => {
@@ -79,8 +80,8 @@ it down.
   The `.pole` is the class (remember, that picks up the style from the Box.pole.fill assignment
   above).
 
-  The base is a horizontal box position so that its centr is at the south end of the pole (the
-  bottom). We overlsp them slightly so we don't see the radius on the bottom of the pole.
+  The base is a horizontal box positioned so that its center is at the south end of the pole (the
+  bottom). We overlap them slightly so we don't see the radius on the bottom of the pole.
 
   We record the pole's number by setting a custom attribute. We then call `canHaveDisks`, which is
   the function we looked at previously. This adds the `push` and `pop` functions to the pole, and
@@ -107,20 +108,20 @@ it down.
   ```
 
   Disk 1 is the smallest, 2 the next biggest, and so on. We want the largest disk to be the first
-  one pushed onto pole 0'n stack, so we count down from `NumDisks` to 1.
+  one pushed onto pole 0's stack, so we count down from `NumDisks` to 1.
 
-  Now we get to see some animation. I;d like the disks to appear one after the other: just a quick
+  Now we get to see some animation. I'd like the disks to appear one after the other: just a quick
   initial animation before the disk moving starts.
 
   The variable `@` is the offset on the timeline. By default, it's 0, but we can change it. When we
   say `@ += 0.3`, we move the time .3 seconds further. Because shapes are displayed at the current
   value of `@`, each disk will appear .3s after the previous one.
 
-  After the last disk is draw, we move the time pointer ahead another .3s, so there's a little
+  After the last disk is drawn, we move the time pointer ahead another .3s, so there's a little
   pause before the moving starts.
 
 * Time to move some disks. There are two parts to this. The actual Towers of Hanoi algorithm
-  decided which disk to move where. That comes later. This function is the second part: it handles
+  decides which disk to move where. That comes later. This function is the second part: it handles
   the mechanics of updating the state of the poles and, along the way, animating the move.
 
   ``` js
@@ -134,7 +135,7 @@ it down.
   }
   ```
 
-  * Its nice it the disks move between poles at a constant speed, which means that moving from pole
+  * Its nice if the disks move between poles at a constant speed, which means that moving from pole
     0 to pole 2 should take twice as long as moving to the center pole. That's why we calculate the
     distance moved.
 
@@ -142,11 +143,11 @@ it down.
      the pole, then across to the destination pole, and then down onto its stack. Remember we had the
     `push` function return the position of the bottom of the disk. Here's where we use that to
      control where the move stops. Note we use `then` for the second and third steps of the
-     animation. This chains these animations into a single sequence: once will start when the
+     animation. This chains these animations into a single sequence: one will start when the
      previous one finishes.
 
    * Then we have the cryptic `@@`. This sets the `@` variable to the end of the last animation.
-     It simply mens we don't have to add up all the `take` values ourselves.
+     It simply means we don't have to add up all the `take` values ourselves.
 
 
 * Finally, we have the Hanoi algorithm itself.
