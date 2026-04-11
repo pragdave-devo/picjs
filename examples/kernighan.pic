@@ -14,7 +14,7 @@ whole = {
     self.A = box
     self.B = box
     self.C = box
-    box wid 2*dw (". . ." x-large)
+    box fill ~none stroke ~none wid 2*dw (". . ." x-large)
     self.D = box
   }
   
@@ -30,7 +30,7 @@ Block = {
     Gap same
     self.C = box
     Gap same
-    box fill ~transparent stroke ~transparent   (". . ." x-large)
+    box fill ~none stroke ~none   (". . ." x-large)
     Gap same
     self.D = box
   } with .n at Ptr.s + (0,h)

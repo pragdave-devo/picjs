@@ -60,7 +60,16 @@
       "Bash(cat:*)",
       "Bash(git log:*)",
       "Bash(npx tsx -e \":*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(git rebase:*)",
+      "Bash(git restore:*)",
+      "Bash(git pull:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(kill 4405 82773)",
+      "Bash(pkill -f \"node.*vite\")"
     ]
   }
 }

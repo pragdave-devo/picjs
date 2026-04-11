@@ -1,8 +1,8 @@
 {
-  "name": "jp",
-  "version": "1.0.0",
-  "description": "JavaScript implementation of DWB pic",
-  "main": "dist/index.js",
+  "name": "@strike48/picjs",
+  "version": "0.2.0",
+  "description": "Constraint-based diagram and animation package. Think Mermaid, but with layout",
+  "main": "dist/picjs.js",
   "type": "module",
   "scripts": {
     "build": "vite build",
@@ -10,7 +10,7 @@
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "parser": "make src/peg_parser/jp.js"
   },
-  "repository": "https://github.com/pragdave/jp",
+  "repository": "https://github.com/pragdave-devo/picjs",
   "author": "pragdave",
   "license": "MIT",
   "browserslist": [
@@ -25,6 +25,7 @@
     "@babel/register": "^7.28.6",
     "@types/culori": "^4.0.1",
     "@types/jest": "^29.5.14",
+    "esbuild": "^0.27.7",
     "jest": "^29.7.0",
     "peggy": "^4.2.0",
     "ts-jest": "^29.4.6",
