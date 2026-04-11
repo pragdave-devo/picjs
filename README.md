@@ -1,5 +1,18 @@
 # Picjs: A language for creating animated web graphics.
 
+### Hewllo World!
+
+![A simple flow chart with three boxes, connected by arrows](./gh-assets/hello.png)
+
+``` js
+Palette.current = "shuksan"
+box "Input" -> box "Process" fill ~b2 -> box "Output"
+```
+picjs supports themes, controlled by the Palette object. Here we select the `shuksan` theme
+which defines light and dark versions of six foreground and six background collors. The outer two
+boxes use the theme-default background, while the middle box uses the second background color,
+`~b2`. 
+
 ### Simple Turtle Graphics
 
 <table>
