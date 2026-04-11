@@ -1,6 +1,6 @@
 # Picjs: A language for creating animated web graphics.
 
-### Hewllo World!
+### Hello World!
 
 ![A simple flow chart with three boxes, connected by arrows](./gh-assets/hello.png)
 
@@ -46,6 +46,12 @@ petals.times(n => {
 </td>
 </tr>
 </table>
+
+The `petal` function draws a petal shape by repeating a set of three arcs four times. There's no
+need for positioning: by defaults shapes follow on from each other.
+
+We then call the `petal` function 17 times, rotating the face of the turtle by 360/17 degrees each
+time, and spinning the (hue of the) color by 30 degrees each time.
 
 ### Run Towers of Hanoi, animating each move:
 
@@ -112,7 +118,7 @@ hanoi = (n, pFrom, pTo, pVia) => {
 hanoi(NumDisks, poles[0], poles[2], poles[1])
 ~~~
 
-
+There's a lot going on here; so I wrote a [separate breakdown](docs/hanoi-breakdown.md).
 ## Features
 
 * Integrates a JavaScript-like language with the drawing and animation DSL
