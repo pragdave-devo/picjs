@@ -36,7 +36,7 @@ petals.times(n => {
 
 ### Run Towers of Hanoi, animating each move:
 
-![Screen shot of the animation in action](./gh-assets/hanoi1.webp)
+![Screen shot of the animation in action](./gh-assets/hanoi1.png)
 
 ~~~ js 
 NumDisks = 5
