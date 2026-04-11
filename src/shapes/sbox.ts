@@ -1,4 +1,4 @@
-import { SBase } from "./_base.js"
+import { SBase, ShapeArgs } from "./_base.js"
 import { TNumber } from "../types.js"
 
 export class SBox extends SBase {
@@ -11,5 +11,17 @@ export class SBox extends SBase {
 
   get rx()             { return this.params.rx       }
   get ry()             { return this.params.ry       }
+
+  // If only rx or ry is explicitly set, sync the other to match
+  setupParams(args: ShapeArgs) {
+    super.setupParams(args)
+    const hasRx = `rx` in args
+    const hasRy = `ry` in args
+    if (hasRx && !hasRy) {
+      this.params.ry = this.params.rx
+    } else if (hasRy && !hasRx) {
+      this.params.rx = this.params.ry
+    }
+  }
 }
 

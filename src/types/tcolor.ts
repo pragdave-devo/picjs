@@ -41,6 +41,9 @@ export class TColor extends TBase<Color> {
   }
 
   static fromString(spec: string): TColor {
+    // Alias: ~none → ~transparent
+    if (spec === 'none') spec = 'transparent'
+
     // Check palette colors first (b1-b8, f1-f8)
     if (Palette.isPaletteColor(spec)) {
       const hex = Palette.getColor(spec)

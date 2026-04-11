@@ -1,10 +1,12 @@
 import { Arc }      from "./arc.js"
 import { Circle }   from "./circle.js"
+import { Group }    from "./group.js"
 import { Label }    from "./label.js"
 import { Line }     from "./line.js"
 import { Polyline } from "./polyline.js"
 import { Rect }     from "./rect.js"
 import * as Shape from "../../shapes.js"
+import { SGroup } from "../../shapes/sgroup.js"
 
 import { SvgBase } from "./_base.js"
 
@@ -13,6 +15,7 @@ export const ShapeToRenderer:Record<string, typeof SvgBase> = {
   SArc:      Arc,
   SBox:      Rect,
   SCircle:   Circle,
+  SGroup:    Group,
   SLabel:    Label,
   SLine:     Line,
   SPolyline: Polyline,
@@ -29,10 +32,29 @@ export class Renderer {
   render(shapes: Shape.SBase[]) {
     const elements: SVGElement[] = []
 
-    shapes.forEach(shape => {
+    // First pass: identify which shapes are group children
+    const groupChildren = new Set<Shape.SBase>()
+    for (const shape of shapes) {
+      if (shape instanceof SGroup) {
+        for (const child of shape.groupChildren) {
+          groupChildren.add(child)
+        }
+      }
+    }
+
+    for (const shape of shapes) {
+      // Skip group children - they're rendered inside their group
+      if (groupChildren.has(shape)) continue
+
       const sid = shape.id
       const params = shape.params
-      if (sid in this.renderers) {
+
+      if (shape instanceof SGroup) {
+        // Render group with transform, then render children inside
+        const groupEl = this.renderGroup(shape)
+        elements.push(groupEl)
+      }
+      else if (sid in this.renderers) {
         const existingElement = this.renderers[sid].rerender(shape.requiredPosition(), params).el
         elements.push(existingElement)
       }
@@ -44,11 +66,66 @@ export class Renderer {
           this.renderers[sid] = renderer
           elements.push(renderer.el)
         }
-        // else
-        // throw new Error(`Unknown shape "${shape.shapeName}" in renderer`)
       }
-    })
+    }
 
     return elements
+  }
+
+  private renderGroup(group: SGroup): SVGElement {
+    const sid = group.id
+    const params = {
+      ...group.params,
+      _svgTransform: group.getSvgTransform()
+    }
+
+    let groupRenderer: Group
+
+    if (sid in this.renderers) {
+      groupRenderer = this.renderers[sid] as Group
+      groupRenderer.rerender(group.requiredPosition(), params)
+      // Clear and re-add children (they may have changed)
+      groupRenderer.clearChildren()
+    }
+    else {
+      groupRenderer = new Group(group.requiredPosition(), params)
+      groupRenderer.el.setAttribute(`data-jp-id`, sid)
+      this.renderers[sid] = groupRenderer
+    }
+
+    // Render children inside the group
+    for (const child of group.groupChildren) {
+      const childEl = this.renderChild(child)
+      if (childEl) {
+        groupRenderer.addChild(childEl)
+      }
+    }
+
+    return groupRenderer.el
+  }
+
+  private renderChild(shape: Shape.SBase): SVGElement | null {
+    // Handle nested groups recursively
+    if (shape instanceof SGroup) {
+      return this.renderGroup(shape)
+    }
+
+    const sid = shape.id
+    const params = shape.params
+
+    if (sid in this.renderers) {
+      return this.renderers[sid].rerender(shape.requiredPosition(), params).el
+    }
+    else {
+      const specificRenderer = ShapeToRenderer[shape.shapeName]
+      if (specificRenderer) {
+        const renderer = new specificRenderer(shape.requiredPosition(), params)
+        renderer.el.setAttribute(`data-jp-id`, sid)
+        this.renderers[sid] = renderer
+        return renderer.el
+      }
+    }
+
+    return null
   }
 }

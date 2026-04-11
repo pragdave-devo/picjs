@@ -648,7 +648,8 @@ SEPos           = 'at' __ Expression
 
 SERadius        = 'radius' __ Expression ;
 
-SERadii         = ( 'rx' | 'ry' ) __ Expression ;
+SERadii         = ( 'rx' | 'ry' ) __ Expression
+                | 'radius' __ Expression ;    (* sets both rx and ry *)
 
 SESize          = Expression _ ( 'x' | '\u00D7' ) _ Expression
                 | 'width' __ Expression

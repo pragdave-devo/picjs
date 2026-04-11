@@ -73,6 +73,8 @@ export class Label extends SvgBase {
   private renderParagraphs(paragraphs: string[]) {
     const fontSize = parseFloat(this.attrs[`font-size`]) || 0.14
     const lineSpacing = this.lineHeight && this.lineHeight > 0 ? this.lineHeight : fontSize * 1.2
+    // Tighter paragraph spacing when inside a shape (parentWidth is set)
+    const paragraphSpacing = this.parentWidth ? lineSpacing : lineSpacing * 2
     const margin = fontSize * 0.5
     const containerWidth = this.parentWidth || this.position.width
     const anchorX = this.align === `w` ? this.position.x - containerWidth / 2 + margin
@@ -92,7 +94,7 @@ export class Label extends SvgBase {
       for (let li = 0; li < wrappedLines.length; li++) {
         const attrs: Record<string, any> = { x: anchorX }
         if (children.length > 0) {
-          attrs.dy = (li === 0 && pi > 0) ? lineSpacing * 2 : lineSpacing
+          attrs.dy = (li === 0 && pi > 0) ? paragraphSpacing : lineSpacing
         }
         const lineEl = svg('tspan', attrs)
         this.runsToTSpans(lineEl, wrappedLines[li])

@@ -1,20 +1,21 @@
+spins = 8
 
-outer_radius = 10.5
+Line.thickness = .2
+
+outer_radius = 10.2
 inner_radius = 4.8
 diff = outer_radius - inner_radius
 ratio = diff/inner_radius
 hue = 0
 
-offset_of_pen = .8*inner_radius # proportion of distance of pen from center of small disk
+offset_of_pen = .8*inner_radius // proportion of distance of pen from center of small disk
 
-move to (diff + offset_of_pen, 0)
+Goto (diff + offset_of_pen, 0)
 
-
-for theta from 0 to 32*$pi step 0.1 do {
+[0..360*spins].each(theta => {
     xp = diff * cos(theta) + offset_of_pen * cos(ratio * theta)
     yp = diff * sin(theta) - offset_of_pen * sin(ratio * theta)
 
-    color = oklch(.7, .3, hue)
-    line thickness 0.1 to (xp, yp)
-    hue += 1
-}
+    line to (xp, yp) stroke oklch(.7, .3, hue)
+    hue += .9/spins
+})

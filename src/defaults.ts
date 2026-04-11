@@ -133,7 +133,8 @@ export type DefaultsType = {
   [ category: string ] : ShapeDefaultsType
 }
 
-let Theme = Themes.Dark
+let currentThemeName = 'Dark'
+let Theme = { ...Themes.Dark }
 
 export const Defaults: DefaultsType = {
   Shapes: parseShapeDefaults(ShapeDefaults),
@@ -141,7 +142,17 @@ export const Defaults: DefaultsType = {
 
 export function setTheme(name: string) {
   if (!Themes[name]) throw new Error(`Unknown theme: "${name}". Available: ${Object.keys(Themes).join(', ')}`)
-  Theme = Themes[name]
+  currentThemeName = name
+  Theme = { ...Themes[name] }  // Copy to avoid mutating original
+  Defaults.Shapes = parseShapeDefaults(ShapeDefaults)
+}
+
+/**
+ * Reset theme to original values (undo any palette modifications).
+ * Call this before starting a new program.
+ */
+export function resetTheme(): void {
+  Theme = { ...Themes[currentThemeName] }
   Defaults.Shapes = parseShapeDefaults(ShapeDefaults)
 }
 

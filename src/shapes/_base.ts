@@ -371,10 +371,25 @@ export class SBase extends TBase<null> {
   corner(cardinal: Cardinals) {
     this.checkAnchorSet()
     let [dx, dy] = this.getCardinalOffsetsFromAnchor(cardinal)
-    return {
-      x: (this.anchorX || 0) + dx,
-      y: (this.anchorY || 0) + dy,
+    let x = (this.anchorX || 0) + dx
+    let y = (this.anchorY || 0) + dy
+
+    // If this shape is in a group, transform from local to absolute coordinates
+    if (this.parentGroup) {
+      const group = this.parentGroup
+      const gx = group.anchorX ?? 0
+      const gy = group.anchorY ?? 0
+      const rotation = (group.params.rotation ?? 0) * DegreesToRadians
+      const cos = Math.cos(rotation)
+      const sin = Math.sin(rotation)
+      // Apply group rotation then translation
+      const absX = gx + x * cos - y * sin
+      const absY = gy + x * sin + y * cos
+      x = absX
+      y = absY
     }
+
+    return { x, y }
   }
 
   // animation

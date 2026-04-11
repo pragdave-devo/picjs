@@ -1,4 +1,4 @@
-NumDisks = 7
+NumDisks = 5
 Box.pole.fill = ~brown.lighten(5%)  // ~brown is a named color
 DiskColor = rgb(220,180,140)
 
@@ -20,7 +20,7 @@ canHaveDisks = (aPole) => {
 // draw a pole with a base.
 
 drawPole = (number) => {
-  pole = Box .pole 20x150 rx 5  at (100 + number*230, 300)
+  pole = Box 20x150 rad 4 .pole  at (100 + number*230, 300)
   Box .pole 160x20 rx 7.5 at pole.s - (0,10) // the base
   pole.number = number
   canHaveDisks(pole)

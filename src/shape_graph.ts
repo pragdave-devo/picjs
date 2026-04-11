@@ -133,12 +133,16 @@ export class ShapeGraph {
         shape.variableDirty = false
       }
 
-      if (shape instanceof Shapes.SPolyline) {
-        this.dispatcher.positionPolyline(shape)
-      } else if (shape instanceof Shapes.LineLike) {
-        this.dispatcher.positionLine(shape)
-      } else if (shape.withConstraint) {
-        this.dispatcher.constrainedLayout(shape)
+      // Skip repositioning for group children — they have fixed local coordinates
+      // and SVG group transforms handle their absolute positioning.
+      if (!shape.parentGroup) {
+        if (shape instanceof Shapes.SPolyline) {
+          this.dispatcher.positionPolyline(shape)
+        } else if (shape instanceof Shapes.LineLike) {
+          this.dispatcher.positionLine(shape)
+        } else if (shape.withConstraint) {
+          this.dispatcher.constrainedLayout(shape)
+        }
       }
     }
 

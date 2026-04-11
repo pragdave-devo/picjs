@@ -95,14 +95,12 @@ export class Geometry {
         const group = shape as SGroup
         if (shape.withConstraint) {
           this.constrainedLayout(shape)
-          // constrainedLayout → positionCardinalToPoint → setAnimatablePosition
-          // SGroup override repositions children from relative offsets
         }
         else if (group.needsFlowLayout && group.predecessorShape) {
           this.lastShape = group.predecessorShape
           this.autolayout(shape)
-          group.repositionChildren()
         }
+        // No repositionChildren() needed - SVG transform handles it
         break
       }
 

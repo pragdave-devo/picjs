@@ -251,6 +251,9 @@ describe(`groups`, () => {
   })
 
   describe(`with constraint repositions children`, () => {
+    // NOTE: Children now store LOCAL coordinates (relative to group center).
+    // Use group.childAbsolutePosition(child) for absolute positions.
+
     it(`children move when group has with .nw constraint`, () => {
       const dispatcher = runProgram(`
         g = Group {
@@ -266,13 +269,15 @@ describe(`groups`, () => {
       expect(group.nw.x).toBeCloseTo(10, 1)
       expect(group.nw.y).toBeCloseTo(10, 1)
 
-      // Children should have shifted from their original (0,0) and (2,0)
-      // by the same delta as the group
+      // Children store LOCAL coords — relative spacing preserved
       const boxes = group.groupChildren
       expect(boxes[1].anchorX! - boxes[0].anchorX!).toBeCloseTo(2, 1)
-      // Both children should be far from origin
-      expect(boxes[0].anchorX!).toBeGreaterThan(5)
-      expect(boxes[1].anchorX!).toBeGreaterThan(5)
+
+      // Absolute positions should be far from origin
+      const abs0 = group.childAbsolutePosition(boxes[0])
+      const abs1 = group.childAbsolutePosition(boxes[1])
+      expect(abs0.x).toBeGreaterThan(5)
+      expect(abs1.x).toBeGreaterThan(5)
     })
 
     it(`nested groups propagate constraint repositioning`, () => {
@@ -299,15 +304,16 @@ describe(`groups`, () => {
       expect(outerGroup.n.x).toBeCloseTo(5, 1)
       expect(outerGroup.n.y).toBeCloseTo(5, 1)
 
-      // Inner groups should also have moved
+      // Inner groups (stored in local coords)
       const innerGroups = outerGroup.groupChildren.filter(s => s instanceof SGroup) as SGroup[]
       expect(innerGroups.length).toBe(2)
 
-      // Inner groups and their children should all be near x=5
+      // Inner groups' absolute positions should be near x=5
       for (const inner of innerGroups) {
-        expect(inner.anchorX!).toBeCloseTo(5, 0)
+        const absPos = outerGroup.childAbsolutePosition(inner)
+        expect(absPos.x).toBeCloseTo(5, 0)
+        // Children should have local coords defined
         for (const child of inner.groupChildren) {
-          // Children should NOT be at origin
           expect(child.anchorX).not.toBeNull()
         }
       }
@@ -324,16 +330,18 @@ describe(`groups`, () => {
       const group = shapes.find(s => s instanceof SGroup) as SGroup
       const boxes = group.groupChildren
 
-      // Center should be at (20, 20)
+      // Group center at (20, 20)
       expect(group.anchorX).toBeCloseTo(20, 1)
       expect(group.anchorY).toBeCloseTo(20, 1)
 
-      // The two boxes were 4 apart originally — should still be 4 apart
+      // Children's LOCAL coords: 4 apart (centered on 0)
       expect(boxes[1].anchorX! - boxes[0].anchorX!).toBeCloseTo(4, 1)
 
-      // And both should be centered around x=20
-      expect(boxes[0].anchorX!).toBeCloseTo(18, 1)
-      expect(boxes[1].anchorX!).toBeCloseTo(22, 1)
+      // Absolute positions should be 18 and 22
+      const abs0 = group.childAbsolutePosition(boxes[0])
+      const abs1 = group.childAbsolutePosition(boxes[1])
+      expect(abs0.x).toBeCloseTo(18, 1)
+      expect(abs1.x).toBeCloseTo(22, 1)
     })
   })
 })

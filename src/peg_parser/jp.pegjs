@@ -1526,6 +1526,8 @@ SERadius
 SERadii
   = which:(rx / ry) __ value:Expression
     { return { [which]: value} }
+  / radius __ value:Expression
+    { return { rx: value, ry: value } }
 
 SESize
   = width:Expression _ [x×] _ height:Expression {

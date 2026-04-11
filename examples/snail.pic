@@ -5,21 +5,11 @@ total_twist = spin * 2 * PI
 circle_count = spin * circles_per_spin
 
 color_factor = 255/total_twist
-
-draw = (i) => {
-  scale = i * 20
-  circle at (50*sin(i*43), 50*cos(i*50))
-         radius scale
-         fill   oklch(60%, 0.2, i*color_factor)
-         stroke oklch(10%, 0.3, i*color_factor)
+turn = (i) => {
+  circle at (7*sin(i*37), 9*cos(i*23))
+         radius i
+         fill   oklch(60%, 0.25, i*color_factor)
+         stroke oklch(5%, 0.2, i*color_factor)
 }
-[total_twist..0].steps(circle_count, draw)
+[total_twist..0].steps(circle_count, turn)
 
-
-@@
-
-[2..50].each(n => {
-  @ += .2
-  set circles_per_spin, n
-  @@
-})

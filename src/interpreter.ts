@@ -720,7 +720,8 @@ VisitColorLiteralString(node: AST.ColorLiteralString) {
     }
 
     // Build a single label with joined text, using first label's styling
-    const joinedText = texts.join('\n')
+    // Use double-newline so each label is a separate paragraph (won't be reflowed to a single line)
+    const joinedText = texts.join('\n\n')
     const evaluatedArgs = { ...firstEvaluatedArgs!, text: joinedText }
 
     // AST node for re-evaluation (e.g., during animation)

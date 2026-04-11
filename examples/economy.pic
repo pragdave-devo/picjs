@@ -1,13 +1,14 @@
  // The standard circular flow of the economy
+Palette.current = "sunset"
 
 
 Box.rx = Box.ry = 0.1
-fill      = oklch(.95, 0,    0)
+Box.fill  = ~b5 //oklch(.95, 0,    0)
 blackish  = oklch(0.6, 0,    0)
-blueish   = oklch(.6,  .4,   200)
-greenish  = oklch(.6,  .4,   150)
-orangeish = oklch(0.9, 0.3,  72)
-reddish   = oklch(0.6, 0.35, 40)
+blueish   = ~b1 //oklch(.6,  .4,   200)
+greenish  = ~b2 //oklch(.6,  .4,   150)
+orangeish = ~b3 //oklch(0.9, 0.3,  72)
+reddish   = ~b4 //oklch(0.6, 0.35, 40)
 
 // horizontal and vertical offsets for lines meeting
 // the sides of boxes
@@ -18,6 +19,7 @@ Box.height = 100%
 ho = ( Box.width/4, 0)
 vo = (0, Box.height/4)
 
+spacer = => box fill ~none stroke ~none
 // The players. The layout is a 4x5 grid, but the only entries are in column 2 and row three. There's
 // a hole where they intersect.
 
@@ -27,7 +29,7 @@ col = Group {
                     Gap
   self.households = box "Households"
                     Gap
-  self.center     = box fill ~transparent
+  self.center     = spacer()
                     Gap
   self.firms      = box "Firms"
                     Gap
@@ -35,17 +37,15 @@ col = Group {
 }
 
 row =  Group {
-  center         = box fill ~transparent at col.center
-                   Face west
-                   Gap
-  self.markets   = box "Markets for" "goods and" "services"
                    Face east
-                   Goto center
+  self.markets   = box "Markets for" "goods and" "services"
+                   Gap
+  self.center    = spacer()
                    Gap
   self.factor    = box "Factor" "markets"
                    Gap
   self.fm        = box "Financial" "markets"
-}
+} with self.center at col.center
 
 Line.rx = .2
 Line.thickness = .2

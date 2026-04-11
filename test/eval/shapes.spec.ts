@@ -224,13 +224,13 @@ describe(`multiple labels`, () => {
     const [box, label] = shapes
     expect(box.shapeName).toBe(`SBox`)
     expect(label.shapeName).toBe(`SLabel`)
-    expect(label.text).toBe(`A\nB`)
+    expect(label.text).toBe(`A\n\nB`)  // double-newline = separate paragraphs (stacked)
   })
 
-  it(`three labels are joined with newlines`, () => {
+  it(`three labels are joined with double-newlines`, () => {
     const d = runProgram(`Box "X" "Y" "Z"`)
     const [, label] = d.shapes()
-    expect(label.text).toBe(`X\nY\nZ`)
+    expect(label.text).toBe(`X\n\nY\n\nZ`)
   })
 
   it(`multiple labels are centered on the parent`, () => {
@@ -251,14 +251,14 @@ describe(`multiple labels`, () => {
   it(`works on circles`, () => {
     const d = runProgram(`Circle "top" "bottom"`)
     const [circle, label] = d.shapes()
-    expect(label.text).toBe(`top\nbottom`)
+    expect(label.text).toBe(`top\n\nbottom`)
     expect(label.anchorX).toBeCloseTo(circle.anchorX)
   })
 
   it(`works with a with-constraint`, () => {
     const d = runProgram(`Box "A" "B" with .nw at (0, 0)`)
     const [box, label] = d.shapes()
-    expect(label.text).toBe(`A\nB`)
+    expect(label.text).toBe(`A\n\nB`)
     // label center should still match box center
     expect(label.anchorX).toBeCloseTo(box.anchorX)
     expect(label.anchorY).toBeCloseTo(box.anchorY)
@@ -268,14 +268,14 @@ describe(`multiple labels`, () => {
     const d = runProgram(`Box "first" width 5 "second"`)
     const [box, label] = d.shapes()
     expect(box.width).toBe(5)
-    expect(label.text).toBe(`first\nsecond`)
+    expect(label.text).toBe(`first\n\nsecond`)
   })
 
   it(`labels with expressions`, () => {
     const d = runProgram(`$a = "hello"\n$b = "world"\nBox ($a) ($b)`)
     const shapes = d.shapes()
     const label = shapes[shapes.length - 1]
-    expect(label.text).toBe(`hello\nworld`)
+    expect(label.text).toBe(`hello\n\nworld`)
   })
 
   it(`registers combined label as dependent of parent`, () => {

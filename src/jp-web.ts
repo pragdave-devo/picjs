@@ -5,7 +5,7 @@ import * as Peggy from "peggy"
 import { Dispatcher } from "./dispatcher.js"
 import { Location } from "./parser.js"
 import { Binding } from "./binding.js"
-import { setTheme, getThemeName } from "./defaults.js"
+import { setTheme, getThemeName, resetTheme } from "./defaults.js"
 
 import { el, mount, setChildren, svg } from "redom"
 import { PlaybackController } from "./jp-web-playback.js"
@@ -376,6 +376,7 @@ function preview() {
   lastOutput = null
   shapeMap.clear()
   currentDispatcher = null
+  resetTheme()  // Reset any palette/theme modifications from previous run
 
   const src = editorView.state.doc.toString()
   const parsed: ParseResult = parseToAST((<unknown>PEG) as Peggy.Parser, src, `Start`)
@@ -509,7 +510,7 @@ exampleSelector.addEventListener(`change`, async () => {
   } catch (e) {
     errorArea.textContent = `Failed to load example: ${e}`
   }
-  exampleSelector.value = ``
+  // Keep showing the selected example name (don't reset to placeholder)
 })
 
 runBtn.addEventListener(`click`, () => preview())
