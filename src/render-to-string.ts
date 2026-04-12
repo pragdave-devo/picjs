@@ -83,6 +83,7 @@ export async function renderToString(source: string, options: RenderOptions = {}
 
   try {
     // Create dispatcher with the virtual SVG element
+    // Cast needed: linkedom's SVGElement is API-compatible but not type-compatible with browser SVGElement
     const dispatcher = new Dispatcher(nullLogger, svgElement as unknown as SVGElement, 1)
 
     // Run the interpreter

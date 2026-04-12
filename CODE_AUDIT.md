@@ -6,7 +6,7 @@
 
 | Location | Problem | Fix |
 |----------|---------|-----|
-| `src/render-to-string.ts:83` | Cast `svgElement as unknown as SVGElement` for linkedom compatibility | Add comment explaining why cast is needed |
+| `src/render-to-string.ts:86` | Cast `svgElement as unknown as SVGElement` for linkedom compatibility | ✓ Documented with comment (unavoidable) |
 | `src/shapes/_base.ts:101` | `parentGroup?: any` with comment "to avoid circular import" | Use proper forward reference or restructure imports |
 | `src/jp-web.ts:445` | `(parsed.error as any).location` | Define proper error type with location property |
 | `src/renderers/svg/label.ts:9` | `(MDModule as any).default` for CJS/ESM interop | Document the interop pattern with comment |
