@@ -211,60 +211,56 @@ if     = "if"     ! IdentifierPart { return text() }
 true   = "true"   ! IdentifierPart { return text() }
 false  = "false"  ! IdentifierPart { return text() }
 
-// TODO: combine synonyms
 // Attributes
-above     = "above"        ! IdentifierPart { return text() }
-close     = "close"        ! IdentifierPart { return text() }
-about     = "about"        ! IdentifierPart { return text() }
-align     = "align"        ! IdentifierPart { return text() }
-behind    = "behind"       ! IdentifierPart { return text() }
-below     = "below"        ! IdentifierPart { return text() }
-at        = "at"           ! IdentifierPart { return text() }
-by        = "by"           ! IdentifierPart { return text() }
-dashed    = "dashed"       ! IdentifierPart { return text() }
-dotted    = "dotted"       ! IdentifierPart { return text() }
-ease      = ("ease" / "each") ! IdentifierPart { return text() }
-fill      = "fill"         ! IdentifierPart { return text() }
-font_family  = "font_family"   ! IdentifierPart { return text() }
-font_size    = "font_size"     ! IdentifierPart { return text() }
-font_stretch = "font_stretch"  ! IdentifierPart { return text() }
-font_style   = "font_style"    ! IdentifierPart { return text() }
-font_variant = "font_variant"  ! IdentifierPart { return text() }
-font_weight  = "font_weight"   ! IdentifierPart { return text() }
-font      = "font"         ! IdentifierPart { return text() }
-from      = "from"         ! IdentifierPart { return text() }
-rx        = "rx"           ! IdentifierPart { return text() }
-ry        = "ry"           ! IdentifierPart { return text() }
-inside    = "inside"       ! IdentifierPart { return text() }
-fit       = "fit"           ! IdentifierPart { return text() }
-opacity   = "opacity"      ! IdentifierPart { return text() }
-outside   = "outside"      ! IdentifierPart { return text() }
-same      = "same"         ! IdentifierPart { return text() }
-solid     = "solid"        ! IdentifierPart { return text() }
-straight  = "straight"     ! IdentifierPart { return text() }
-stroke_width = "stroke_width"  ! IdentifierPart { return text() }
-stroke    = "stroke"       ! IdentifierPart { return text() }
-take      = "take"         ! IdentifierPart { return text() }
-to        = "to"           ! IdentifierPart { return text() }
-turn      = "turn"         ! IdentifierPart { return text() }
-with      = "with"         ! IdentifierPart { return text() }
-x         = "x"            ! IdentifierPart { return text() }
-y         = "y"            ! IdentifierPart { return text() }
-
-line_height = "line_height" ! IdentifierPart { return text() }
-maxwidth    = "maxwidth"    ! IdentifierPart { return text() }
-height    = ( "height"    / "ht" )        ! IdentifierPart { return "height" }
-length    = ( "length"    / "len" )       ! IdentifierPart { return "length" }
-radius    = ( "radius"    / "rad" / "r" ) ! IdentifierPart { return "radius" }
-rotation  = ( "rotation"  / "rot" )       ! IdentifierPart { return "rotation" }
-smooth    = ( "smooth"    / "curve" "d"?) ! IdentifierPart { return "smooth" }
-stepped   = ( "stepped"   / "step" )      ! IdentifierPart { return "stepped" }
-thickness = ( "thickness" / "thick" )     ! IdentifierPart { return "thickness" }
-width     = ( "width"     / "wid" )       ! IdentifierPart { return "width" }
-
-// These mean that "turn cw" is the same as "turn 'cw'"
-ccw       = "ccw"          ! IdentifierPart { return string(text()) }
-cw        = "cw"           ! IdentifierPart { return string(text()) }
+about        = "about"                    ! IdentifierPart { return text() }
+above        = "above"                    ! IdentifierPart { return text() }
+align        = "align"                    ! IdentifierPart { return text() }
+at           = "at"                       ! IdentifierPart { return text() }
+behind       = "behind"                   ! IdentifierPart { return text() }
+below        = "below"                    ! IdentifierPart { return text() }
+by           = "by"                       ! IdentifierPart { return text() }
+ccw          = "ccw"                      ! IdentifierPart { return string(text()) } // so we can say turn "ccw"
+close        = "close"                    ! IdentifierPart { return text() }
+cw           = "cw"                       ! IdentifierPart { return string(text()) }
+dashed       = "dashed"                   ! IdentifierPart { return text() }
+dotted       = "dotted"                   ! IdentifierPart { return text() }
+ease         = ("ease" / "each")          ! IdentifierPart { return text() }
+fill         = "fill"                     ! IdentifierPart { return text() }
+fit          = "fit"                      ! IdentifierPart { return text() }
+font         = "font"                     ! IdentifierPart { return text() }
+font_family  = "font_family"              ! IdentifierPart { return text() }
+font_size    = "font_size"                ! IdentifierPart { return text() }
+font_stretch = "font_stretch"             ! IdentifierPart { return text() }
+font_style   = "font_style"               ! IdentifierPart { return text() }
+font_variant = "font_variant"             ! IdentifierPart { return text() }
+font_weight  = "font_weight"              ! IdentifierPart { return text() }
+from         = "from"                     ! IdentifierPart { return text() }
+height       = ( "height" / "ht" )        ! IdentifierPart { return "height" }
+inside       = "inside"                   ! IdentifierPart { return text() }
+length       = ( "length" / "len" )       ! IdentifierPart { return "length" }
+line_height  = "line_height"              ! IdentifierPart { return text() }
+maxwidth     = "maxwidth"                 ! IdentifierPart { return text() }
+opacity      = "opacity"                  ! IdentifierPart { return text() }
+outside      = "outside"                  ! IdentifierPart { return text() }
+radius       = ( "radius" / "rad" / "r" ) ! IdentifierPart { return "radius" }
+rotation     = ( "rotation" / "rot" )     ! IdentifierPart { return "rotation" }
+rx           = "rx"                       ! IdentifierPart { return text() }
+ry           = "ry"                       ! IdentifierPart { return text() }
+same         = "same"                     ! IdentifierPart { return text() }
+smooth       = ( "smooth" / "curve" "d"?) ! IdentifierPart { return "smooth" }
+solid        = "solid"                    ! IdentifierPart { return text() }
+stepped      = ( "stepped" / "step" )     ! IdentifierPart { return "stepped" }
+straight     = "straight"                 ! IdentifierPart { return text() }
+stroke       = "stroke"                   ! IdentifierPart { return text() }
+stroke_width = "stroke_width"             ! IdentifierPart { return text() }
+take         = "take"                     ! IdentifierPart { return text() }
+thickness    = ( "thickness" / "thick" )  ! IdentifierPart { return "thickness" }
+to           = "to"                       ! IdentifierPart { return text() }
+turn         = "turn"                     ! IdentifierPart { return text() }
+width        = ( "width" / "wid" )        ! IdentifierPart { return "width" }
+with         = "with"                     ! IdentifierPart { return text() }
+x            = "x"                        ! IdentifierPart { return text() }
+y            = "y"                        ! IdentifierPart { return text() }
 
 
 
@@ -384,7 +380,7 @@ LValue
 
 
 BaseLValue
-  = "(" _ expression:Expression _ ")"  // TODO: is the expression case useful?
+  = "(" _ expression:Expression _ ")" 
     { return expression }
   / VariableValue
 

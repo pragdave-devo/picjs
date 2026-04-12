@@ -81,7 +81,7 @@ export class Geometry {
   // shape and the current direction
 
   position(shape: SBase) {
-    switch (shape.shapeName) { // TODO: at some point double dispatch from shapes
+    switch (shape.shapeName) {
       case 'SLine':
       case `SArc`:
         this.positionLine(shape)

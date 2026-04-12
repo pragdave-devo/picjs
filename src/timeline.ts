@@ -1,4 +1,3 @@
-// todo: make this switchable
 import { MinPriorityQueue, PriorityQueueItem } from "@datastructures-js/priority-queue"
 import { AnimationRunner } from "./animation_runner.js"
 import { AnimatorBase, createAttributeAnimator } from "./animators/_base.js"

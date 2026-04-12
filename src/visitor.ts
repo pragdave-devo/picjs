@@ -5,7 +5,9 @@ import { Location } from "./parser.js"
 
 export abstract class Visitor {
 
-  [ visitor: string ]:  any   // TODO: must be a better way...
+  // Index signature for dynamic visitor dispatch: this[`Visit${node.type}`]
+  // TypeScript lacks string-pattern index types, so `any` is required here
+  [visitor: string]: any
 
   // we nest interpreters when we invoke thunks, which means exceptions will
   // ripple up through the running programs stack, so we can

@@ -27,8 +27,8 @@ export class TFunction extends TBase<null> {
         return (<AST.Identifier>ast).name
 
       default:
-        console.log(`Can't run toText() on ${JSON.stringify(ast)}`)
-      return `X`
+        console.error(`Can't run toText() on ${JSON.stringify(ast)}`)
+        return `X`
     }
   }
 }

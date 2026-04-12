@@ -67,7 +67,7 @@ export class SLine extends LineLike {
   }
 
   // Return point and tangent angle at a given fraction along the line (0.0 to 1.0)
-  pointAtPercent(t: number): { x: number, y: number, tangentAngle: number, radiusAngle: number } {
+  pointAtPercent(t: number) {
     const start = this.start
     const end = this.end
 

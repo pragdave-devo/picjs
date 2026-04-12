@@ -50,11 +50,6 @@ function undefinedbinop(op: string): never   {
   throw `undefined operator ` + op
 }
 
-// TODO: very fragile, I suspect
-// function addCssPrefix(css: string, prefix: string) {
-//   return css.replace(/^\s*[a-zA-Z0-9-_.]+[ \t]*{/gm, `${prefix} $&`)
-// }
-
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -146,35 +141,6 @@ export class Interpreter extends Visitor{
 
   VisitBoolean(node: AST.Boolean) {
     return new TBool(node.value)
-  }
-
-  // TODO: move me 
-
-  callFunction(callee: TNative | TFunction, args: any[]) {
-    if (callee instanceof TFunction)  {
-      if (args.length < callee.formals.length) {
-        let msg = `function called with ${args.length} parameters, ` +
-          `but it takes ${callee.formals.length} parameter`
-        throw new RTE(msg)
-      }
-      args = args.slice(0, callee.formals.length)
-
-      const myBinding = this.binding
-      this.binding = callee.binding.push()
-      callee.formals.forEach((name, i) => {
-        this.binding.set_local_variable(name.name, args[i])
-      })
-
-      const result = this.accept(callee.body)
-      this.binding = myBinding
-      return result
-    }
-
-
-    if (callee instanceof TNative) {
-      callee.acceptableParameters(args)
-      return callee.value(this, ...args) 
-    }
   }
 
 VisitColorLiteralString(node: AST.ColorLiteralString) {
@@ -906,6 +872,32 @@ VisitColorLiteralString(node: AST.ColorLiteralString) {
     this.dispatcher.addCreateShapeToTimeline(shape)
   }
 
+
+  callFunction(callee: TNative | TFunction, args: any[]) {
+    if (callee instanceof TFunction)  {
+      if (args.length < callee.formals.length) {
+        let msg = `function called with ${args.length} parameters, ` +
+          `but it takes ${callee.formals.length} parameter`
+        throw new RTE(msg)
+      }
+      args = args.slice(0, callee.formals.length)
+
+      const myBinding = this.binding
+      this.binding = callee.binding.push()
+      callee.formals.forEach((name, i) => {
+        this.binding.set_local_variable(name.name, args[i])
+      })
+
+      const result = this.accept(callee.body)
+      this.binding = myBinding
+      return result
+    }
+
+    if (callee instanceof TNative) {
+      callee.acceptableParameters(args)
+      return callee.value(this, ...args)
+    }
+  }
 
   visit_object(obj: any) {
     const result: { [name: string]: any } = {}

@@ -150,18 +150,14 @@ export class Dispatcher {
   runTimeline(statusCallback: (...args: any[]) => void) {
     const runner = this.timeline.getRunner(statusCallback)
 
-    runner.runAll((shapes: SBase[]) => {
-      this.updateAfterTimelineStep(shapes)
-    })
+    runner.runAll()
     return runner
   }
 
   prepareTimeline(statusCallback: (...args: any[]) => void) {
     const runner = this.timeline.getRunner(statusCallback)
     runner.pause()
-    runner.runAll((shapes: SBase[]) => {
-      this.updateAfterTimelineStep(shapes)
-    })
+    runner.runAll()
     return runner
   }
 
@@ -169,7 +165,7 @@ export class Dispatcher {
   // The runner is paused (waiting for resume()) and won't re-process already-applied entries.
   runTimelineFrom(t: number, statusCallback: (...args: any[]) => void) {
     const runner = this.timeline.getRunner(statusCallback)
-    runner.startFrom(t, (shapes: SBase[]) => this.updateAfterTimelineStep(shapes))
+    runner.startFrom(t)
     return runner
   }
 

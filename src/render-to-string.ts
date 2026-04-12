@@ -4,7 +4,6 @@
  */
 
 import { parseHTML } from "linkedom"
-import { RTE } from "./runtime_error.js"
 
 export interface RenderResult {
   svg: string
@@ -106,7 +105,7 @@ export async function renderToString(source: string, options: RenderOptions = {}
     return { svg, width: bounds.width, height: bounds.height }
 
   } catch (e) {
-    const message = e instanceof RTE ? e.message : (e instanceof Error ? e.message : String(e))
+    const message = e instanceof Error ? e.message : String(e)
     return {
       svg: '',
       width: 0,

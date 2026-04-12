@@ -4,8 +4,6 @@ import { SBase } from "../shapes.js"
 import { ExportedTimelineEntry, Timeline } from "../timeline.js"
 import { TLEntry, Animation } from "./tlentries.js"
 
-type RenderCallback = (shapes: SBase[]) => void
-
 export class TimelineRunner {
     paused = false
     index = 0
@@ -13,16 +11,16 @@ export class TimelineRunner {
     private resumeWithContext!: () => void
 
   constructor(
-    private timeline: Timeline, 
-    private dispatcher: Dispatcher, 
+    private timeline: Timeline,
+    private dispatcher: Dispatcher,
     private animationRunner: AnimationRunner,
     private statusCallback: (status: string, time: number, message?: string | null) => void
   ) {
     this.entries = timeline.entries()
   }
 
-  runAll(renderer: RenderCallback) {
-    this.processUpToNextTime(renderer, 0)
+  runAll() {
+    this.processUpToNextTime(0)
   }
 
   // Called after applyTimelineUpTo(t) has already rendered a snapshot.
@@ -35,21 +33,20 @@ export class TimelineRunner {
   //   - Animation entries with end > t: KEEP — processUpToNextTime will add them to the
   //     AnimationRunner so they actually play (for start == t) or resume from the
   //     interpolated position (for mid-flight start < t < end)
-  startFrom(t: number, renderer: RenderCallback) {
+  startFrom(t: number) {
     let next = this.peek()
     while (next) {
       if (next.start > t) break                          // future entry — stop
       if (next instanceof Animation && next.end > t) break  // needs to run — stop
       next = this.peekNext()                             // skip: non-anim or elapsed anim
     }
-    this.resumeWithContext = () => this.processUpToNextTime(renderer, t)
+    this.resumeWithContext = () => this.processUpToNextTime(t)
   }
 
-  // TODO: Remove renderCallback?
-  processUpToNextTime(renderer: RenderCallback, nextTime: number) {
+  processUpToNextTime(nextTime: number) {
     if (this.paused) {
       this.resumeWithContext = () => {
-        this.processUpToNextTime(renderer, nextTime)
+        this.processUpToNextTime(nextTime)
       }
       this.statusCallback(`paused`, 0)
       return
@@ -65,7 +62,7 @@ export class TimelineRunner {
         this.timeline.pauseMessage = null
         this.paused = true
         this.resumeWithContext = () => {
-          this.processUpToNextTime(renderer, nextTime)
+          this.processUpToNextTime(nextTime)
         }
         this.dispatcher.renderUpdatedShapes()
         this.statusCallback(`paused`, 0, msg)
@@ -75,23 +72,23 @@ export class TimelineRunner {
     }
 
     this.dispatcher.renderUpdatedShapes()
-    
+
     if (next)
-      this.waitForNextEvent(next, nextTime, renderer)
-    else 
+      this.waitForNextEvent(next, nextTime)
+    else
       this.statusCallback(`done`, 0)
   }
 
-  waitForNextEvent(next: TLEntry, currentTime: number, renderer: RenderCallback) {
+  waitForNextEvent(next: TLEntry, currentTime: number) {
     // Update resumeWithContext in case we're externally paused before the timeout fires
-    this.resumeWithContext = () => this.processUpToNextTime(renderer, next.start)
+    this.resumeWithContext = () => this.processUpToNextTime(next.start)
     const interval = next.start - currentTime
     const speed = this.animationRunner.speed || 1
     setTimeout(() => {
-      this.processUpToNextTime(renderer, next.start)
+      this.processUpToNextTime(next.start)
     }, interval * 1000 / speed)
   }
-  
+
   startAnimationsNowGeometryIsSettled() {
     this.animationRunner.maybeStartRunners()
   }
@@ -100,26 +97,19 @@ export class TimelineRunner {
     this.paused = true
   }
 
-  cancel(): void {
-    this.paused = true
-  }
-
   resume() {
     this.paused = false
-    this.statusCallback(`continuing`, 0)
-    if (this.resumeWithContext) this.resumeWithContext()
-  }
-  
-  peek() {
-    if (this.index < this.entries.length)
-      return this.entries[this.index].element
-    return false
+    if (this.resumeWithContext) {
+      this.resumeWithContext()
+    }
   }
 
-  peekNext() {
+  private peek() {
+    return this.entries[this.index]
+  }
+
+  private peekNext() {
     this.index++
-    return this.peek()
+    return this.entries[this.index]
   }
 }
-
-

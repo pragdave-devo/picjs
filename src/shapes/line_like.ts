@@ -9,18 +9,18 @@ export interface PathPoint {
   radiusAngle: number  // For arcs: angle from center to point. For lines: perpendicular to tangent.
 }
 
-export class LineLike extends SBase {
+export abstract class LineLike extends SBase {
   // Set during the post-layout connector scan for connectors with no explicit endpoints.
   // Used by geometry.positionLine to avoid relying on stale lastShape state.
   predecessorShape?: SBase
   successorShape?:   SBase
   _layoutDirection?: XY
 
-  // Implemented by subclasses to enable start/end access in geometry
-  get start(): XY { throw new Error(`start not implemented`) }
-  set start(_val: XY) { throw new Error(`start not implemented`) }
-  get end(): XY { throw new Error(`end not implemented`) }
-  set end(_val: XY) { throw new Error(`end not implemented`) }
+  // Subclasses must implement start/end accessors for geometry positioning
+  abstract get start(): XY
+  abstract set start(val: XY)
+  abstract get end(): XY
+  abstract set end(val: XY)
 
   handle_attr_draw_progress() {
     return new TNumber(this.params.draw_progress ?? 1)
@@ -40,10 +40,7 @@ export class LineLike extends SBase {
   }
 
   // Return point and tangent at a given fraction along the path (0.0 to 1.0)
-  // Must be overridden by subclasses
-  pointAtPercent(_t: number): PathPoint {
-    throw new Error(`pointAtPercent not implemented for ${this.constructor.name}`)
-  }
+  abstract pointAtPercent(t: number): PathPoint
 
   // Return direction multiplier for perpendicular offset based on side
   // -1 for above/outside, +1 for below/inside, 0 for center

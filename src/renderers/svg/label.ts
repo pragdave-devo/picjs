@@ -5,8 +5,13 @@ import * as Shape from "../../shapes.js"
 
 import * as MDModule from "simple-markdown"
 
+// Type interface for simple-markdown functions we use (keeps interop cast isolated)
+interface SimpleMarkdownParser {
+  defaultInlineParse(text: string): SimpleMarkdown.SingleASTNode[]
+}
+
 // Handle CJS/ESM interop - simple-markdown exports are under .default in ESM
-const MD = (MDModule as any).default || MDModule
+const MD: SimpleMarkdownParser = (MDModule as any).default || MDModule
 import { setAttr, setChildren, svg, text } from "redom"
 import { RenderParameters } from "../../types.js"
 
