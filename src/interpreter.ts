@@ -159,9 +159,6 @@ export class Interpreter extends Visitor{
       }
       args = args.slice(0, callee.formals.length)
 
-      // console.log({arguments: node.arguments})
-      // console.log({arguments: this.accept(node.arguments[0])})
-      // console.log({ argValues })
       const myBinding = this.binding
       this.binding = callee.binding.push()
       callee.formals.forEach((name, i) => {
@@ -469,8 +466,7 @@ VisitColorLiteralString(node: AST.ColorLiteralString) {
       cardinal = this.accept(cardinalAttr.qvalue)
     }
     else {
-      console.log("what", node.what)
-      throw new RTE(`Dont know how to move this`)
+      throw new RTE(`Don't know how to move ${JSON.stringify(node.what)}`)
     }
 
     const mover = new MoveToAnimator(

@@ -122,22 +122,6 @@ export class Geometry {
   }
 
 
-  // called after an animation step to update shapes whose position is dependent of shapes 
-  // that may have moved.
-
-  //   updateDependentShapes(shapes) {
-  //     shapes.forEach(shape => {
-  //       if (shape.shapeName === `SLine`) {
-  //         console.log(`reposition`, shape)
-  //         this.positionLine(shape)
-  //       }
-  //       else if (shape.withConstraint) {
-  //         console.log(`reposition`, shape)
-  //         this.constrainedLayout(shape)
-  //       }
-  //     })
-  //   }
-
   // project a line from the center of the last line in the current direction.
   // where that intersectws the last shape is the constraint point.
   // Now set the center of the target shape to zero, and project a line back 

@@ -32,7 +32,6 @@ export function addToAttrs(host: TA) {
     `return the first item in this collection or range`,
 
     (_interpreter) => {
-      console.log(`FIRST`, host)
       return host.at(host.first_index())
     })
 

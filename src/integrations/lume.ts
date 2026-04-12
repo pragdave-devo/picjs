@@ -49,10 +49,13 @@ export default function picjsPlugin(options: PicjsOptions = {}) {
         // These would be <pre><code class="language-picjs">...</code></pre>
         const codeBlockRegex = /<pre><code class="language-picjs">([\s\S]*?)<\/code><\/pre>/g
 
-        let content = page.content
-        let match
+        // Collect all matches first to avoid regex state issues during replacement
+        const matches = [...page.content.matchAll(codeBlockRegex)]
+        if (matches.length === 0) continue
 
-        while ((match = codeBlockRegex.exec(page.content)) !== null) {
+        let content = page.content
+
+        for (const match of matches) {
           const source = decodeHtmlEntities(match[1])
 
           const result = await renderToString(source, {

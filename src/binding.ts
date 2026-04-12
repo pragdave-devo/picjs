@@ -36,7 +36,6 @@ export class Binding {
 
   set_variable(name: string, value: TA) {
     const home = this.findBindingContaining(name) || this
-    // console.log(`set`, name, `to`, value)
     this.checkIsTyped(name, value)
     home.bindings[name] = value
   }
@@ -188,17 +187,6 @@ export class Binding {
 
   dumpAsTable() {
     return { "$level$": this.level, ...this.bindings }
-  }
-
-  // render to DOT for visualization
-  to_dot() {
-    this.children.forEach(child => {
-      console.log(`${this.as_node()} -> ${child.as_node()}`)
-    })
-  }
-
-  as_node() {
-    return `${this.level} [ label = '${JSON.stringify(this.bindings)}' ]`
   }
 
 }

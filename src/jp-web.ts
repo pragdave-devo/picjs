@@ -525,7 +525,6 @@ themeBtn.addEventListener(`click`, () => {
 
 // ─── Bootstrap ─────────────────────────────────────────────────────────────
 
-console.log(`mounting`)
 mount(document.body, playpen)
 editorView.focus()
 if (savedSource) preview()

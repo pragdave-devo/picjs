@@ -33,25 +33,6 @@ export interface FailedParseResult {
 export type ParseResult = SuccessfulParseResult | FailedParseResult
 
 
-let indent = ``
-function trace(evt: any) {
-  switch (evt.type) {
-    case `rule.enter`:
-      console.log(indent, `Enter ${evt.rule}`)
-    indent += `  `
-    break
-    case `rule.fail`:
-      indent = indent.slice(2)
-    console.log(indent, `Fail ${evt.rule}`)
-    break
-    case `rule.match`:
-      indent = indent.slice(2)
-    console.log(indent, `MATCH ${evt.rule}`)
-    break
-  }
-}
-
-
 export function parseToAST(
   parser: Peggy.Parser, 
   content: string, 

@@ -28,25 +28,26 @@
 | `src/renderers/svg/label.ts:9` | `(MDModule as any).default` for CJS/ESM interop | Document the interop pattern with comment |
 | `src/visitor.ts:8` | `[visitor: string]: any` with TODO comment | Define proper visitor method signatures |
 
-### 2. Debugging Code Left In
+### 2. Debugging Code Left In (FIXED)
 
-| Location | Problem | Fix |
-|----------|---------|-----|
-| `src/interpreter.ts:472` | `console.log("what", node.what)` — active debug log | Remove |
-| `src/jp.ts:24,27,30,35` | Multiple `console.log` for program/AST output | Remove or gate behind debug flag |
-| `src/jp-web.ts:528` | `console.log("mounting")` | Remove |
-| `src/types/iterable.ts:35` | `console.log("FIRST", host)` | Remove |
-| `src/binding.ts:196` | `console.log` in what appears to be debug output | Remove or gate behind flag |
+Fixed:
+- `src/interpreter.ts` - Removed debug console.log, improved error message
+- `src/jp-web.ts` - Removed "mounting" log
+- `src/types/iterable.ts` - Removed "FIRST" log
+- `src/binding.ts` - Removed unused to_dot() method with console.log
+- `src/parser.ts` - Removed unused trace() function
 
-### 3. Commented-Out Code
+Not fixed (intentional - development CLI tool):
+- `src/jp.ts` - Console output is the purpose of this CLI tool
 
-| Location | Problem | Fix |
-|----------|---------|-----|
-| `src/interpreter.ts:162-164` | Three commented console.log lines | Remove |
-| `src/geometry.ts:131,135` | Commented repositioning debug logs | Remove |
-| `src/jp.ts:3,31-32` | Commented ToDotVisitor imports/usage | Remove if unused |
-| `src/binding.ts:39` | Commented `console.log("set"...)` | Remove |
-| `src/parser.ts:40-49` | Tracing console.logs (may be intentional for debugging flag) | Gate behind explicit debug mode |
+### 3. Commented-Out Code (FIXED)
+
+Fixed:
+- `src/interpreter.ts:162-164` - Removed commented console.logs
+- `src/geometry.ts` - Removed commented updateDependentShapes method
+- `src/binding.ts:39` - Removed commented console.log
+- `src/parser.ts` - Removed unused trace function and indent variable
+- `src/types/2` - Deleted stale backup file
 
 ### 4. Incomplete Implementations
 
@@ -56,11 +57,9 @@
 | `src/shapes/line_like.ts:20-23,45` | Getters/setters throw "not implemented" | These are abstract — consider using abstract class |
 | `src/integrations/lume.ts:13-18` | Placeholder Lume types with "in a real setup" comment | Either import real types or document duck-typing is intentional |
 
-### 5. Algorithm Bug
+### 5. Algorithm Bug (FIXED)
 
-| Location | Problem | Fix |
-|----------|---------|-----|
-| `src/integrations/lume.ts:55` | Regex iterates over `page.content` but modifies `content` variable; only first match processed | Change `codeBlockRegex.exec(page.content)` to `codeBlockRegex.exec(content)` |
+Fixed `src/integrations/lume.ts` - Changed from stateful `exec()` loop to `matchAll()` to properly handle multiple code blocks on a page.
 
 ### 6. Code Duplication
 
