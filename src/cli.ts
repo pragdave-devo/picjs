@@ -122,9 +122,7 @@ async function processMarkdown(content: string, verbose: boolean): Promise<strin
   return result
 }
 
-async function processFile(inputPath: string, options: ProcessOptions): Promise<void> {
-  const verbose = options.verbose ?? false
-
+async function processFile(inputPath: string, { verbose = false, output }: ProcessOptions): Promise<void> {
   if (!fs.existsSync(inputPath)) {
     console.error(`File not found: ${inputPath}`)
     process.exit(1)
@@ -133,7 +131,7 @@ async function processFile(inputPath: string, options: ProcessOptions): Promise<
   const content = fs.readFileSync(inputPath, 'utf-8')
   const processed = await processMarkdown(content, verbose)
 
-  const outputPath = options.output || inputPath
+  const outputPath = output || inputPath
 
   if (processed !== content) {
     fs.writeFileSync(outputPath, processed)
@@ -144,7 +142,7 @@ async function processFile(inputPath: string, options: ProcessOptions): Promise<
 }
 
 async function watchFile(inputPath: string, options: ProcessOptions): Promise<void> {
-  const verbose = options.verbose ?? false
+  const { verbose = false } = options
 
   console.log(`Watching ${inputPath}...`)
   await processFile(inputPath, options)

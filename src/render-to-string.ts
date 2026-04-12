@@ -48,10 +48,16 @@ export async function renderToString(source: string, options: RenderOptions = {}
   setupLinkedomGlobals()
 
   // Dynamic imports to ensure globals are set first
-  const [{ parseToAST, ParseStatus }, { Dispatcher }, { parse: pegParse }] = await Promise.all([
+  const [
+    { parseToAST, ParseStatus },
+    { Dispatcher },
+    { parse: pegParse },
+    { nullLogger, calculateBoundingBox, viewBoxFromBounds }
+  ] = await Promise.all([
     import("./parser.js"),
     import("./dispatcher.js"),
-    import("./peg_parser/jp.js")
+    import("./peg_parser/jp.js"),
+    import("./render-utils.js")
   ])
 
   // Parse the source
@@ -75,57 +81,17 @@ export async function renderToString(source: string, options: RenderOptions = {}
   svgElement.setAttribute("xmlns", svgNS)
   document.body.appendChild(svgElement)
 
-  // Create a simple logger that does nothing
-  const logger = () => {}
-
   try {
     // Create dispatcher with the virtual SVG element
-    const dispatcher = new Dispatcher(logger, svgElement as unknown as SVGElement, 1)
+    const dispatcher = new Dispatcher(nullLogger, svgElement as unknown as SVGElement, 1)
 
     // Run the interpreter
     dispatcher.start(parsed.ast)
-
-    // Apply timeline at t=0 to render initial state
     dispatcher.applyTimelineUpTo(0)
 
-    // Get rendered shapes for bounding box calculation
-    const shapes = dispatcher.shapes()
-
-    // Calculate bounding box from shapes
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-
-    for (const shape of shapes) {
-      if (!shape.visible) continue
-      if (shape.anchorX === null || shape.anchorY === null) continue
-
-      const nw = shape.nw
-      const se = shape.se
-
-      if (!isNaN(nw.x) && !isNaN(se.x)) {
-        minX = Math.min(minX, nw.x)
-        minY = Math.min(minY, nw.y)
-        maxX = Math.max(maxX, se.x)
-        maxY = Math.max(maxY, se.y)
-      } else {
-        // Dimensionless shapes - use anchor
-        minX = Math.min(minX, shape.anchorX)
-        minY = Math.min(minY, shape.anchorY)
-        maxX = Math.max(maxX, shape.anchorX)
-        maxY = Math.max(maxY, shape.anchorY)
-      }
-    }
-
-    // Handle empty or invalid bounds
-    if (!isFinite(minX)) {
-      minX = 0; minY = 0; maxX = 10; maxY = 7
-    }
-
-    const width = maxX - minX + padding * 2
-    const height = maxY - minY + padding * 2
-
-    // Set viewBox
-    svgElement.setAttribute("viewBox",
-      `${minX - padding} ${minY - padding} ${width} ${height}`)
+    // Calculate bounding box and set viewBox
+    const bounds = calculateBoundingBox(dispatcher.shapes(), padding)
+    svgElement.setAttribute("viewBox", viewBoxFromBounds(bounds, padding))
 
     // Add source as comment if requested
     if (includeSource) {
@@ -136,7 +102,7 @@ export async function renderToString(source: string, options: RenderOptions = {}
     // Serialize to string
     const svg = svgElement.outerHTML
 
-    return { svg, width, height }
+    return { svg, width: bounds.width, height: bounds.height }
 
   } catch (e) {
     const message = e instanceof RTE ? e.message : (e instanceof Error ? e.message : String(e))

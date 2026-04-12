@@ -6,6 +6,7 @@
 import { parseToAST, ParseStatus } from "./parser.js"
 import { Dispatcher } from "./dispatcher.js"
 import { parse as pegParse } from "./peg_parser/jp.js"
+import { nullLogger, calculateBoundingBox, viewBoxFromBounds } from "./render-utils.js"
 
 export interface RenderOptions {
   /** Padding around the content (default: 0.2) */
@@ -45,52 +46,15 @@ export function render(element: Element, options: RenderOptions = {}): SVGElemen
     return null
   }
 
-  // Create a simple logger
-  const logger = () => {}
-
   try {
     // Create dispatcher and render
-    const dispatcher = new Dispatcher(logger, svgElement, 1)
+    const dispatcher = new Dispatcher(nullLogger, svgElement, 1)
     dispatcher.start(parsed.ast)
     dispatcher.applyTimelineUpTo(0)
 
-    // Get rendered shapes for bounding box calculation
-    const shapes = dispatcher.shapes()
-
-    // Calculate bounding box
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-
-    for (const shape of shapes) {
-      if (!shape.visible) continue
-      if (shape.anchorX === null || shape.anchorY === null) continue
-
-      const nw = shape.nw
-      const se = shape.se
-
-      if (!isNaN(nw.x) && !isNaN(se.x)) {
-        minX = Math.min(minX, nw.x)
-        minY = Math.min(minY, nw.y)
-        maxX = Math.max(maxX, se.x)
-        maxY = Math.max(maxY, se.y)
-      } else {
-        minX = Math.min(minX, shape.anchorX)
-        minY = Math.min(minY, shape.anchorY)
-        maxX = Math.max(maxX, shape.anchorX)
-        maxY = Math.max(maxY, shape.anchorY)
-      }
-    }
-
-    // Handle empty bounds
-    if (!isFinite(minX)) {
-      minX = 0; minY = 0; maxX = 10; maxY = 7
-    }
-
-    const width = maxX - minX + padding * 2
-    const height = maxY - minY + padding * 2
-
-    // Set viewBox
-    svgElement.setAttribute("viewBox",
-      `${minX - padding} ${minY - padding} ${width} ${height}`)
+    // Calculate bounding box and set viewBox
+    const bounds = calculateBoundingBox(dispatcher.shapes(), padding)
+    svgElement.setAttribute("viewBox", viewBoxFromBounds(bounds, padding))
 
     // Preserve source as comment
     if (preserveSource) {

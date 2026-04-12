@@ -20,13 +20,15 @@
 | `src/shapes/line_like.ts:20-23,45` | Getters/setters throw "not implemented" | These are abstract — consider using abstract class |
 | `src/integrations/lume.ts:13-18` | Placeholder Lume types with "in a real setup" comment | Either import real types or document duck-typing is intentional |
 
-### Code Duplication
+### Code Duplication (FIXED)
 
-| Location | Problem | Fix |
-|----------|---------|-----|
-| `src/browser.ts:50`, `src/render-to-string.ts:78` | Identical no-op logger pattern `const logger = () => {}` | Extract to shared utility |
-| `src/cli.ts:126,147` | Repeated `options.verbose ?? false` | Use destructuring default |
-| `src/browser.ts:56-84`, `src/render-to-string.ts:90-118` | Near-identical bounding box calculation | Extract to shared function |
+Created `src/render-utils.ts` with shared utilities:
+- `nullLogger` - no-op logger function
+- `calculateBoundingBox()` - compute bounds from shapes
+- `viewBoxFromBounds()` - generate viewBox attribute
+
+Updated `browser.ts` and `render-to-string.ts` to use shared utilities.
+Fixed `cli.ts` to use destructuring with defaults.
 
 ### TODOs Still in Code
 
