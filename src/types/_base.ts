@@ -75,18 +75,14 @@ export class TBase<ValueType, > {
     return this
   }
 
-  // We get into dependency issues here: this is the base class, but we need to 
-  // know it we're being passed an instance of TString (a child of ours).
-  // TODO: change to mixin
-  
   getAtIndex(index: any) {
-    if (index?.constructor?.name === `TString`) 
+    if (typeof index?.value === `string`)
       return this.getAtAttr(index.value)
     this.operatorNotSupported(`[${index}]`)
   }
 
   setAtIndex(index: any, value: any) {
-    if (index?.constructor?.name === `TString`) 
+    if (typeof index?.value === `string`)
       this.setAtAttr(index.value, value)
     this.operatorNotSupported(`[${index}] = ${value.toNative()}`)
   }
