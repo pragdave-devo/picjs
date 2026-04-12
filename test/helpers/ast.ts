@@ -1,5 +1,4 @@
-import * as parser from "../../src/peg_parser/jp-test.js"
-import type * as Peggy from "peggy"
+import { parse as pegParse } from "../../src/peg_parser/jp-test.js"
 import * as AST from "../../src/ast.js"
 import { parseToAST, ParseStatus, SyntaxError } from "../../src/parser.js"
 
@@ -26,7 +25,7 @@ import { parseToAST, ParseStatus, SyntaxError } from "../../src/parser.js"
 // }
 
 export function parseToMockAST(startRule: string, content: string) {
-  return parseToAST(parser as unknown as Peggy.Parser, content, startRule, /* testing = */true)
+  return parseToAST(pegParse, content, startRule, /* testing = */true)
 }
 
 export function parse(startRule: string, content: string, tests: ( result: AST.Base | SyntaxError) => void) {

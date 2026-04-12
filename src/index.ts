@@ -3,8 +3,7 @@ import { Dispatcher } from "./dispatcher.js"
 export { RTE } from "./runtime_error.js"
 import { LoggerInterface } from "./types.js"
 
-import * as PEG from "./peg_parser/jp.js"
-import type * as Peggy from "peggy"
+import { parse as pegParse } from "./peg_parser/jp.js"
 
 // Re-export browser integration
 export { render, renderAll, autoInit } from "./browser.js"
@@ -15,7 +14,7 @@ export { renderToString, render as renderAsync } from "./render-to-string.js"
 export type { RenderResult, RenderOptions as ServerRenderOptions } from "./render-to-string.js"
 
 export function parse(content: string) {
-  return parseToAST(PEG as unknown as Peggy.Parser, content, `Start`, /* testing=*/ false)
+  return parseToAST(pegParse, content, `Start`, false)
 }
 
 export function createRunner(

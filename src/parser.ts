@@ -1,7 +1,5 @@
-//import fs from "fs"
-// import Util from "pegjs-util"
 import * as AST from "./ast.js"
-import * as Peggy from "peggy"
+import type { SyntaxError as PEGSyntaxError } from "./peg_parser/jp.js"
 
 export interface LocationPoint {
   line: number
@@ -15,7 +13,7 @@ export interface Location {
   content?: string  // optional, can be added for error display
 }
 
-export type SyntaxError = Peggy.parser.SyntaxError
+export type SyntaxError = PEGSyntaxError
 
 export enum ParseStatus { Ok="ok", SyntaxError="error" }
 
@@ -32,18 +30,19 @@ export interface FailedParseResult {
 
 export type ParseResult = SuccessfulParseResult | FailedParseResult
 
+type ParseFunction = (input: string, options?: Record<string, unknown>) => unknown
 
 export function parseToAST(
-  parser: Peggy.Parser, 
-  content: string, 
+  parse: ParseFunction,
+  content: string,
   start: string,
-    testing = false
-) : ParseResult {
+  testing = false
+): ParseResult {
 
   let result
 
   try {
-    result = parser.parse(
+    result = parse(
       content,
       {
         startRule: start,
@@ -63,5 +62,5 @@ export function parseToAST(
     }
   }
 
-  return { status: ParseStatus.Ok, ast: result }
+  return { status: ParseStatus.Ok, ast: result as AST.Node }
 }

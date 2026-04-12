@@ -2,27 +2,31 @@
 
 ## Summary
 
-| Category | Count | Severity |
-|----------|-------|----------|
-| Type workarounds (`as any`) | 8 | Medium |
-| Debugging code left in | 6 | High |
-| Commented-out code | 10+ blocks | Medium |
-| Incomplete implementations | 4 | Medium |
-| Test quality issues | 15+ | Medium |
-| Style inconsistencies | 5 | Low |
+| Category | Status |
+|----------|--------|
+| Type workarounds (`as any`) | 5 remaining (3 fixed) |
+| Debugging code left in | FIXED |
+| Commented-out code | FIXED |
+| Incomplete implementations | 3 remaining |
+| Test quality issues | FIXED |
+| Algorithm bug (lume.ts) | FIXED |
+| Style inconsistencies | 3 remaining |
 
 ---
 
 ## Source Code Issues
 
-### 1. Type Workarounds
+### 1. Type Workarounds (PARTIALLY FIXED)
 
+**Fixed - PEG Parser casts:**
+- Added `--dts` flag to Makefile to generate type declarations for Peggy parsers
+- Refactored `parseToAST()` to accept parse function directly instead of Parser object
+- Removed all `as unknown as Peggy.Parser` casts from index.ts, browser.ts, render-to-string.ts, and test helpers
+
+**Remaining:**
 | Location | Problem | Fix |
 |----------|---------|-----|
-| `src/render-to-string.ts:58` | Uses `as any` inconsistent with other files using `as unknown as` | Change to `PEG as unknown as Peggy.Parser` |
 | `src/render-to-string.ts:83` | Cast `svgElement as unknown as SVGElement` for linkedom compatibility | Add comment explaining why cast is needed |
-| `src/browser.ts:39` | Same PEG parser cast pattern | Consider a typed factory function |
-| `src/index.ts:18` | Same PEG parser cast | Same — all three files repeat this pattern |
 | `src/shapes/_base.ts:101` | `parentGroup?: any` with comment "to avoid circular import" | Use proper forward reference or restructure imports |
 | `src/jp-web.ts:445` | `(parsed.error as any).location` | Define proper error type with location property |
 | `src/renderers/svg/label.ts:9` | `(MDModule as any).default` for CJS/ESM interop | Document the interop pattern with comment |
@@ -112,7 +116,7 @@ The following test issues have been fixed:
 
 ## Potential Design Issues (indicated by special-case code)
 
-1. **PEG Parser Type**: The repeated `as unknown as Peggy.Parser` cast in three files suggests the PEG module's types don't match expectations. Consider creating a properly typed wrapper.
+1. ~~**PEG Parser Type**: The repeated `as unknown as Peggy.Parser` cast in three files suggests the PEG module's types don't match expectations.~~ **FIXED** - Now using `--dts` flag to generate type declarations.
 
 2. **Circular Import Avoidance**: `src/shapes/_base.ts:101` uses `any` to avoid circular imports. This suggests the module structure could be reorganized.
 

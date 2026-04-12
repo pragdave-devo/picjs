@@ -26,9 +26,9 @@ $(TARGET): $(PARSER).js
 	npx vite build
 
 $(PARSER).js: $(PARSER).pegjs Makefile
-	node $(PEGJS) $(TRACE) --format es -o $(PARSER).js $(PARSER).pegjs
+	node $(PEGJS) $(TRACE) --format es --dts -o $(PARSER).js $(PARSER).pegjs
 
 $(PARSER)-test.js: $(PARSER).pegjs Makefile
-	node $(PEGJS) $(TRACE) --format es --allowed-start-rules $(STARTS) -o $(PARSER)-test.js $(PARSER).pegjs
+	node $(PEGJS) $(TRACE) --format es --dts --allowed-start-rules $(STARTS) -o $(PARSER)-test.js $(PARSER).pegjs
 
 

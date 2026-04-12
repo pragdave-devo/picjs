@@ -48,14 +48,14 @@ export async function renderToString(source: string, options: RenderOptions = {}
   setupLinkedomGlobals()
 
   // Dynamic imports to ensure globals are set first
-  const [{ parseToAST, ParseStatus }, { Dispatcher }, PEG] = await Promise.all([
+  const [{ parseToAST, ParseStatus }, { Dispatcher }, { parse: pegParse }] = await Promise.all([
     import("./parser.js"),
     import("./dispatcher.js"),
     import("./peg_parser/jp.js")
   ])
 
   // Parse the source
-  const parsed = parseToAST(PEG as any, source, `Start`, false)
+  const parsed = parseToAST(pegParse, source, `Start`, false)
 
   if (parsed.status !== ParseStatus.Ok) {
     return {

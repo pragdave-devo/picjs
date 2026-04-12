@@ -3,11 +3,9 @@
  * Provides functions to render picjs diagrams from HTML elements.
  */
 
-import { parseToAST as parse } from "./parser.js"
+import { parseToAST, ParseStatus } from "./parser.js"
 import { Dispatcher } from "./dispatcher.js"
-import * as PEG from "./peg_parser/jp.js"
-import type * as Peggy from "peggy"
-import { ParseStatus } from "./parser.js"
+import { parse as pegParse } from "./peg_parser/jp.js"
 
 export interface RenderOptions {
   /** Padding around the content (default: 0.2) */
@@ -36,7 +34,7 @@ export function render(element: Element, options: RenderOptions = {}): SVGElemen
   svgElement.setAttribute("xmlns", svgNS)
 
   // Parse the source
-  const parsed = parse(PEG as unknown as Peggy.Parser, source, `Start`, false)
+  const parsed = parseToAST(pegParse, source, `Start`, false)
 
   if (parsed.status !== ParseStatus.Ok) {
     console.error('picjs parse error:', parsed.error?.message)
