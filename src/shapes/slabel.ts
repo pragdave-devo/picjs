@@ -87,19 +87,6 @@ export class SLabel extends SBase {
       return super.setAtAttr(name, value)
     }
   }
-
-  prepareForCrossfade(targetValue: number) {
-    console.error("not implemented")
-  }
-
-  updateCrossFade(ratio: number) {
-    console.error("not implemented")
-  }
-
-  finalizeCrossFade() {
-    console.error("not implemented")
-  }
-
 }
 
 

@@ -407,6 +407,11 @@ export class SBase extends TBase<null> {
     }
   }
 
+  // Crossfade animation support (for non-interpolatable attributes)
+  // Subclasses can override to implement visual crossfade effects
+  prepareForCrossfade(_targetValue: unknown) {}
+  updateCrossFade(_ratio: number) {}
+  finalizeCrossFade() {}
 
   [attr_name: string]: any  // TODO: find better way
 

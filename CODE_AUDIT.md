@@ -16,9 +16,10 @@
 
 | Location | Problem | Fix |
 |----------|---------|-----|
-| `src/shapes/slabel.ts:92-100` | Three methods just log "not implemented" | Implement or throw proper NotImplementedError |
 | `src/shapes/line_like.ts:20-23,45` | Getters/setters throw "not implemented" | These are abstract — consider using abstract class |
 | `src/integrations/lume.ts:13-18` | Placeholder Lume types with "in a real setup" comment | Either import real types or document duck-typing is intentional |
+
+*Fixed:* `src/shapes/slabel.ts` crossfade stubs - moved default no-op implementations to `SBase`.
 
 ### Code Duplication (FIXED)
 
