@@ -1,4 +1,4 @@
-import { TList, TNumber, TString, TA } from "../../src/types.js"
+import { TA } from "../../src/types.js"
 
 import { valueOf } from "../helpers/eval.js"
 
@@ -11,18 +11,6 @@ function t(ip: string, expected: any) {
       expect(result.value).toBe(expected)
   })
 }
-
-// function l(val: TNumber[]) {
-//   return new TList(val)
-// }
-
-// function n(val: number) {
-//   return new TNumber(val)
-// }
-
-// function s(val: string) {
-//   return new TString(val)
-// }
 
 
 describe(`assignment`, () => {

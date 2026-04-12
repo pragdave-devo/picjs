@@ -368,9 +368,6 @@ describe(`Goto`, () => {
     const d = runProgram(`a = Box\nFace west\n-> Box\nFace east\nGoto a\nb = Box`)
     const boxes = d.shapes().filter(s => s.shapeName === `SBox`)
     const [a, c, b] = boxes
-    console.log(`a=${a.anchorX}, c=${c.anchorX}, b=${b.anchorX}`)
-    console.log(`all shapes:`, d.shapes().map((s: any) => `${s.shapeName}(${s.anchorX})`))
-    console.log(`direction:`, d.getDirection())
     // B should be east of A, not overlapping it
     expect(b.anchorX!).toBeGreaterThan(a.anchorX!)
     // C should be west of A

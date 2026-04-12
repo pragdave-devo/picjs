@@ -36,9 +36,6 @@ const tests: [ string, any ][] = [
   [ `(100, 200)`, position(number(100), number(200)) ],
   [ `(a, b)`, position(A, B) ],
 
-// function definition
-
-
 // basic binops
 
   [ `a+b`, binop(`+`, A, B) ],
@@ -66,22 +63,3 @@ const tests: [ string, any ][] = [
 tests.forEach(([given, expected]) =>
   testParse(given, expected)
 )
-
-// built in
-
-// test(ast, expr, `rand()`,  builtin(`rand`, []))
-// test(ast, expr, `sin(a)`,  builtin(`sin`, [ A ]))
-// test(ast, expr, `cos(a)`,  builtin(`cos`, [ A ]))
-// test(ast, expr, `log(a)`,  builtin(`log`, [ A ]))
-// test(ast, expr, `exp(a)`,  builtin(`exp`, [ A ]))
-// test(ast, expr, `sqrt(a)`, builtin(`sqrt`, [ A ]))
-
-// test(ast, expr, `atan2(a, b)`, builtin(`atan2`, [ A, B ]))
-
-// test(ast, expr, `max(a)`,       builtin(`max`, [ A ]))
-// test(ast, expr, `max(a, b)`,    builtin(`max`, [ A, B ]))
-// test(ast, expr, `max(a, b, c)`, builtin(`max`, [ A, B, C ]))
-// test(ast, expr, `min(a, b, c)`, builtin(`min`, [ A, B, C ]))
-
-// scalar attribute of an object
-
