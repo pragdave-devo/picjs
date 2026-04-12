@@ -1,7 +1,6 @@
 import { parseToAST, ParseResult, ParseStatus  } from "./parser.js"
 import { RTE } from "./runtime_error.js"
-import * as PEG from "./peg_parser/jp.js"
-import * as Peggy from "peggy"
+import { parse as pegParse } from "./peg_parser/jp.js"
 import { Dispatcher } from "./dispatcher.js"
 import { Location } from "./parser.js"
 import { Binding } from "./binding.js"
@@ -338,7 +337,7 @@ function getEventTimes(dispatcher: Dispatcher): number[] {
 function onSeek(t: number): void {
   controller.cancel()  // re-entrant seek protection: cancel any in-flight runners first
   const src = editorView.state.doc.toString()
-  const parsed: ParseResult = parseToAST((<unknown>PEG) as Peggy.Parser, src, `Start`)
+  const parsed: ParseResult = parseToAST(pegParse, src, `Start`)
   if (parsed.status !== ParseStatus.Ok) return
 
   const seekDispatcher = new Dispatcher(logger, svgHolder, runNumber)
@@ -379,7 +378,7 @@ function preview() {
   resetTheme()  // Reset any palette/theme modifications from previous run
 
   const src = editorView.state.doc.toString()
-  const parsed: ParseResult = parseToAST((<unknown>PEG) as Peggy.Parser, src, `Start`)
+  const parsed: ParseResult = parseToAST(pegParse, src, `Start`)
 
   if (parsed.status === ParseStatus.Ok) {
     errorArea.textContent = ``
@@ -442,7 +441,7 @@ function preview() {
       controlsBar.style.display = `none`
     }
   } else {
-    const loc = (parsed.error as any).location
+    const loc = parsed.error.location
     const errorLine = loc?.start?.line ?? null
     const errorCol  = loc?.start?.column ?? null
 
