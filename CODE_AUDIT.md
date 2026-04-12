@@ -1,29 +1,9 @@
 # Code Audit Report
 
-## Summary
+## Remaining Issues
 
-| Category | Status |
-|----------|--------|
-| Type workarounds (`as any`) | 5 remaining (3 fixed) |
-| Debugging code left in | FIXED |
-| Commented-out code | FIXED |
-| Incomplete implementations | 3 remaining |
-| Test quality issues | FIXED |
-| Algorithm bug (lume.ts) | FIXED |
-| Style inconsistencies | 3 remaining |
+### Type Workarounds
 
----
-
-## Source Code Issues
-
-### 1. Type Workarounds (PARTIALLY FIXED)
-
-**Fixed - PEG Parser casts:**
-- Added `--dts` flag to Makefile to generate type declarations for Peggy parsers
-- Refactored `parseToAST()` to accept parse function directly instead of Parser object
-- Removed all `as unknown as Peggy.Parser` casts from index.ts, browser.ts, render-to-string.ts, and test helpers
-
-**Remaining:**
 | Location | Problem | Fix |
 |----------|---------|-----|
 | `src/render-to-string.ts:83` | Cast `svgElement as unknown as SVGElement` for linkedom compatibility | Add comment explaining why cast is needed |
@@ -32,28 +12,7 @@
 | `src/renderers/svg/label.ts:9` | `(MDModule as any).default` for CJS/ESM interop | Document the interop pattern with comment |
 | `src/visitor.ts:8` | `[visitor: string]: any` with TODO comment | Define proper visitor method signatures |
 
-### 2. Debugging Code Left In (FIXED)
-
-Fixed:
-- `src/interpreter.ts` - Removed debug console.log, improved error message
-- `src/jp-web.ts` - Removed "mounting" log
-- `src/types/iterable.ts` - Removed "FIRST" log
-- `src/binding.ts` - Removed unused to_dot() method with console.log
-- `src/parser.ts` - Removed unused trace() function
-
-Not fixed (intentional - development CLI tool):
-- `src/jp.ts` - Console output is the purpose of this CLI tool
-
-### 3. Commented-Out Code (FIXED)
-
-Fixed:
-- `src/interpreter.ts:162-164` - Removed commented console.logs
-- `src/geometry.ts` - Removed commented updateDependentShapes method
-- `src/binding.ts:39` - Removed commented console.log
-- `src/parser.ts` - Removed unused trace function and indent variable
-- `src/types/2` - Deleted stale backup file
-
-### 4. Incomplete Implementations
+### Incomplete Implementations
 
 | Location | Problem | Fix |
 |----------|---------|-----|
@@ -61,11 +20,7 @@ Fixed:
 | `src/shapes/line_like.ts:20-23,45` | Getters/setters throw "not implemented" | These are abstract — consider using abstract class |
 | `src/integrations/lume.ts:13-18` | Placeholder Lume types with "in a real setup" comment | Either import real types or document duck-typing is intentional |
 
-### 5. Algorithm Bug (FIXED)
-
-Fixed `src/integrations/lume.ts` - Changed from stateful `exec()` loop to `matchAll()` to properly handle multiple code blocks on a page.
-
-### 6. Code Duplication
+### Code Duplication
 
 | Location | Problem | Fix |
 |----------|---------|-----|
@@ -73,7 +28,7 @@ Fixed `src/integrations/lume.ts` - Changed from stateful `exec()` loop to `match
 | `src/cli.ts:126,147` | Repeated `options.verbose ?? false` | Use destructuring default |
 | `src/browser.ts:56-84`, `src/render-to-string.ts:90-118` | Near-identical bounding box calculation | Extract to shared function |
 
-### 7. TODOs Still in Code
+### TODOs Still in Code
 
 | Location | Problem |
 |----------|---------|
@@ -87,39 +42,17 @@ Fixed `src/integrations/lume.ts` - Changed from stateful `exec()` loop to `match
 | `src/geometry.ts:84` | `// TODO: at some point double dispatch from shapes` |
 | `src/types/_base.ts:80,100` | Two TODO comments about type improvements |
 
----
-
-## Test Issues (FIXED)
-
-The following test issues have been fixed:
-
-- **Debugging code removed** from `test/eval/shapes.spec.ts` (3 console.log statements)
-- **Test descriptions fixed** in `test/geometry/basic_positions.spec.ts` (X/Y mismatches corrected)
-- **Vague descriptions replaced** in `test/geometry/line_constraints.spec.ts` ("has default" → specific descriptions)
-- **Commented-out tests removed** from:
-  - `test/geometry/basic_positions.spec.ts`
-  - `test/parse/arithmetic_expressions.spec.ts`
-  - `test/geometry/line_constraints.spec.ts`
-  - `test/eval/assignment.spec.ts` (unused helper functions)
-
----
-
-## Style Inconsistencies
+### Style Inconsistencies
 
 | Location | Problem | Fix |
 |----------|---------|-----|
-| `src/render-to-string.ts` | Uses `as any` while other files use `as unknown as X` | Standardize on `as unknown as X` |
 | `src/browser.ts:108` vs `src/render-to-string.ts:142` | Different error handling patterns (one checks RTE, one doesn't) | Standardize error handling |
 | Various | Mix of `console.error` for real errors vs `console.log` for debug | Use logger abstraction |
 
----
+### Design Issues
 
-## Potential Design Issues (indicated by special-case code)
-
-1. ~~**PEG Parser Type**: The repeated `as unknown as Peggy.Parser` cast in three files suggests the PEG module's types don't match expectations.~~ **FIXED** - Now using `--dts` flag to generate type declarations.
-
-2. **Circular Import Avoidance**: `src/shapes/_base.ts:101` uses `any` to avoid circular imports. This suggests the module structure could be reorganized.
-
-3. **Abstract Methods via Throws**: `src/shapes/line_like.ts` uses runtime errors for "abstract" methods. TypeScript abstract classes would be cleaner.
-
-4. **CJS/ESM Interop**: The `simple-markdown` interop hack in label.ts suggests dependency issues. Consider finding an ESM-native alternative or documenting the workaround properly.
+| Location | Problem | Fix |
+|----------|---------|-----|
+| `src/shapes/_base.ts:101` | Uses `any` to avoid circular imports | Reorganize module structure |
+| `src/shapes/line_like.ts` | Runtime errors for "abstract" methods | Use TypeScript abstract classes |
+| `src/renderers/svg/label.ts` | CJS/ESM interop hack for simple-markdown | Find ESM-native alternative or document workaround |
