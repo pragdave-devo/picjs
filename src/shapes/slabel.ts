@@ -53,6 +53,15 @@ export class SLabel extends SBase {
     const text = label.el
 
     if (text) {
+      // Check if getBBox is available (not in linkedom or other minimal DOMs)
+      if (typeof (text as SVGGraphicsElement).getBBox !== 'function') {
+        // Fallback: estimate dimensions based on text content
+        const str = this.params.text || ''
+        const fontSize = this.params.font?.size || 0.2
+        this.params.width  ??= str.length * fontSize * 0.6  // rough estimate
+        this.params.height ??= fontSize * 1.2
+        return
+      }
       this.dispatcher.temporarilyAddSVGElement(text, () => {
         const bb = (text as SVGGraphicsElement).getBBox()
         this.params.width = bb.width

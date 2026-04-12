@@ -3,7 +3,10 @@ import { RTE } from "../../runtime_error.js"
 import * as Convert from "./attribute_converters.js"
 import * as Shape from "../../shapes.js"
 
-import * as MD from "simple-markdown"
+import * as MDModule from "simple-markdown"
+
+// Handle CJS/ESM interop - simple-markdown exports are under .default in ESM
+const MD = (MDModule as any).default || MDModule
 import { setAttr, setChildren, svg, text } from "redom"
 import { RenderParameters } from "../../types.js"
 

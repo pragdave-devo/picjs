@@ -119,6 +119,32 @@ hanoi(NumDisks, poles[0], poles[2], poles[1])
 ~~~
 
 There's a lot going on here; so I wrote a [separate breakdown](docs/hanoi-breakdown.md).
+
+## Integration
+
+**Browser:**
+```html
+<script type="module">
+  import { renderAll } from 'picjs'
+  renderAll('.picjs')  // renders all elements with class "picjs"
+</script>
+<div class="picjs">box "Hello"</div>
+```
+
+**Server-side (Node.js):**
+```typescript
+import { renderToString } from 'picjs/server'
+const { svg, width, height } = await renderToString('box "Hello"')
+```
+
+**CLI (for markdown files):**
+```bash
+npx picjs process README.md   # renders ```picjs blocks to SVG
+npx picjs watch README.md     # watch mode
+```
+
+The CLI preserves code blocks and caches rendered SVGs—unchanged blocks are skipped on reprocessing.
+
 ## Features
 
 * Integrates a JavaScript-like language with the drawing and animation DSL
