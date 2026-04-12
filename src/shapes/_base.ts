@@ -5,6 +5,7 @@ import { CardinalFactorsFromCenter, Cardinals, XY } from "../position.js"
 import { Dispatcher } from "../dispatcher.js"
 import * as AST from "../ast.js"
 import { Binding } from "../binding.js"
+import type { SGroup } from "./sgroup.js"  // type-only import avoids circular dependency
 
 export type ShapeArgs = Record<string, any>
 export type ProcessedWithConstraint =  {
@@ -98,7 +99,7 @@ export class SBase extends TBase<null> {
   behind?: SBase
 
   // Relative positioning within a parent group (see sgroup.ts)
-  parentGroup?: any       // SGroup — typed as any to avoid circular import
+  parentGroup?: SGroup
   relativeX?: number      // X offset from parent group anchor
   relativeY?: number      // Y offset from parent group anchor
 
