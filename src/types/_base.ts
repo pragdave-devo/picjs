@@ -97,7 +97,9 @@ export class TBase<ValueType, > {
     return {}
   }
 
-  [ name: string]: any  // TODO: anything but this...
+  // Index signature for dynamic attribute dispatch: this[`handle_attr_${name}`]
+  // TypeScript lacks string-pattern index types, so `any` is required here
+  [name: string]: any
 
   handleBuiltInAttribute(name: string) {
     const handlerName = `handle_attr_` + name
