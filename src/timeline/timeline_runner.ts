@@ -97,6 +97,10 @@ export class TimelineRunner {
     this.paused = true
   }
 
+  cancel() {
+    this.paused = true
+  }
+
   resume() {
     this.paused = false
     if (this.resumeWithContext) {
