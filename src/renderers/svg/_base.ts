@@ -45,8 +45,14 @@ export class SvgBase implements RedomComponent {
 
     if (drawProgress !== undefined && drawProgress < 1) {
       attrs.pathLength = 1
-      attrs[`stroke_dasharray`] = 1
-      attrs[`stroke_dashoffset`] = 1 - drawProgress
+      if (drawProgress <= 0) {
+        // Zero-length dash + full gap: nothing visible, no browser rounding artifacts
+        attrs[`stroke_dasharray`] = `0 1`
+        attrs[`stroke_dashoffset`] = 0
+      } else {
+        attrs[`stroke_dasharray`] = 1
+        attrs[`stroke_dashoffset`] = 1 - drawProgress
+      }
     }
   }
 }

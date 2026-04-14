@@ -109,11 +109,11 @@ export class TimelineRunner {
   }
 
   private peek() {
-    return this.entries[this.index]
+    return this.entries[this.index]?.element
   }
 
   private peekNext() {
     this.index++
-    return this.entries[this.index]
+    return this.entries[this.index]?.element
   }
 }
