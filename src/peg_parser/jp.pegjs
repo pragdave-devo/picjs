@@ -293,7 +293,6 @@ Expression
   / ShapeDefaultSetter
   / GroupExpression
   / Shape
-  / SetTime
   / AnimationSequence
   / Assignment
   / IfExpression
@@ -591,6 +590,7 @@ Primary
   / Color
   / Position
   / String
+  / SetTime
   / TimelineValue
   / ShapeDefaultGetter
   / VariableValue
