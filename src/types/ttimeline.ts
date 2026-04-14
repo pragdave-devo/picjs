@@ -59,6 +59,21 @@ export class TTimeline extends TBase<Timeline> {
   // }
 
 
+  // Coerce to current recording time for arithmetic
+  private asNumber() { return new TNumber(this.value.now()) }
+
+  opPlus(other: TA)    { return this.asNumber().opPlus(other) }
+  opMinus(other: TA)   { return this.asNumber().opMinus(other) }
+  opTimes(other: TA)   { return this.asNumber().opTimes(other) }
+  opDivide(other: TA)  { return this.asNumber().opDivide(other) }
+
+  opEqual_to(other: TA)                      { return this.asNumber().opEqual_to(other) }
+  opNot_equal_to(other: TA)                  { return this.asNumber().opNot_equal_to(other) }
+  opLess_than(other: TA)                     { return this.asNumber().opLess_than(other) }
+  opLess_than_or_equal_to(other: TA)         { return this.asNumber().opLess_than_or_equal_to(other) }
+  opGreater_than_than(other: TA)             { return this.asNumber().opGreater_than_than(other) }
+  opGreater_than_than_or_equal_to(other: TA) { return this.asNumber().opGreater_than_than_or_equal_to(other) }
+
   handle_attr_now() {
     return new TNumber(this.value.now())
   }
