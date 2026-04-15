@@ -414,7 +414,9 @@ export class SBase extends TBase<null> {
   updateCrossFade(_ratio: number) {}
   finalizeCrossFade() {}
 
-  [attr_name: string]: any  // TODO: find better way
+  // Index signature for dynamic attribute dispatch: this[`handle_attr_${attr}`]
+  // TypeScript lacks string-pattern index types, so `any` is required here
+  [attr_name: string]: any
 
   getAnimatableAttr(attr: string) {
     const attr_getter: () => any = this[`handle_attr_${attr}`]

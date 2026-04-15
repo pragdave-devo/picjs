@@ -69,7 +69,8 @@
       "Bash(npx tsc:*)",
       "Bash(npm install:*)",
       "Bash(kill 4405 82773)",
-      "Bash(pkill -f \"node.*vite\")"
+      "Bash(pkill -f \"node.*vite\")",
+      "WebFetch(domain:peggyjs.org)"
     ]
   }
 }

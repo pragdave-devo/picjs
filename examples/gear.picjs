@@ -1,30 +1,53 @@
-define ps {  ($1 * sin($2), $1 * cos($2))  }
 
 teeth = 12
 inner_radius = 3
 outer_radius = 4
+thickness    = 0.07 // line thickness
 
-# line thickness
-thickness = 0.07
 
-# angular width of one tooth
-tooth_width = 2*$pi / teeth
+ps = (radius, theta) => {
+  radius * (sin(theta), cos(theta) )
+}
 
-# angular width of slope up, top land, slope down, bottom land
-# we start in the middle of the land to we don't get ugly
-# joins between teeth
+
+// angular width of one tooth
+tooth_width =  360/ teeth
+
+// angular width of slope up, top land, slope down, bottom land
+// we start in the middle of the land to we don't get ugly
+// joins between teeth
 
 bottom_land_1 = .1 * tooth_width
 slope_up      = bottom_land_1 + .2 * tooth_width
-top_land      = slope_up + .3 * tooth_width
-slope_down    = top_land + .2 * tooth_width
-bottom_land_2 = slope_down + .2 * tooth_width
+top_land      = slope_up      + .3 * tooth_width
+slope_down    = top_land      + .2 * tooth_width
+bottom_land_2 = slope_down    + .2 * tooth_width
 
-theta = 0
-move to ps(inner_radius, theta)
+box wid outer_radius*2.2 ht outer_radius*2.2 at (0,0) fill ~b1
+Goto (0, inner_radius)
 
-for _count from 1 to teeth do {
-  line to ps(inner_radius, theta + bottom_land_1)   then to ps(outer_radius, theta + slope_up)        then to ps(outer_radius, theta + top_land)        then to ps(inner_radius, theta + slope_down)      then to ps(inner_radius, theta + bottom_land_2)        rad 0.1
-  theta += tooth_width
+draw_tooth  = (n, theta)=> {
+ animation_time = 1 - sin(theta/4)
+ l = line to ps(inner_radius, theta + bottom_land_1) 
+ then to ps(outer_radius, theta + slope_up) 
+ then to ps(outer_radius, theta + top_land)
+ then to ps(inner_radius, theta + slope_down)
+ then to ps(inner_radius, theta + bottom_land_2) nodraw rx 0.1
+ draw l take animation_time
+ @@
 }
 
+g = { teeth.times(n => draw_tooth(n, tooth_width*n))  }
+
+@ = @.last_animation_end + .2
+
+l = Label "Press Play" at (0,0) .h1
+
+@ += .4  // skip past reveal time
+
+set l.opacity to 0 take .7
+
+@.start_from = @
+
+set g.rotation to 360 take 8 
+then set g.rotation to 0 take 8 ease cubic
