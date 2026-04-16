@@ -42,9 +42,12 @@ export class TPalette extends TBase<null> {
       }
       Palette.setCurrent(paletteName)
       // Update theme defaults to use palette colors
-      const b1 = Palette.getColor(`b1`)!
-      const f1 = Palette.getColor(`f1`)!
-      applyPaletteToTheme(b1, f1)
+      const colors: Record<string, string> = {}
+      for (let i = 1; i <= 8; i++) {
+        colors[`b${i}`] = Palette.getColor(`b${i}`)!
+        colors[`f${i}`] = Palette.getColor(`f${i}`)!
+      }
+      applyPaletteToTheme(colors)
       return this
     }
 

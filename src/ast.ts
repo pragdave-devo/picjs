@@ -301,7 +301,17 @@ export interface ShapeDefaultSetter extends Base {
 
 export interface String extends Base {
   type: `String`
-  value: string, 
+  value: string,
+}
+
+export interface InterpolatedString extends Base {
+  type: `InterpolatedString`
+  parts: Node[],   // mix of String nodes and expression nodes
+}
+
+export interface ColorDynamic extends Base {
+  type: `ColorDynamic`
+  expr: Node,      // expression that evaluates to a color name
 }
 
 export interface UnaryExpression extends Base {
@@ -330,6 +340,7 @@ export type Node
   | Assignment
   | BinaryExpression
   | Boolean
+  | ColorDynamic
   | ColorLiteralString
   | DirectionalUntilWaypoint
   | DirectionalWaypoint
@@ -361,6 +372,7 @@ export type Node
   | Shape
   | ShapeDefaultGetter
   | ShapeDefaultSetter
+  | InterpolatedString
   | String
   | UnaryExpression
   | VariableValue

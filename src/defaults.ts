@@ -157,7 +157,7 @@ export function resetTheme(): void {
 }
 
 export function getThemeName(): string {
-  return Theme === Themes.Dark ? 'Dark' : 'Light'
+  return currentThemeName
 }
 
 export function getThemeNames(): string[] {
@@ -168,12 +168,14 @@ export function getThemeNames(): string[] {
  * Update theme colors based on palette colors.
  * Called when Palette.current is set.
  */
-export function applyPaletteToTheme(b1: string, f1: string): void {
-  // Update the current theme's colors
-  Theme.BoxFill0 = b1
-  Theme.ShapeStroke = b1
-  Theme.LineStroke = b1
-  Theme.BodyTextColor = f1
+export function applyPaletteToTheme(colors: Record<string, string>): void {
+  Theme.BoxFill0 = colors.b1
+  Theme.BoxFill1 = colors.b2
+  Theme.BoxFill2 = colors.b3
+  Theme.BoxFill3 = colors.b4
+  Theme.BoxFill4 = colors.b5
+  Theme.BodyTextColor = colors.f1
+  Theme.LineStroke = colors.b1
   // Re-parse defaults to pick up new theme values
   Defaults.Shapes = parseShapeDefaults(ShapeDefaults)
 }

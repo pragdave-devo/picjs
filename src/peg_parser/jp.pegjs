@@ -120,6 +120,29 @@ function buildCompoundAssignment(lvalue, operator, rvalue) {
   function string(str) {
     return { type: "String", value: str }
   }
+
+  // Build an InterpolatedString if there are expression parts,
+  // otherwise a plain String for backwards compat
+  function buildInterpolatedString(parts) {
+    // All parts are either strings (literal text) or AST nodes (expressions)
+    const hasInterpolation = parts.some(p => typeof p !== "string")
+    if (!hasInterpolation) {
+      return string(parts.join(""))
+    }
+    // Merge adjacent string parts, wrap strings as String nodes
+    const merged = []
+    let buf = ""
+    for (const p of parts) {
+      if (typeof p === "string") {
+        buf += p
+      } else {
+        if (buf) { merged.push(ast(string(buf))); buf = "" }
+        merged.push(p)
+      }
+    }
+    if (buf) merged.push(ast(string(buf)))
+    return { type: "InterpolatedString", parts: merged }
+  }
 }
 
 
@@ -750,6 +773,9 @@ Color
   / "#" hex:(HexNibble HexNibble HexNibble HexNibble? ) !HexNibble
     { return ast({ type: "ColorLiteralString", spec: text() }) }
 
+  / "~#{" _ expr:Expression _ "}"
+    { return ast({ type: "ColorDynamic", expr }) }
+
   / "~" name: [a-zA-Z0-9]+
     { return ast({ type: "ColorLiteralString", spec: name.join('') }) }
 
@@ -772,29 +798,41 @@ HexByte
 // -------------------------------------------------------------------- String
 
 String
-  = '"""' chars:TripleDoubleStringCharacter* '"""' {
-      return ast(string(chars.join("")) )
+  = '"""' parts:TripleDoubleStringPart* '"""' {
+      return ast(buildInterpolatedString(parts))
     }
   / "'''" chars:TripleSingleStringCharacter* "'''" {
       return ast(string(chars.join("")) )
     }
-  / '"' chars:DoubleStringCharacter* '"' {
-      return ast(string(chars.join("")) )
+  / '"' parts:DoubleStringPart* '"' {
+      return ast(buildInterpolatedString(parts))
     }
   / "'" chars:SingleStringCharacter* "'" {
       return ast(string(chars.join("")) )
     }
 
+// Double-quoted strings support #{expr} interpolation and ## for literal #
+DoubleStringPart
+  = "#{" _ expr:Expression _ "}" { return expr; }
+  / "##"                         { return "#"; }
+  / chars:DoubleStringCharacter+ { return chars.join(""); }
+
+DoubleStringCharacter
+  = !('"' / "\\" / "#{" / "##" / LineTerminator) . { return text(); }
+  / "\\" sequence:EscapeSequence { return sequence; }
+  / LineContinuation
+
+// Triple-double-quoted strings also support interpolation
+TripleDoubleStringPart
+  = "#{" _ expr:Expression _ "}" { return expr; }
+  / "##"                         { return "#"; }
+  / chars:TripleDoubleStringCharacter+ { return chars.join(""); }
+
 TripleDoubleStringCharacter
-  = !('"""') char:. { return char; }
+  = !('"""' / "#{" / "##") char:. { return char; }
 
 TripleSingleStringCharacter
   = !("'''") char:. { return char; }
-
-DoubleStringCharacter
-  = !('"' / "\\" / LineTerminator) . { return text(); }
-  / "\\" sequence:EscapeSequence { return sequence; }
-  / LineContinuation
 
 SingleStringCharacter
   = !("'" / "\\" / LineTerminator) . { return text(); }
@@ -1338,7 +1376,7 @@ Shape "shape"
       return ast({ type: "LayoutGap", same: true })
     }
 
-  / Gap __ direction:CardinalVector __ distance:MoveDistance {
+  / Gap __ direction:CardinalVector SameLineSpace distance:MoveDistance {
       return ast({ type: "LayoutGap", direction, distance })
     }
 
@@ -1346,11 +1384,7 @@ Shape "shape"
       return ast({ type: "LayoutGap", direction })
     }
 
-  / Gap __ distance:MoveDistance {
-      return ast({ type: "LayoutGap", distance })
-    }
-
-  / Gap SameLineSpace distance:VariableValue {
+  / Gap SameLineSpace distance:MoveDistance {
       return ast({ type: "LayoutGap", distance })
     }
 
@@ -1392,9 +1426,7 @@ Shape "shape"
     }
 
 MoveDistance
-  = "-" n:Number { n.value = -n.value; return n }
-  / Number
-  / "(" _ expr:ConditionalExpression _ ")" { return expr }
+  = AdditiveExpression
 
 SkipArgs
   = to __ at:Expression
@@ -1498,6 +1530,7 @@ LabelTextAttr
   = __ attr:SEText   { return attr }
   / __ attr:SEFill   { return attr }
   / __ attr:SEStroke  { return attr }
+  / __ attr:SEClass  { return attr }
   / __ fs:ActualFontSize { return { "font_size": ast({ type: "String", value: fs }) } }
 
 SEPos

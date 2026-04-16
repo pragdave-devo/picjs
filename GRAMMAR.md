@@ -222,6 +222,7 @@ Boolean         = 'true' !IdentifierPart
 Color           = ColorModel '(' _ ColorComponents _ ')'
                 | '#' HexByte HexByte HexByte HexByte? !HexNibble
                 | '#' HexNibble HexNibble HexNibble HexNibble? !HexNibble
+                | '~#{' _ Expression _ '}'
                 | '~' [a-zA-Z0-9]+ ;
 
 ColorModel      = ( 'oklch'i | 'rgb'i | 'hsl'i | 'hsv'i ) 'a'i? ;
@@ -282,20 +283,34 @@ by Jake Lawlor featuring color palettes inspired by the Pacific Northwest.
 
 ## String
 
+Double-quoted strings (and triple-double-quoted strings) support `#{expr}`
+interpolation. Use `##` for a literal `#`. Single-quoted strings have no
+interpolation.
+
 ```ebnf
-String          = '"""' TripleDoubleStringCharacter* '"""'
+String          = '"""' TripleDoubleStringPart* '"""'
                 | "'''" TripleSingleStringCharacter* "'''"
-                | '"' DoubleStringCharacter* '"'
+                | '"' DoubleStringPart* '"'
                 | "'" SingleStringCharacter* "'" ;
 
+DoubleStringPart
+                = '#{' _ Expression _ '}'
+                | '##'
+                | DoubleStringCharacter+ ;
+
+TripleDoubleStringPart
+                = '#{' _ Expression _ '}'
+                | '##'
+                | TripleDoubleStringCharacter+ ;
+
 TripleDoubleStringCharacter
-                = !( '"""' ) . ;
+                = !( '"""' | '#{' | '##' ) . ;
 
 TripleSingleStringCharacter
                 = !( "'''" ) . ;
 
 DoubleStringCharacter
-                = !( '"' | '\\' | LineTerminator ) .
+                = !( '"' | '\\' | '#{' | '##' | LineTerminator ) .
                 | '\\' EscapeSequence
                 | LineContinuation ;
 
@@ -1026,6 +1041,8 @@ standalone EBNF rules.
 | HexNibble | HexNibble |
 | HexByte | HexByte |
 | String | String |
+| DoubleStringPart | DoubleStringPart |
+| TripleDoubleStringPart | TripleDoubleStringPart |
 | TripleDoubleStringCharacter | TripleDoubleStringCharacter |
 | TripleSingleStringCharacter | TripleSingleStringCharacter |
 | DoubleStringCharacter | DoubleStringCharacter |

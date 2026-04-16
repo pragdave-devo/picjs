@@ -139,4 +139,10 @@ describe(`evaluating color literals`, () => {
       t(operation, expected)
     })
   })
+
+  describe(`dynamic color names with ~#{expr}`, () => {
+    t(`$c = "red" ~#{$c}`,          c(`#ff0000`))
+    t(`$c = "blue" ~#{$c}`,         c(`#0000ff`))
+    t(`$a = "gre" $b = "en" ~#{$a + $b}`, c(`#008000`))
+  })
 })

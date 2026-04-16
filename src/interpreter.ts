@@ -143,9 +143,14 @@ export class Interpreter extends Visitor{
     return new TBool(node.value)
   }
 
-VisitColorLiteralString(node: AST.ColorLiteralString) {
-  return TColor.fromString(node.spec)
-}
+  VisitColorDynamic(node: AST.ColorDynamic) {
+    const name = this.accept(node.expr)
+    return TColor.fromString(name.toString())
+  }
+
+  VisitColorLiteralString(node: AST.ColorLiteralString) {
+    return TColor.fromString(node.spec)
+  }
 
   VisitColorLiteralWithModel(node: AST.ColorLiteralWithModel) {
     const args = node.params.map((n: AST.Node) => this.accept(n).value)
@@ -809,6 +814,14 @@ VisitColorLiteralString(node: AST.ColorLiteralString) {
       this.binding.setDefault(`Shapes`, shape, node.klass, attr, value)
     }
     return value
+  }
+
+  VisitInterpolatedString(node: AST.InterpolatedString) {
+    const result = node.parts.map(part => {
+      const val = this.accept(part)
+      return val.toString()
+    }).join(``)
+    return new TString(result)
   }
 
   VisitString(node: AST.String) {

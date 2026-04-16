@@ -61,12 +61,15 @@ export class Label extends SvgBase {
       const paragraphs = text.split('\n\n')
 
       if (paragraphs.length === 1 && !text.includes('\n')) {
-        this.el.removeAttribute('text-anchor')
         const parsed = MD.defaultInlineParse(text)
         const runs = flattenMDToRuns(parsed)
         const wrapped = this.maxwidth ? wrapRuns(runs, this.maxwidth) : [runs]
-        if (wrapped.length <= 1) {
+        if (wrapped.length <= 1 && this.align === `c`) {
+          this.el.removeAttribute('text-anchor')
           this.runsToTSpans(this.el, wrapped[0] || runs)
+        } else if (wrapped.length <= 1) {
+          // Single line but non-center alignment — need anchor positioning
+          this.renderWrappedLines([wrapped[0] || runs], false)
         } else {
           this.renderWrappedLines(wrapped, false)
         }

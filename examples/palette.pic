@@ -1,0 +1,31 @@
+label_width = 1.2
+sample_width = .9
+gap = .1
+
+palette = (name) => {
+  Face e
+  [1..8].each(n => {
+    f = "f#{n}"
+    b = "b#{n}"
+    box wid sample_width ht .5  fill ~#{b} ("#{f}" fill ~#{f} large)
+    Gap gap
+  })
+}
+
+{
+  box wid label_width fill ~none stroke ~none ("Theme" align .e .h2)
+  [1..8].each(n => {
+    box wid sample_width fill ~none stroke ~none ("b#{n}" .h3 align .c) 
+    Gap gap
+  })
+}
+Palette.names.each(name => {
+  Face s
+  {
+    Face e
+    box wid label_width ht .5 fill ~none stroke ~none (name align .e .h4 ) 
+    Palette.current = name
+    palette(name)
+  }
+  Gap gap*2
+})

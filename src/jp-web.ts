@@ -53,12 +53,13 @@ const errorLineField = StateField.define<DecorationSet>({
 
 const examples: { file: string; description: string }[] = [
 { file: "911.pic",                        description: "A state machine" },
-{ file: "architecture.pic",               description: "Basic Aerchitecturen diagram" },
+{ file: "architecture.pic",               description: "Basic Architecture diagram" },
 { file: "economy.pic",                    description: "Simple model of supply and demand" },
 { file: "gear.pic",                       description: "Prametric gear" },
 { file: "hanoi.pic",                      description: "Hanoi animation" },
 { file: "kernighan.pic",                  description: "Diagram from Kernighan's PIC paper" },
 { file: "line-labels.pic",                description: "Demo of labelling on lines" },
+{ file: "palette.pic",                    description: "Themes and palettes" },
 { file: "petal.pic",                      description: "Petals/Pattens" },
 { file: "sequential_color_generator.pic", description: "Color interpolation" },
 { file: "snail.pic",                      description: "Spiral with sequential colors" },
