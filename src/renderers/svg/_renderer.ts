@@ -168,8 +168,18 @@ export class Renderer {
       this.renderers[sid] = groupRenderer
     }
 
+    // Identify shapes that are children of a parent (e.g. labels inside a box)
+    // so we skip them — they'll be rendered inside their parent's <g>
+    const parentOwned = new Set<Shape.SBase>()
+    for (const child of group.groupChildren) {
+      for (const c of child.children) {
+        parentOwned.add(c)
+      }
+    }
+
     // Render children inside the group
     for (const child of group.groupChildren) {
+      if (parentOwned.has(child)) continue
       const childEl = this.renderChild(child)
       if (childEl) {
         groupRenderer.addChild(childEl)
@@ -183,6 +193,11 @@ export class Renderer {
     // Handle nested groups recursively
     if (shape instanceof SGroup) {
       return this.renderGroup(shape)
+    }
+
+    // Handle shapes with children (e.g. rotated box with label inside a group)
+    if (shape.children.length > 0) {
+      return this.renderParentWithChildren(shape)
     }
 
     const sid = shape.id
