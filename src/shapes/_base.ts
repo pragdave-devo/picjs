@@ -79,7 +79,8 @@ export class SBase extends TBase<null> {
   protected hidden: ShapeArgs = {}
   protected bindingAtCreation: Binding
   protected childShape?: SBase
-  protected parentShape?: SBase
+  parentShape?: SBase
+  children: SBase[] = []
 
   // rotation trig values
   protected sinR = 0.0
@@ -246,6 +247,7 @@ export class SBase extends TBase<null> {
     }
     // Allow multiple children (for multiple line labels)
     child.parentShape = this
+    this.children.push(child)
     child.params._parentWidth = this.width
     child.params._parentHeight = this.height
     // Pass fill for auto-text coloring with palette colors

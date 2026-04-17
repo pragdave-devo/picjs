@@ -6,7 +6,9 @@ import { Line }     from "./line.js"
 import { Polyline } from "./polyline.js"
 import { Rect }     from "./rect.js"
 import * as Shape from "../../shapes.js"
+import { RenderParameters } from "../../types.js"
 import { SGroup } from "../../shapes/sgroup.js"
+import { svg, setAttr } from "redom"
 
 import { SvgBase } from "./_base.js"
 
@@ -25,6 +27,7 @@ export class Renderer {
 
 
   renderers: { [sid: string]: SvgBase } = {}
+  parentGroups: { [sid: string]: SVGElement } = {}
 
   constructor(_dispatcher: unknown) {
   }
@@ -32,12 +35,18 @@ export class Renderer {
   render(shapes: Shape.SBase[]) {
     const elements: SVGElement[] = []
 
-    // First pass: identify which shapes are group children
+    // First pass: identify which shapes are group children or parent-child pairs
     const groupChildren = new Set<Shape.SBase>()
+    const parentChildShapes = new Set<Shape.SBase>()
     for (const shape of shapes) {
       if (shape instanceof SGroup) {
         for (const child of shape.groupChildren) {
           groupChildren.add(child)
+        }
+      }
+      if (shape.children.length > 0) {
+        for (const child of shape.children) {
+          parentChildShapes.add(child)
         }
       }
     }
@@ -45,6 +54,8 @@ export class Renderer {
     for (const shape of shapes) {
       // Skip group children - they're rendered inside their group
       if (groupChildren.has(shape)) continue
+      // Skip shapes that are children of a parent — rendered inside parent's <g>
+      if (parentChildShapes.has(shape)) continue
 
       const sid = shape.id
       const params = shape.params
@@ -52,6 +63,10 @@ export class Renderer {
       if (shape instanceof SGroup) {
         // Render group with transform, then render children inside
         const groupEl = this.renderGroup(shape)
+        elements.push(groupEl)
+      }
+      else if (shape.children.length > 0) {
+        const groupEl = this.renderParentWithChildren(shape)
         elements.push(groupEl)
       }
       else if (sid in this.renderers) {
@@ -70,6 +85,66 @@ export class Renderer {
     }
 
     return elements
+  }
+
+  private renderParentWithChildren(shape: Shape.SBase): SVGElement {
+    const sid = shape.id
+    const position = shape.requiredPosition()
+    const rotation = shape.params.rotation
+    const center = position.rotationCenter
+
+    // Build the rotation transform for the group
+    let groupTransform = ``
+    if (rotation && center) {
+      groupTransform = `rotate(${rotation}, ${center.x}, ${center.y})`
+    }
+
+    // Render parent without rotation
+    const parentParams = { ...shape.params, rotation: 0 }
+    const parentEl = this.renderSingleShape(shape, { ...position, rotation: 0 }, parentParams)
+
+    // Render children without rotation
+    const childEls: SVGElement[] = []
+    for (const child of shape.children) {
+      const childPos = child.requiredPosition()
+      const childParams = { ...child.params, rotation: 0 }
+      childEls.push(this.renderSingleShape(child, { ...childPos, rotation: 0 }, childParams))
+    }
+
+    // Wrap in group
+    let groupEl = this.parentGroups[sid]
+    if (!groupEl) {
+      groupEl = svg('g') as SVGElement
+      groupEl.setAttribute(`data-jp-id`, sid)
+      this.parentGroups[sid] = groupEl
+    }
+    if (groupTransform) {
+      setAttr(groupEl, { transform: groupTransform })
+    } else {
+      groupEl.removeAttribute(`transform`)
+    }
+
+    // Replace children
+    while (groupEl.firstChild) groupEl.removeChild(groupEl.firstChild)
+    groupEl.appendChild(parentEl)
+    for (const el of childEls) groupEl.appendChild(el)
+
+    return groupEl
+  }
+
+  private renderSingleShape(shape: Shape.SBase, position: RenderParameters, params: Shape.Args): SVGElement {
+    const sid = shape.id
+    if (sid in this.renderers) {
+      return this.renderers[sid].rerender(position, params).el
+    }
+    const specificRenderer = ShapeToRenderer[shape.shapeName]
+    if (specificRenderer) {
+      const renderer = new specificRenderer(position, params)
+      renderer.el.setAttribute(`data-jp-id`, sid)
+      this.renderers[sid] = renderer
+      return renderer.el
+    }
+    return svg('g') as SVGElement
   }
 
   private renderGroup(group: SGroup): SVGElement {
