@@ -1,3 +1,4 @@
+import { Palette } from "./palette.js"
 
 /* eslint-disable max-len */
 const ShapeDefaults = `
@@ -49,6 +50,22 @@ SCircle  | r            | fill           | stroke      | stroke_width     | line
 .v2      |              | BoxFill2
 .v3      |              | BoxFill3
 .v4      |              | BoxFill4
+
+SEllipse | rx           | ry             | fill           | stroke      | stroke_width     | linestyle  | rotation | reveal_time | hide_time
+-------------------------------------------------------------------------------------------------
+.normal  | =ShapeWidth*0.5 | =ShapeHeight*0.5 | BoxFill0       | ShapeStroke | ShapeStrokeWidth | LineStyle  | 0        | 0.3         | 0.3
+.v1      |              |                | BoxFill1
+.v2      |              |                | BoxFill2
+.v3      |              |                | BoxFill3
+.v4      |              |                | BoxFill4
+
+SOval    | width      | height      | fill           | stroke      | stroke_width     | linestyle  | rx      | ry      | rotation | reveal_time | hide_time
+---------------------------------------------------------------------------------------------------------------------------------
+.normal  | ShapeWidth | ShapeHeight | BoxFill0       | ShapeStroke | ShapeStrokeWidth | LineStyle  | ShapeRX | ShapeRY | 0        | 0.3         | 0.3
+.v1      |            |             | BoxFill1
+.v2      |            |             | BoxFill2
+.v3      |            |             | BoxFill3
+.v4      |            |             | BoxFill4
 `
 
 
@@ -153,7 +170,8 @@ export function setTheme(name: string) {
  */
 export function resetTheme(): void {
   Theme = { ...Themes[currentThemeName] }
-  Defaults.Shapes = parseShapeDefaults(ShapeDefaults)
+  Palette.setCurrent(`default`)
+  applyPaletteToTheme(Palette.getCurrentColors())
 }
 
 export function getThemeName(): string {

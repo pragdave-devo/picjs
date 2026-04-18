@@ -24,7 +24,7 @@ const Palettes: Record<string, PaletteDefinition> = {
   default: {
     name: `default`,
     colors: {
-      b1: `#2c3e50`, f1: `#ecf0f1`,  // Dark blue-grey / near-white
+      b1: `#3e5770`, f1: `#ecf0f1`,  // Blue-grey / near-white
       b2: `#8e44ad`, f2: `#ffffff`,  // Purple / white
       b3: `#27ae60`, f3: `#ffffff`,  // Green / white
       b4: `#e74c3c`, f4: `#ffffff`,  // Red / white

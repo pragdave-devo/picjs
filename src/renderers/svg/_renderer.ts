@@ -1,5 +1,6 @@
 import { Arc }      from "./arc.js"
 import { Circle }   from "./circle.js"
+import { Ellipse }  from "./ellipse.js"
 import { Group }    from "./group.js"
 import { Label }    from "./label.js"
 import { Line }     from "./line.js"
@@ -17,9 +18,11 @@ export const ShapeToRenderer:Record<string, typeof SvgBase> = {
   SArc:      Arc,
   SBox:      Rect,
   SCircle:   Circle,
+  SEllipse:  Ellipse,
   SGroup:    Group,
   SLabel:    Label,
   SLine:     Line,
+  SOval:     Rect,
   SPolyline: Polyline,
 }
 

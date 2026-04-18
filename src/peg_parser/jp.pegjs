@@ -146,9 +146,17 @@ function buildCompoundAssignment(lvalue, operator, rvalue) {
 }
 
 
+// ==================================================================== Entry Point
+
 Start
   = _ program:Program _ EOF
     { return program }
+
+// ==================================================================== Reserved Words
+//
+// Words that cannot be used as identifiers. AlwaysReserved covers shape names,
+// animation verbs, keywords, and constants. AttrName covers attribute keywords
+// that are only reserved in attribute position.
 
 Reserved
   = AlwaysReserved // AttrName
@@ -202,22 +210,22 @@ AttrName
     )
   { return { type: "Identifier", name: text() } }
 
-// Shape
+// ---- Shape keywords (case-sensitive; some accept lowercase aliases)
 Aside   = "Aside"  ! IdentifierPart  { return text() }
 Arc     = ("Arc" / "arc")       ! IdentifierPart  { return "Arc" }
 Box     = ("Box" / "box")       ! IdentifierPart  { return "Box" }
 Circle  = ("Circle" / "circle") ! IdentifierPart  { return "Circle" }
-Ellipse = "Ellipse" ! IdentifierPart  { return text() }
+Ellipse = ("Ellipse" / "ellipse") ! IdentifierPart  { return "Ellipse" }
 Face    = "Face"    ! IdentifierPart  { return text() }
 Group   = "Group"   ! IdentifierPart  { return text() }
 Line    = ("Line" / "line")    ! IdentifierPart  { return "Line" }
 Label   = "Label"   ! IdentifierPart  { return text() }
 Gap     = "Gap"    ! IdentifierPart  { return text() }
 Goto    = "Goto"   ! IdentifierPart  { return text() }
-Oval    = "Oval"    ! IdentifierPart  { return text() }
+Oval    = ("Oval" / "oval")       ! IdentifierPart  { return "Oval" }
 Skip    = "Skip"    ! IdentifierPart  { return text() }
 
-// Animation
+// ---- Animation keywords
 draw   = "draw"   ! IdentifierPart { return text() }
 move   = "move"   ! IdentifierPart { return text() }
 set    = "set"    ! IdentifierPart { return text() }
@@ -226,15 +234,15 @@ pause  = "pause"  ! IdentifierPart { return text() }
 wait   = "wait"   ! IdentifierPart { return text() }
 rotate = "rotate" ! IdentifierPart { return text() }
 
-// Keywords
+// ---- Keywords
 else   = "else"   ! IdentifierPart { return text() }
 if     = "if"     ! IdentifierPart { return text() }
 
-// Constants
+// ---- Constants
 true   = "true"   ! IdentifierPart { return text() }
 false  = "false"  ! IdentifierPart { return text() }
 
-// Attributes
+// ---- Attribute keywords (many have abbreviations, e.g. ht → height)
 about        = "about"                    ! IdentifierPart { return text() }
 above        = "above"                    ! IdentifierPart { return text() }
 align        = "align"                    ! IdentifierPart { return text() }
@@ -288,6 +296,11 @@ y            = "y"                        ! IdentifierPart { return text() }
 
 
 
+// ==================================================================== Program Structure
+//
+// A program is a list of expressions (statements). There are no separators;
+// whitespace (including newlines) delimits statements.
+
 Program
   = body:ExpressionList?
     {
@@ -309,6 +322,9 @@ ExpressionList
     {
       return head
     }
+
+// The top-level expression types, tried in order. NonShapeExpression is the
+// subset valid in attribute positions (no shapes or animations).
 
 Expression
   = Inspect
@@ -337,7 +353,9 @@ Inspect "start of expression"
     })
   }
 
-// -------------------------------------------------------------------- Assignmnt
+// -------------------------------------------------------------------- Assignment
+// Supports simple (=) and compound (+=, -=, *=, /=, %=) assignment.
+// LValues can be identifiers, qualified paths (obj.attr, list[i]), or @ (timeline).
 
 Assignment
   = lvalue:LValue _ "=" ![=>] _ rvalue:Expression
@@ -431,7 +449,8 @@ Qualifier
     }
 
 
-// -------------------------------------------------------------------- conditional
+// -------------------------------------------------------------------- Conditional (ternary)
+// test ? consequent : alternate
 
 ConditionalExpression
   = test:LogicalORExpression _
@@ -448,7 +467,8 @@ ConditionalExpression
   / LogicalORExpression
 
 
-// -------------------------------------------------------------------- if/then/else
+// -------------------------------------------------------------------- If/Else
+// if (test) body [else body]. Body is a single expression or { block }.
 
 IfExpression
   = if _ "(" _ test:LogicalORExpression _ ")" _
@@ -480,7 +500,8 @@ ExpressionOrBlock
   / Expression
 
 
-// -------------------------------------------------------------------- Logical
+// -------------------------------------------------------------------- Logical Operators
+// Standard precedence: OR < AND < equality < relational < additive < multiplicative < power < unary
 
 LogicalORExpression
   = head:LogicalANDExpression
@@ -508,7 +529,7 @@ EqualityOperator
   / "!="
 
 
-// -------------------------------------------------------------------- Relational
+// -------------------------------------------------------------------- Relational Operators
 
 RelationalExpression
   = head:AdditiveExpression
@@ -524,7 +545,7 @@ RelationalOperator "operator"
   / ">"
 
 
-// -------------------------------------------------------------------- Arithmetic-style
+// -------------------------------------------------------------------- Arithmetic Operators
 
 AdditiveExpression
   = head:MultiplicativeExpression
@@ -599,7 +620,9 @@ ArgumentList
       return buildList(head, tail, 2);
     }
 
-// -------------------------------------------------------------------- Qualified Primary
+// -------------------------------------------------------------------- Primary Expressions
+// The leaves of the expression tree: literals, variables, parenthesized exprs,
+// and function definitions.
 
 FunctionDefOrPrimary
   = FunctionDefinitionExpression
@@ -646,7 +669,7 @@ TimelineValue
     })
   }
 
-// -------------------------------------------------------------------- Function definition
+// -------------------------------------------------------------------- Variable Reference
 
 VariableValue
   = identifier:Identifier
@@ -657,7 +680,8 @@ VariableValue
       })
     }
 
-// -------------------------------------------------------------------- Function definition
+// -------------------------------------------------------------------- Function Definition
+// Arrow function syntax: (params) => body, name => body, or => body
 
 FunctionDefinitionExpression
   = "(" _ params:FormalParameterList _ ")" _ "=>" _ body: FunctionBody
@@ -700,7 +724,9 @@ FormalParameterList
     }
 
 
-// -------------------------------------------------------------------- Identifier
+// -------------------------------------------------------------------- Identifiers
+// Start with letter, _, or $; continue with those plus digits.
+// @ is a special identifier for the timeline object.
 
 Identifier "identifier"
   = !Reserved IdentifierStart IdentifierPart*
@@ -751,7 +777,7 @@ UnicodeConnectorPunctuation
   = Pc
 
 
-// -------------------------------------------------------------------- Boolean
+// -------------------------------------------------------------------- Boolean Literal
 
 Boolean
   = ( true / false )
@@ -761,7 +787,9 @@ Boolean
       })
     }
 
-// -------------------------------------------------------------------- Color
+// -------------------------------------------------------------------- Color Literals
+// Named (~red), hex (#rgb, #rrggbb), model (rgb(...), oklch(...)),
+// or dynamic (~#{expr}) colors.
 
 Color
   = model:ColorModel "(" _  params:ColorComponents _ ")"
@@ -795,7 +823,9 @@ HexByte
   = HexNibble HexNibble
 
 
-// -------------------------------------------------------------------- String
+// -------------------------------------------------------------------- String Literals
+// Single/double quoted with escape sequences. Double-quoted support #{expr}
+// interpolation. Triple-quoted (''' and """) for multi-line strings.
 
 String
   = '"""' parts:TripleDoubleStringPart* '"""' {
@@ -883,14 +913,17 @@ UnicodeEscapeSequence
     }
 
 
-// -------------------------------------------------------------------- Position
+// -------------------------------------------------------------------- Position Literal
+// (x, y) coordinate pair — comma is optional
 
 Position
   = "(" _ x:Expression _ ("," _)? y:Expression _ ")"
     { return ast({ type: "Position", x, y }) }
 
 
-// ==================================================================== Animation
+// ==================================================================== ANIMATIONS
+// move, rotate, set, draw, pause — each with optional take/ease params.
+// Animations can be chained with "then" for sequential execution.
 
 SetTime
   = "@@"
@@ -1049,6 +1082,9 @@ AnimationParam
     { return [ "ease", string(ease) ] }
 
 // ==================================================================== GROUPS
+// Groups ({ ... }) collect shapes into a shared coordinate space.
+// Aside is a non-layout-affecting variant.
+// Groups accept common options and with-constraints for positioning.
 
 GroupExpression "group"
   = Aside _ "{" _ body:ExpressionList _ "}"
@@ -1078,6 +1114,9 @@ GroupExpression "group"
     }
 
 // ==================================================================== SHAPES
+// Shape definitions: Box, Circle, Ellipse, Oval, Line, Polyline, Arc, Label,
+// Face, Gap, Goto, Skip. Lines have many variants based on from/to/then
+// combinations and arrow abbreviations.
 
 ShapeName "shape"
   = shape:( Arc / Box / Circle / Ellipse / Oval / Line / Label / Skip )
@@ -1155,11 +1194,31 @@ Shape "shape"
       })
     }
 
-  / subtype:( Circle / Ellipse / Oval ) !"." !"(" pre:( __ ( SECommon / SERadius ))* withConstraint:( __ WithConstraint )? post:( __ ( SECommon / SERadius ))* {
+  / Circle !"." !"(" pre:( __ ( SECommon / SERadius ))* withConstraint:( __ WithConstraint )? post:( __ ( SECommon / SERadius ))* {
       const args = mergeAttributes([...extractList(pre, 1), ...extractList(post, 1)])
       return ast({
         type: "Shape",
-        shape: "S" + subtype,
+        shape: "SCircle",
+        args,
+        withConstraint: extractOptional(withConstraint, 1),
+      })
+    }
+
+  / Ellipse !"." !"(" pre:( __ ( SECommon / SERadii ))* withConstraint:( __ WithConstraint )? post:( __ ( SECommon / SERadii ))* {
+      const args = mergeAttributes([...extractList(pre, 1), ...extractList(post, 1)])
+      return ast({
+        type: "Shape",
+        shape: "SEllipse",
+        args,
+        withConstraint: extractOptional(withConstraint, 1),
+      })
+    }
+
+  / Oval !"." !"(" pre:( __ ( SECommon / SESize / SERadii ))* withConstraint:( __ WithConstraint )? post:( __ ( SECommon / SESize / SERadii ))* {
+      const args = mergeAttributes([...extractList(pre, 1), ...extractList(post, 1)])
+      return ast({
+        type: "Shape",
+        shape: "SOval",
         args,
         withConstraint: extractOptional(withConstraint, 1),
       })
@@ -1447,7 +1506,8 @@ LineOrAbbrev
     }
   / SELineEndings
 
-// -------------------------------------------------------------------- Shape helpers
+// -------------------------------------------------------------------- Shape Helpers
+// From/to positions, waypoints (directional and absolute), and line abbreviations.
 
 FromPosition
   = "from" __ start:PositionValue { return start }
@@ -1482,7 +1542,9 @@ PositionValue "a position: (x,y) or place.nw"
     }
 
 
-// -------------------------------------------------------------------- Shape parameters
+// -------------------------------------------------------------------- Shape Parameters
+// Attribute rules shared across shapes: labels, positioning, fill, stroke,
+// rotation, line endings, line shape, line labels, text formatting, etc.
 
 SECommon
   = SELabel  // must be first
@@ -1774,6 +1836,9 @@ SelfAnchor
   = "self." name:Identifier cardinal:Cardinal?
     { return { element: name.name, cardinal: cardinal || "c" } }
 
+// ---- Cardinal points (.n, .ne, .e, etc.) for shape anchors
+// Cardinal vectors (north, south, etc.) for layout directions
+
 Cardinal "cardinal"
   = "." point:("nw" / "ne" / "n" / "sw" / "se" / "s" / "w" / "e" / "c") !IdentifierPart
   { return point }
@@ -1798,16 +1863,8 @@ CardinalVector
 
 
 
-// -------------------------------------------------------------------- Number
-
-
-// -------------------------------------------------------------------- Number
-
-
-// -------------------------------------------------------------------- Number
-
-
-// -------------------------------------------------------------------- Number
+// -------------------------------------------------------------------- Number Literals
+// Integers, decimals, scientific notation. Append % to divide by 100.
 
 Number "number"
   = number:ActualNumber "%"
@@ -1844,7 +1901,8 @@ ExponentPart
 DecimalPoint
   = "." !"."
 
-// -------------------------------------------------------------------- Array or Range
+// -------------------------------------------------------------------- Array and Range Literals
+// [a, b, c] for arrays, [start..end] for ranges. Commas are optional.
 
 ArrayOrRange "array or range"
   = "[" _ start:Expression _ ".." _ end:Expression _ "]"
@@ -1886,7 +1944,8 @@ ElementList
     { return Array.prototype.concat.apply(head, tail); }
 
 
-// -------------------------------------------------------------------- Subset of css font spec
+// -------------------------------------------------------------------- Font Specification
+// A subset of CSS font syntax: [style] [variant] [weight] [stretch] size[/line-height] family
 
 FontSpec
   = SystemFont
@@ -1985,7 +2044,7 @@ IgnoreNormal
   = "normal"
   { return null }
 
-// -------------------------------------------------------------------- Directive
+// -------------------------------------------------------------------- Directive (disabled)
 
 /* Directive */
 /*   = "<style>" style:(!"</style>" .)* "</style>" */
@@ -1996,7 +2055,9 @@ IgnoreNormal
 /*       }) */
 /*     } */
 
-// -------------------------------------------------------------------- Spaces 'n' stuff
+// ==================================================================== WHITESPACE AND COMMENTS
+// _ = optional whitespace, __ = required whitespace, SameLineSpace = no newlines.
+// Comments are // to end-of-line.
 
 _
   = WhiteSpace*
