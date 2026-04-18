@@ -156,6 +156,34 @@ describe(`line label SVG rendering`, () => {
     }
   })
 
+  it(`rotated shape inside group uses local rotation center`, () => {
+    // A rotated box inside a group offset to (3,0): the SVG rotate()
+    // center must be in local coords, not global. If global, it would
+    // be ~3 units away from the element's local x/y.
+    const d = runProgram(`g = {\n  box "hello" rot 45\n} with .nw at (3, 0)`)
+    d.applyTimelineUpTo(0)
+    const shapes = d.shapes()
+
+    const renderer = new Renderer(null)
+    const elements = renderer.render(shapes)
+
+    // Find the wrapping <g> with the rotation transform
+    const allElements = elements.flatMap(el => [el, ...Array.from(el.querySelectorAll(`*`))])
+    const rotatedG = allElements.find(el => {
+      const t = el.getAttribute?.(`transform`) || ``
+      return t.includes(`rotate(45`)
+    })
+    expect(rotatedG).toBeDefined()
+
+    const transform = rotatedG!.getAttribute(`transform`)!
+    const match = transform.match(/rotate\([^,]+,\s*([^,]+),\s*([^)]+)\)/)
+    expect(match).toBeTruthy()
+    const cx = parseFloat(match![1])
+
+    // Local coords: box center is near 0, not near 3
+    expect(Math.abs(cx)).toBeLessThan(1)
+  })
+
   it(`rotated box label gets rotation from group, not from individual element`, () => {
     const d = runProgram(`Box "hello" rot 30`)
     d.applyTimelineUpTo(0)

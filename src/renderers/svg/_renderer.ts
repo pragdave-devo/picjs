@@ -89,9 +89,9 @@ export class Renderer {
 
   private renderParentWithChildren(shape: Shape.SBase): SVGElement {
     const sid = shape.id
-    const position = shape.requiredPosition()
+    const position = this.localPosition(shape)
     const rotation = shape.params.rotation
-    const center = position.rotationCenter
+    const center = position?.rotationCenter
 
     // Build the rotation transform for the group
     let groupTransform = ``
@@ -101,17 +101,17 @@ export class Renderer {
 
     // Render parent without rotation
     const parentParams = { ...shape.params, rotation: 0 }
-    const parentEl = this.renderSingleShape(shape, { ...position, rotation: 0 }, parentParams)
+    const parentEl = this.renderSingleShape(shape, position ? { ...position, rotation: 0 } : position, parentParams)
 
     // Render children — strip rotation only when the parent's rotation is
     // lifted to the group.  Line labels carry their own rotation (from the
     // line tangent) which must be preserved because the parent line has none.
     const childEls: SVGElement[] = []
     for (const child of shape.children) {
-      const childPos = child.requiredPosition()
+      const childPos = this.localPosition(child)
       if (rotation) {
         const childParams = { ...child.params, rotation: 0 }
-        childEls.push(this.renderSingleShape(child, { ...childPos, rotation: 0 }, childParams))
+        childEls.push(this.renderSingleShape(child, childPos ? { ...childPos, rotation: 0 } : childPos, childParams))
       } else {
         childEls.push(this.renderSingleShape(child, childPos, child.params))
       }
@@ -208,14 +208,15 @@ export class Renderer {
 
     const sid = shape.id
     const params = shape.params
+    const position = this.localPosition(shape)
 
     if (sid in this.renderers) {
-      return this.renderers[sid].rerender(shape.requiredPosition(), params).el
+      return this.renderers[sid].rerender(position, params).el
     }
     else {
       const specificRenderer = ShapeToRenderer[shape.shapeName]
       if (specificRenderer) {
-        const renderer = new specificRenderer(shape.requiredPosition(), params)
+        const renderer = new specificRenderer(position, params)
         renderer.el.setAttribute(`data-jp-id`, sid)
         this.renderers[sid] = renderer
         return renderer.el
@@ -223,5 +224,20 @@ export class Renderer {
     }
 
     return null
+  }
+
+  // Return the shape's render position with rotationCenter in local coords.
+  // Shapes inside a group have local x/y (relative to group anchor) but
+  // requiredPosition().rotationCenter uses corner() which converts to global.
+  // The SVG group already provides the global translation, so the rotation
+  // center must match the local coordinate space.
+  private localPosition(shape: Shape.SBase): RenderParameters {
+    const pos = shape.requiredPosition()
+    if (!pos) return pos
+    if (shape.parentGroup) {
+      const localCenter = { x: shape.anchorX ?? 0, y: shape.anchorY ?? 0 }
+      return { ...pos, rotationCenter: localCenter }
+    }
+    return pos
   }
 }
