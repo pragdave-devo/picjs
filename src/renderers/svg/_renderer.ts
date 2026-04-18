@@ -103,12 +103,18 @@ export class Renderer {
     const parentParams = { ...shape.params, rotation: 0 }
     const parentEl = this.renderSingleShape(shape, { ...position, rotation: 0 }, parentParams)
 
-    // Render children without rotation
+    // Render children — strip rotation only when the parent's rotation is
+    // lifted to the group.  Line labels carry their own rotation (from the
+    // line tangent) which must be preserved because the parent line has none.
     const childEls: SVGElement[] = []
     for (const child of shape.children) {
       const childPos = child.requiredPosition()
-      const childParams = { ...child.params, rotation: 0 }
-      childEls.push(this.renderSingleShape(child, { ...childPos, rotation: 0 }, childParams))
+      if (rotation) {
+        const childParams = { ...child.params, rotation: 0 }
+        childEls.push(this.renderSingleShape(child, { ...childPos, rotation: 0 }, childParams))
+      } else {
+        childEls.push(this.renderSingleShape(child, childPos, child.params))
+      }
     }
 
     // Wrap in group
