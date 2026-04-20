@@ -71,13 +71,6 @@
         "if ( <expr> ) <body>"
       ],
       "description": "Conditional expression (if/else)"
-    },
-    {
-      "name": "ConditionalExpression",
-      "syntax": [
-        "<expr> ? <expr> : <expr>"
-      ],
-      "description": "Ternary conditional (test ? then : else)"
     }
   ],
   "shapes": [

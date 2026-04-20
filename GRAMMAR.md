@@ -33,13 +33,13 @@ Expression      = Inspect
                 | AnimationSequence
                 | Assignment
                 | IfExpression
-                | ConditionalExpression ;
+                | LogicalORExpression ;
 
 NonShapeExpression
                 = Inspect
                 | Assignment
                 | IfExpression
-                | ConditionalExpression ;
+                | LogicalORExpression ;
 ```
 
 ## Inspect
@@ -69,13 +69,9 @@ Qualifier       = Arguments
                 | '.' ( AttrName | Identifier ) ;
 ```
 
-## Conditional & If/Else
+## If/Else
 
 ```ebnf
-ConditionalExpression
-                = LogicalORExpression _ '?' _ Expression _ ':' _ Expression
-                | LogicalORExpression ;
-
 IfExpression    = 'if' _ '(' _ LogicalORExpression _ ')' _ ExpressionOrBlock
                      _ 'else' _ ExpressionOrBlock
                 | 'if' _ '(' _ LogicalORExpression _ ')' _ ExpressionOrBlock
@@ -392,7 +388,7 @@ Animation       = 'move' __ Expression _ ( 'to' __ )? Expression _ AnimationPara
                 | 'rotate' __ Expression __ 'by' __ Expression _ AnimationParams
                 | 'set' __ LValue ( _ ',' _ | __ ( 'to' __ )? ) Expression _ AnimationParams
                 | 'draw' __ Expression _ AnimationParams
-                | 'pause' __ ConditionalExpression
+                | 'pause' __ LogicalORExpression
                 | 'pause' ;
 
 AnimationParams = AnimationParam* ;
@@ -590,7 +586,7 @@ Shape           = 'Arc' __ FromPosition __ ToPosition
 
 MoveDistance     = '-' Number
                 | Number
-                | '(' _ ConditionalExpression _ ')' ;
+                | '(' _ LogicalORExpression _ ')' ;
 
 SkipArgs        = 'to' __ Expression
                 | Position
@@ -619,7 +615,7 @@ DirectionalWaypoint
                 | DirectionalComponent ;
 
 DirectionalComponent
-                = CardinalVector __ ConditionalExpression ;
+                = CardinalVector __ LogicalORExpression ;
 ```
 
 ## Shape Attributes (SE = Shape Element)
@@ -1000,10 +996,9 @@ standalone EBNF rules.
 | LValue | LValue |
 | BaseLValue | BaseLValue |
 | Qualifier | Qualifier |
-| ConditionalExpression | ConditionalExpression |
+| LogicalORExpression | LogicalORExpression |
 | IfExpression | IfExpression |
 | ExpressionOrBlock | ExpressionOrBlock |
-| LogicalORExpression | LogicalORExpression |
 | LogicalANDExpression | LogicalANDExpression |
 | EqualityExpression | EqualityExpression |
 | EqualityOperator | EqualityOperator |

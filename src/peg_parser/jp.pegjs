@@ -335,13 +335,13 @@ Expression
   / AnimationSequence
   / Assignment
   / IfExpression
-  / ConditionalExpression
+  / LogicalORExpression
 
 NonShapeExpression
   = Inspect
   / Assignment
   / IfExpression
-  / ConditionalExpression
+  / LogicalORExpression
 
 // -------------------------------------------------------------------- Inspect
 
@@ -447,24 +447,6 @@ Qualifier
         qvalue: attr,
       })
     }
-
-
-// -------------------------------------------------------------------- Conditional (ternary)
-// test ? consequent : alternate
-
-ConditionalExpression
-  = test:LogicalORExpression _
-    "?" _ consequent:Expression _
-    ":" _ alternate:Expression
-    {
-      return ast({
-        type:       "IfExpression",
-        test:       test,
-        consequent: consequent,
-        alternate:  alternate
-      })
-    }
-  / LogicalORExpression
 
 
 // -------------------------------------------------------------------- If/Else
@@ -1015,7 +997,7 @@ Animation
        expected(`"draw" takes a shape and optional animation parameters`)
     }
 
-  / pause __ message:ConditionalExpression
+  / pause __ message:LogicalORExpression
     {
       return ast({
         type: "Pause",
@@ -1533,7 +1515,7 @@ DirectionalWaypoint
     }
 
 DirectionalComponent
-  = direction:CardinalVector __ distance:ConditionalExpression
+  = direction:CardinalVector __ distance:LogicalORExpression
     { return { direction, distance } }
 
 PositionValue "a position: (x,y) or place.nw"

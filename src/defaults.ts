@@ -1,5 +1,3 @@
-import { Palette } from "./palette.js"
-
 /* eslint-disable max-len */
 const ShapeDefaults = `
 SArc    | stroke      | stroke_width     | linestyle | turn  | rotation | reveal_time | hide_time
@@ -170,8 +168,7 @@ export function setTheme(name: string) {
  */
 export function resetTheme(): void {
   Theme = { ...Themes[currentThemeName] }
-  Palette.setCurrent(`default`)
-  applyPaletteToTheme(Palette.getCurrentColors())
+  Defaults.Shapes = parseShapeDefaults(ShapeDefaults)
 }
 
 export function getThemeName(): string {
@@ -192,7 +189,6 @@ export function applyPaletteToTheme(colors: Record<string, string>): void {
   Theme.BoxFill2 = colors.b3
   Theme.BoxFill3 = colors.b4
   Theme.BoxFill4 = colors.b5
-  Theme.BodyTextColor = colors.f1
   Theme.LineStroke = colors.b1
   // Re-parse defaults to pick up new theme values
   Defaults.Shapes = parseShapeDefaults(ShapeDefaults)

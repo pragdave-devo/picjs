@@ -562,7 +562,7 @@ Read a shape default:
 <Shape>.<class>.<attr>
 ```
 
-`Shape` (capitalized, without a prefix S) refers to the base shape class.
+`Shape` (capitalized) refers to the base shape class.
 
 ```
 Box.fill = ~lightblue
@@ -581,7 +581,7 @@ Circle.radius = 0.5
 <target> %= <expr>
 ```
 
-Targets can be simple identifiers, `$`-prefixed variables, qualified paths
+Targets can be simple identifiers, qualified paths
 (`obj.attr`, `list[index]`), or the timeline shorthand `@` (equivalent to `@.now`).
 
 ```
@@ -624,7 +624,6 @@ These can be chained: `$list.map(fn)[0].x`
 ```
 if (<expr>) <body> else <body>
 if (<expr>) <body>
-<expr> ? <expr> : <expr>
 ```
 
 The body can be a single expression or a block `{ ... }`.
@@ -681,6 +680,11 @@ Colors in various formats:
 | Color model | `rgb(255, 0, 0)`, `hsl(0, 100, 50)` |
 | Dynamic color | `~#{expr}` |
 
+Named colors can be one of the standard [web color
+  names](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/named-color), a
+  foreground or background palette color (`~f1`..`~f8`, `~b1`..`~b8`), or `~none` (for transparent).
+
+
 **Color models:** `rgb`, `hsl`, `hsv`, `oklch` (case-insensitive, optional `a` suffix for alpha variant).
 
 | Model | Parameters |
@@ -711,9 +715,9 @@ Single-quoted and double-quoted strings. Double-quoted strings support interpola
 **Interpolation** (double-quoted only): `#{expr}` embeds an expression. Use `##` for a literal `#`.
 
 ```
-"Hello #{$name}"
+"Hello #{name}"
 "Total: #{a + b}"
-"Price: ###{$price}"     // outputs: Price: #42
+"Price: ###{price}"     // outputs: Price: #42
 ```
 
 **Escape sequences:** `\\`, `\'`, `\"`, `\n`, `\t`, `\r`, `\b`, `\f`, `\v`,
@@ -737,10 +741,12 @@ The comma between x and y is optional.
 
 ```
 [1, 2, 3]
-["hello", "world"]
+["hello", "world", 42]
 [~red, ~blue, ~green]
 []
 ```
+
+Elements of an array can have different types.
 
 Commas between elements are optional.
 

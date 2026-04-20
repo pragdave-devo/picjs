@@ -283,7 +283,6 @@ function extractStatements() {
     'AnimationSequence':    'One or more animations, optionally chained with "then"',
     'Assignment':           'Assign a value to a variable or attribute',
     'IfExpression':         'Conditional expression (if/else)',
-    'ConditionalExpression':'Ternary conditional (test ? then : else)',
   }
 
   const rule = rulesByName['Expression']
@@ -515,11 +514,7 @@ function extractExpressions() {
       { syntax: '<expr>.<attr>',    description: 'attribute access' },
     ],
     conditionals: renderAlternatives('IfExpression')
-      .filter(s => s.startsWith('if'))
-      .concat(
-        renderAlternatives('ConditionalExpression')
-          .filter(s => s.includes('?'))
-      ),
+      .filter(s => s.startsWith('if')),
     assignment: {
       operators: ['=', '+=', '-=', '*=', '/=', '%='],
       syntax: renderAlternatives('Assignment'),

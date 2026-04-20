@@ -4,7 +4,8 @@ import { parse as pegParse } from "./peg_parser/jp.js"
 import { Dispatcher } from "./dispatcher.js"
 import { Location } from "./parser.js"
 import { Binding } from "./binding.js"
-import { setTheme, getThemeName, resetTheme } from "./defaults.js"
+import { setTheme, getThemeName, resetTheme, applyPaletteToTheme } from "./defaults.js"
+import { Palette } from "./palette.js"
 
 import { el, mount, setChildren, svg } from "redom"
 import { PlaybackController } from "./jp-web-playback.js"
@@ -376,7 +377,9 @@ function preview() {
   lastOutput = null
   shapeMap.clear()
   currentDispatcher = null
-  resetTheme()  // Reset any palette/theme modifications from previous run
+  resetTheme()
+  Palette.setCurrent(`default`)
+  applyPaletteToTheme(Palette.getCurrentColors())
 
   const src = editorView.state.doc.toString()
   const parsed: ParseResult = parseToAST(pegParse, src, `Start`)

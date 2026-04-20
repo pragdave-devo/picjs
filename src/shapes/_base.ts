@@ -73,6 +73,7 @@ export class SBase extends TBase<null> {
   public params:         ShapeArgs = {}
   public anchorX:        number | null = null
   public anchorY:        number | null = null
+  public _hasExplicitAt = false
   public withConstraint?: WithConstraint
 
   protected dispatcher: Dispatcher
@@ -168,6 +169,7 @@ export class SBase extends TBase<null> {
       else if (k === `at`) {
         this.anchorX = val.x
         this.anchorY = val.y
+        this._hasExplicitAt = true
       }
       // else if (k === `x`) {
       //   this.anchorX = val
@@ -336,6 +338,10 @@ export class SBase extends TBase<null> {
 
   hasNoYCoordinate() {
     return this.anchorY === null
+  }
+
+  hasExplicitPosition() {
+    return this._hasExplicitAt || !!this.withConstraint
   }
 
   // these assume the anchor point is the center. This can be overridden
