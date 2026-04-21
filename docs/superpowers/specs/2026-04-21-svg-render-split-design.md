@@ -111,9 +111,9 @@ The AST is a tree of plain objects with `type` discriminators — mostly JSON-se
 
 The serialized AST is the **parser output** (before evaluation), not the evaluated state. The runtime re-evaluates from scratch, so live references, resolved constraints, and runtime state are never serialized.
 
-### Unsupported Features in Animated Export
+### Edge Cases in Animated Export
 
-- **`Pause` nodes:** Interactive pauses (expecting user click to resume) are converted to timed pauses with a default duration in exported HTML. Alternatively, the runtime can emit pause/resume UI controls — this is deferred to a later iteration.
+- **`Pause` nodes:** Supported. The runtime stops advancing the timeline and resumes on user interaction (click/tap on the SVG or a play control). Same behavior as current browser playback.
 - **Parse errors:** If the source has errors, no animated export is produced — the build-time step returns an error SVG (same as current behavior).
 
 ### Animated HTML Output Format
