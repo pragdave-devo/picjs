@@ -5,7 +5,7 @@ import { Timeline } from "./timeline.js"
 import { ShapeGraph } from "./shape_graph.js"
 import { WithConstraint } from "./shapes/_base.js"
 import { LineLike, SBase, SLabel, SPolyline } from "./shapes.js"
-import { setAttr, setChildren } from "redom"
+import { SvgNode, serialize } from "./svg-node.js"
 import { Location } from "./parser.js"
 import { Binding } from "./binding.js"
 import { XY, Cardinals } from "./position.js"
@@ -21,6 +21,7 @@ export class Dispatcher {
   private geometry: Geometry
   private timeline: Timeline
   private renderer: Renderer
+  private lastRenderNodes: SvgNode[] = []
 
   // Set while evaluating a shape's AST args/constraints, so the interpreter
   // can record variable→shape dependencies.
@@ -28,19 +29,19 @@ export class Dispatcher {
   asideDepth = 0
 
   constructor(
-    private logger: LoggerInterface, 
+    private logger: LoggerInterface,
     private svgHolder: SVGElement | null,
     runNumber: number
   ) {
     let width = 10, height = 7
-    
+
     this.logger = logger
     this.interpreter = new Interpreter(this, runNumber)
     this.shapeGraph = new ShapeGraph(this)
 
     this.svgHolder = svgHolder
     if (svgHolder) {
-      setAttr(this.svgHolder, { class: `${this.interpreter.cssPrefix}` })
+      svgHolder.setAttribute("class", this.interpreter.cssPrefix)
       const vb = svgHolder.getAttribute(`viewBox`)
       if (vb) {
         const [ _x, _y, wid, ht ] = vb.split(" ").map(n => parseInt(n))
@@ -92,9 +93,18 @@ export class Dispatcher {
   }
 
   renderUpdatedShapes() {
-    if (!this.svgHolder) return
-    const svgElements = this.shapeGraph.renderUpdatedOn(this.renderer)
-    setChildren(this.svgHolder, svgElements)
+    const svgNodes = this.shapeGraph.renderUpdatedOn(this.renderer)
+    this.lastRenderNodes = svgNodes
+    if (this.svgHolder) {
+      this.svgHolder.innerHTML = svgNodes.map((n: SvgNode) => serialize(n)).join("")
+    }
+  }
+
+  renderToSvgNodes(): SvgNode[] {
+    if (this.lastRenderNodes.length === 0) {
+      this.renderUpdatedShapes()
+    }
+    return this.lastRenderNodes
   }
 
   //////////////////////////////////////////////////  timeline

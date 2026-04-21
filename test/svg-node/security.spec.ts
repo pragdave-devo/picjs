@@ -20,7 +20,7 @@ describe("SvgNode security", () => {
       const node = svgNode("rect", { "data-info": '" onload="alert(1)' } as any)
       const svg = serialize(node)
       // Verify quotes are escaped and the malicious payload is safely contained
-      expect(svg).toBe('<rect data-info="&quot; onload=&quot;alert(1)"/>')
+      expect(svg).toBe('<rect data-info="&quot; onload=&quot;alert(1)"></rect>')
       // No actual onload attribute should exist (it's just escaped text in data-info)
       expect(svg.match(/onload=/g)).toHaveLength(1) // Only one, in the data-info value
       expect(svg).not.toMatch(/" onload="/) // No unescaped quote-space-onload pattern

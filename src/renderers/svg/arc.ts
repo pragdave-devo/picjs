@@ -3,7 +3,7 @@ import * as Convert from "./attribute_converters.js"
 import * as Shape from "../../shapes.js"
 import { XY } from "../../position.js"
 import { RenderParameters } from "../../types.js"
-import { setAttr, svg } from "redom"
+import { SvgNode, svgNode } from "../../svg-node.js"
 
 
 const two_cos_45 = 2.0 * Math.cos(Math.PI / 4.0)
@@ -11,7 +11,6 @@ const two_cos_45 = 2.0 * Math.cos(Math.PI / 4.0)
 export class Arc extends SvgBase {
 
   cropped = false
-  private lineEl!: SVGElement
   private pendingMarkers!: string[]
   private hideMarkers!: boolean
 
@@ -22,53 +21,29 @@ export class Arc extends SvgBase {
 
   private buildGroup() {
     const strokeColor = this.attrs.stroke || 'currentColor'
-    // Extract opacity for the group so it applies to both line and markers
-    const groupAttrs: Shape.Args = {}
+    const groupAttrs: Record<string, string | number> = {}
     if (this.attrs.opacity !== undefined) {
       groupAttrs.opacity = this.attrs.opacity
       delete this.attrs.opacity
     }
-    this.lineEl = svg('path', this.attrs)
-    this.el = svg('g', groupAttrs)
-    this.el.appendChild(this.lineEl)
-    this.appendMarkers(strokeColor)
+    const lineNode = svgNode('path', this.attrs as Record<string, string | number>)
+    const markerNodes = this.buildMarkers(strokeColor)
+    this.node = svgNode('g', groupAttrs, [lineNode, ...markerNodes])
   }
 
-  private appendMarkers(strokeColor: string) {
-    if (this.hideMarkers) {
-      this.pendingMarkers = []
-      return
-    }
-    for (const d of this.pendingMarkers) {
-      this.el.appendChild(svg('path', { d, fill: strokeColor, stroke: 'none' }))
-    }
+  private buildMarkers(strokeColor: string): SvgNode[] {
+    if (this.hideMarkers) { this.pendingMarkers = []; return [] }
+    const nodes = this.pendingMarkers.map(d =>
+      svgNode('path', { d, fill: strokeColor, stroke: 'none' })
+    )
     this.pendingMarkers = []
+    return nodes
   }
 
   rerender(position: RenderParameters, attrs: Shape.Args) {
     this.pendingMarkers = []
     this.attrs = toSvgAttrNames(this.convertToSVG(position, attrs))
-    const strokeColor = this.attrs.stroke || 'currentColor'
-
-    // Extract opacity for the group
-    if (this.attrs.opacity !== undefined) {
-      setAttr(this.el, { opacity: this.attrs.opacity })
-      delete this.attrs.opacity
-    } else {
-      this.el.removeAttribute('opacity')
-    }
-
-    setAttr(this.lineEl, this.attrs)
-    for (const attr of [`pathLength`, `stroke-dasharray`, `stroke-dashoffset`]) {
-      if (!(attr in this.attrs)) {
-        this.lineEl.removeAttribute(attr)
-      }
-    }
-
-    while (this.el.childNodes.length > 1) {
-      this.el.removeChild(this.el.lastChild!)
-    }
-    this.appendMarkers(strokeColor)
+    this.buildGroup()
     return this
   }
 

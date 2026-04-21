@@ -12,7 +12,7 @@ interface SimpleMarkdownParser {
 
 // Handle CJS/ESM interop - simple-markdown exports are under .default in ESM
 const MD: SimpleMarkdownParser = (MDModule as any).default || MDModule
-import { setAttr, setChildren, svg, text } from "redom"
+import { SvgNode, svgNode } from "../../svg-node.js"
 import { RenderParameters } from "../../types.js"
 
 
@@ -65,8 +65,8 @@ export class Label extends SvgBase {
         const runs = flattenMDToRuns(parsed)
         const wrapped = this.maxwidth ? wrapRuns(runs, this.maxwidth) : [runs]
         if (wrapped.length <= 1 && this.align === `c`) {
-          this.el.removeAttribute('text-anchor')
-          this.runsToTSpans(this.el, wrapped[0] || runs)
+          delete this.node.attrs["text-anchor"]
+          this.node.children = this.runsToTSpans(wrapped[0] || runs)
         } else if (wrapped.length <= 1) {
           // Single line but non-center alignment — need anchor positioning
           this.renderWrappedLines([wrapped[0] || runs], false)
@@ -94,9 +94,9 @@ export class Label extends SvgBase {
     const textAnchor = this.align === `w` ? `start`
                      : this.align === `e` ? `end`
                      : `middle`
-    setAttr(this.el, { 'text-anchor': textAnchor })
+    this.node.attrs["text-anchor"] = textAnchor
 
-    const children: SVGElement[] = []
+    const children: SvgNode[] = []
     for (let pi = 0; pi < paragraphs.length; pi++) {
       const parsed = MD.defaultInlineParse(paragraphs[pi])
       const runs = flattenMDToRuns(parsed)
@@ -107,12 +107,11 @@ export class Label extends SvgBase {
         if (children.length > 0) {
           attrs.dy = (li === 0 && pi > 0) ? paragraphSpacing : lineSpacing
         }
-        const lineEl = svg('tspan', attrs)
-        this.runsToTSpans(lineEl, wrappedLines[li])
-        children.push(lineEl)
+        const tspanChildren = this.runsToTSpans(wrappedLines[li])
+        children.push(svgNode('tspan', attrs, tspanChildren))
       }
     }
-    setChildren(this.el, children)
+    this.node.children = children
   }
 
   private renderWrappedLines(lines: StyledRun[][], multiParagraph: boolean) {
@@ -126,26 +125,24 @@ export class Label extends SvgBase {
     const textAnchor = this.align === `w` ? `start`
                      : this.align === `e` ? `end`
                      : `middle`
-    setAttr(this.el, { 'text-anchor': textAnchor })
+    this.node.attrs["text-anchor"] = textAnchor
 
-    const children: SVGElement[] = []
+    const children: SvgNode[] = []
     for (let i = 0; i < lines.length; i++) {
       const attrs: Record<string, any> = { x: anchorX }
       if (i > 0) attrs.dy = lineSpacing
-      const lineEl = svg('tspan', attrs)
-      this.runsToTSpans(lineEl, lines[i])
-      children.push(lineEl)
+      const tspanChildren = this.runsToTSpans(lines[i])
+      children.push(svgNode('tspan', attrs, tspanChildren))
     }
-    setChildren(this.el, children)
+    this.node.children = children
   }
 
-  private runsToTSpans(parent: Node, runs: StyledRun[]) {
-    const nodes = runs.map(run => {
-      if (run.type === `text`) return text(run.text)
-      if (run.type === `em`)   return svg(`tspan`, run.text, { "font-style": `italic` })
-      return text(run.text)
+  private runsToTSpans(runs: StyledRun[]): (SvgNode | string)[] {
+    return runs.map(run => {
+      if (run.type === "text") return run.text
+      if (run.type === "em") return svgNode("tspan", { "font-style": "italic" }, [run.text])
+      return run.text
     })
-    setChildren(parent, nodes)
   }
 
 

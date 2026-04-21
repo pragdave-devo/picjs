@@ -4,7 +4,8 @@ import { serialize, svgNode } from "../../src/svg-node.js"
 describe("SvgNode serialization", () => {
   it("serializes a self-closing element with no children", () => {
     const node = svgNode("rect", { x: 10, y: 20, width: 100, height: 50 })
-    expect(serialize(node)).toBe(`<rect x="10" y="20" width="100" height="50"/>`)
+    // Note: Always use explicit closing tags for linkedom compatibility
+    expect(serialize(node)).toBe(`<rect x="10" y="20" width="100" height="50"></rect>`)
   })
 
   it("serializes an element with children", () => {
@@ -12,7 +13,7 @@ describe("SvgNode serialization", () => {
       svgNode("rect", { x: 0, y: 0, width: 10, height: 10 }),
     ])
     expect(serialize(node)).toBe(
-      `<g transform="translate(5,5)"><rect x="0" y="0" width="10" height="10"/></g>`
+      `<g transform="translate(5,5)"><rect x="0" y="0" width="10" height="10"></rect></g>`
     )
   })
 
@@ -33,7 +34,7 @@ describe("SvgNode serialization", () => {
 
   it("omits undefined and null attribute values", () => {
     const node = svgNode("rect", { x: 10, y: undefined, width: null } as any)
-    expect(serialize(node)).toBe(`<rect x="10"/>`)
+    expect(serialize(node)).toBe(`<rect x="10"></rect>`)
   })
 
   it("always uses closing tag for text elements (not self-closing)", () => {

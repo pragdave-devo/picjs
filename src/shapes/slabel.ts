@@ -50,11 +50,36 @@ export class SLabel extends SBase {
       width: 0, height: 0, rotation: 0, rotationCenter: { x: 0, y: 0 },
     }
     const label = new ShapeToRenderer.SLabel(dummyPosition, localParams)
-    const text = label.el
+    const svgNode = label.node
 
-    if (text) {
-      // Check if getBBox is available (not in linkedom or other minimal DOMs)
-      if (typeof (text as SVGGraphicsElement).getBBox !== 'function') {
+    if (svgNode) {
+      // Convert SvgNode to DOM element for measurement (browser only)
+      const svgNS = 'http://www.w3.org/2000/svg'
+      const text = document.createElementNS(svgNS, 'text') as SVGTextElement
+      // Copy attributes
+      for (const [key, value] of Object.entries(svgNode.attrs)) {
+        text.setAttribute(key, String(value))
+      }
+      // Copy children
+      const renderChild = (child: any): Node => {
+        if (typeof child === 'string') {
+          return document.createTextNode(child)
+        }
+        const el = document.createElementNS(svgNS, child.tag)
+        for (const [k, v] of Object.entries(child.attrs || {})) {
+          el.setAttribute(k, String(v))
+        }
+        for (const c of child.children || []) {
+          el.appendChild(renderChild(c))
+        }
+        return el
+      }
+      for (const child of svgNode.children) {
+        text.appendChild(renderChild(child))
+      }
+
+      // Check if getBBox is available
+      if (typeof text.getBBox !== 'function') {
         // Fallback: estimate dimensions based on text content
         const str = this.params.text || ''
         const fontSize = this.params.font?.size || 0.2
@@ -63,7 +88,7 @@ export class SLabel extends SBase {
         return
       }
       this.dispatcher.temporarilyAddSVGElement(text, () => {
-        const bb = (text as SVGGraphicsElement).getBBox()
+        const bb = text.getBBox()
         this.params.width = bb.width
         this.params.height = bb.height
       })

@@ -1,14 +1,14 @@
-import { RedomComponent, setAttr, svg } from "redom"
+import { SvgNode, svgNode } from "../../svg-node.js"
 import * as Shape from "../../shapes.js"
 import { RenderParameters     } from "../../types.js"
 
 export type LineDirection = -1 | 1
 
-export class SvgBase implements RedomComponent {
+export class SvgBase {
 
   position: RenderParameters
   attrs: Shape.Args
-  el!: SVGElement
+  node!: SvgNode
 
   constructor(position: RenderParameters, attrs: Shape.Args) {
     this.position = position
@@ -18,19 +18,12 @@ export class SvgBase implements RedomComponent {
 
   rerender(position: RenderParameters, attrs: Shape.Args) {
     this.attrs = toSvgAttrNames(this.convertToSVG(position, attrs))
-    setAttr(this.el, this.attrs)
-    // redom's setAttr only adds/updates attributes, never removes.
-    // Clean up draw-animation attributes when no longer active.
-    for (const attr of [`pathLength`, `stroke-dasharray`, `stroke-dashoffset`]) {
-      if (!(attr in this.attrs)) {
-        this.el.removeAttribute(attr)
-      }
-    }
+    this.node = svgNode(this.node.tag, this.attrs as Record<string, string | number>)
     return this
   }
 
   build(tag: string) {
-    this.el = svg(tag, this.attrs)
+    this.node = svgNode(tag, this.attrs as Record<string, string | number>)
   }
 
   convertToSVG(_position: RenderParameters, _attrs: Shape.Args): Shape.Args {

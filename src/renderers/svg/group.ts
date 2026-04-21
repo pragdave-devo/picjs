@@ -1,4 +1,4 @@
-import { setAttr, svg } from "redom"
+import { SvgNode, svgNode } from "../../svg-node.js"
 import { SGroup } from "../../shapes/sgroup.js"
 import { RenderParameters } from "../../types.js"
 import { SvgBase } from "./_base.js"
@@ -31,19 +31,18 @@ export class Group extends SvgBase {
 
   rerender(_position: RenderParameters, attrs: Shape.Args) {
     this.attrs = this.convertToSVG(_position, attrs)
-    setAttr(this.el, this.attrs)
+    const existingChildren = this.node ? this.node.children : []
+    this.node = svgNode("g", this.attrs as Record<string, string | number>, existingChildren)
     return this
   }
 
   // Add a child element to this group
-  addChild(childEl: SVGElement) {
-    this.el.appendChild(childEl)
+  addChild(childNode: SvgNode) {
+    this.node.children.push(childNode)
   }
 
   // Clear all children (for re-render)
   clearChildren() {
-    while (this.el.firstChild) {
-      this.el.removeChild(this.el.firstChild)
-    }
+    this.node.children = []
   }
 }

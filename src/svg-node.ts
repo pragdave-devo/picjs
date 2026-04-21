@@ -9,10 +9,16 @@ export interface SvgNode {
 export function svgNode(
   tag: string,
   attrs: Record<string, string | number> = {},
-  children: (SvgNode | string)[] = []
+  children?: (SvgNode | string)[]
 ): SvgNode {
-  return { tag, attrs, children }
+  return { tag, attrs, children: children || [] }
 }
+
+// When rendering to linkedom (server-side), self-closing SVG tags like <rect/>
+// are incorrectly parsed as opening tags without closing, causing subsequent
+// elements to nest inside them. Always use explicit closing tags.
+// See: https://github.com/WebReflection/linkedom/issues/270
+const USE_SELF_CLOSING_TAGS = false
 
 // Elements that must always have a closing tag even with no children
 // (browsers treat self-closing <text/> differently than <text></text>)
@@ -23,7 +29,7 @@ export function serialize(node: SvgNode): string {
   const attrStr = serializeAttrs(node.attrs)
   const prefix = attrStr ? `<${tag} ${attrStr}` : `<${tag}`
 
-  if (node.children.length === 0 && !NEEDS_CLOSING_TAG.has(tag)) {
+  if (USE_SELF_CLOSING_TAGS && node.children.length === 0 && !NEEDS_CLOSING_TAG.has(tag)) {
     return `${prefix}/>`
   }
 

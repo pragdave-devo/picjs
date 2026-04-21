@@ -1,4 +1,3 @@
-// import { setAttr } from "redom"
 import { SvgBase } from "./_base.js"
 import * as Convert from "./attribute_converters.js"
 import { RenderParameters } from "../../types.js"

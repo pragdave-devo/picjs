@@ -9,7 +9,7 @@ import { Rect }     from "./rect.js"
 import * as Shape from "../../shapes.js"
 import { RenderParameters } from "../../types.js"
 import { SGroup } from "../../shapes/sgroup.js"
-import { svg, setAttr } from "redom"
+import { SvgNode, svgNode } from "../../svg-node.js"
 
 import { SvgBase } from "./_base.js"
 
@@ -30,13 +30,13 @@ export class Renderer {
 
 
   renderers: { [sid: string]: SvgBase } = {}
-  parentGroups: { [sid: string]: SVGElement } = {}
+  parentGroups: { [sid: string]: SvgNode } = {}
 
   constructor(_dispatcher: unknown) {
   }
 
   render(shapes: Shape.SBase[]) {
-    const elements: SVGElement[] = []
+    const elements: SvgNode[] = []
 
     // First pass: identify which shapes are group children or parent-child pairs
     const groupChildren = new Set<Shape.SBase>()
@@ -73,16 +73,16 @@ export class Renderer {
         elements.push(groupEl)
       }
       else if (sid in this.renderers) {
-        const existingElement = this.renderers[sid].rerender(shape.requiredPosition(), params).el
-        elements.push(existingElement)
+        const renderer = this.renderers[sid].rerender(shape.requiredPosition(), params)
+        elements.push(renderer.node)
       }
       else {
         const specificRenderer = ShapeToRenderer[shape.shapeName]
         if (specificRenderer) {
           const renderer = new specificRenderer(shape.requiredPosition(), params)
-          renderer.el.setAttribute(`data-jp-id`, sid)
+          renderer.node.attrs["data-jp-id"] = sid
           this.renderers[sid] = renderer
-          elements.push(renderer.el)
+          elements.push(renderer.node)
         }
       }
     }
@@ -90,7 +90,7 @@ export class Renderer {
     return elements
   }
 
-  private renderParentWithChildren(shape: Shape.SBase): SVGElement {
+  private renderParentWithChildren(shape: Shape.SBase): SvgNode {
     const sid = shape.id
     const position = this.localPosition(shape)
     const rotation = shape.params.rotation
@@ -104,59 +104,57 @@ export class Renderer {
 
     // Render parent without rotation
     const parentParams = { ...shape.params, rotation: 0 }
-    const parentEl = this.renderSingleShape(shape, position ? { ...position, rotation: 0 } : position, parentParams)
+    const parentNode = this.renderSingleShape(shape, position ? { ...position, rotation: 0 } : position, parentParams)
 
     // Render children — strip rotation only when the parent's rotation is
     // lifted to the group.  Line labels carry their own rotation (from the
     // line tangent) which must be preserved because the parent line has none.
-    const childEls: SVGElement[] = []
+    const childNodes: SvgNode[] = []
     for (const child of shape.children) {
       const childPos = this.localPosition(child)
       if (rotation) {
         const childParams = { ...child.params, rotation: 0 }
-        childEls.push(this.renderSingleShape(child, childPos ? { ...childPos, rotation: 0 } : childPos, childParams))
+        childNodes.push(this.renderSingleShape(child, childPos ? { ...childPos, rotation: 0 } : childPos, childParams))
       } else {
-        childEls.push(this.renderSingleShape(child, childPos, child.params))
+        childNodes.push(this.renderSingleShape(child, childPos, child.params))
       }
     }
 
     // Wrap in group
-    let groupEl = this.parentGroups[sid]
-    if (!groupEl) {
-      groupEl = svg('g') as SVGElement
-      groupEl.setAttribute(`data-jp-id`, sid)
-      this.parentGroups[sid] = groupEl
+    let groupNode = this.parentGroups[sid]
+    if (!groupNode) {
+      groupNode = svgNode("g")
+      groupNode.attrs["data-jp-id"] = sid
+      this.parentGroups[sid] = groupNode
     }
     if (groupTransform) {
-      setAttr(groupEl, { transform: groupTransform })
+      groupNode.attrs.transform = groupTransform
     } else {
-      groupEl.removeAttribute(`transform`)
+      delete groupNode.attrs.transform
     }
 
     // Replace children
-    while (groupEl.firstChild) groupEl.removeChild(groupEl.firstChild)
-    groupEl.appendChild(parentEl)
-    for (const el of childEls) groupEl.appendChild(el)
+    groupNode.children = [parentNode, ...childNodes]
 
-    return groupEl
+    return groupNode
   }
 
-  private renderSingleShape(shape: Shape.SBase, position: RenderParameters, params: Shape.Args): SVGElement {
+  private renderSingleShape(shape: Shape.SBase, position: RenderParameters, params: Shape.Args): SvgNode {
     const sid = shape.id
     if (sid in this.renderers) {
-      return this.renderers[sid].rerender(position, params).el
+      return this.renderers[sid].rerender(position, params).node
     }
     const specificRenderer = ShapeToRenderer[shape.shapeName]
     if (specificRenderer) {
       const renderer = new specificRenderer(position, params)
-      renderer.el.setAttribute(`data-jp-id`, sid)
+      renderer.node.attrs["data-jp-id"] = sid
       this.renderers[sid] = renderer
-      return renderer.el
+      return renderer.node
     }
-    return svg('g') as SVGElement
+    return svgNode("g")
   }
 
-  private renderGroup(group: SGroup): SVGElement {
+  private renderGroup(group: SGroup): SvgNode {
     const sid = group.id
     const params = {
       ...group.params,
@@ -173,7 +171,7 @@ export class Renderer {
     }
     else {
       groupRenderer = new Group(group.requiredPosition(), params)
-      groupRenderer.el.setAttribute(`data-jp-id`, sid)
+      groupRenderer.node.attrs["data-jp-id"] = sid
       this.renderers[sid] = groupRenderer
     }
 
@@ -189,16 +187,16 @@ export class Renderer {
     // Render children inside the group
     for (const child of group.groupChildren) {
       if (parentOwned.has(child)) continue
-      const childEl = this.renderChild(child)
-      if (childEl) {
-        groupRenderer.addChild(childEl)
+      const childNode = this.renderChild(child)
+      if (childNode) {
+        groupRenderer.addChild(childNode)
       }
     }
 
-    return groupRenderer.el
+    return groupRenderer.node
   }
 
-  private renderChild(shape: Shape.SBase): SVGElement | null {
+  private renderChild(shape: Shape.SBase): SvgNode | null {
     // Handle nested groups recursively
     if (shape instanceof SGroup) {
       return this.renderGroup(shape)
@@ -214,15 +212,15 @@ export class Renderer {
     const position = this.localPosition(shape)
 
     if (sid in this.renderers) {
-      return this.renderers[sid].rerender(position, params).el
+      return this.renderers[sid].rerender(position, params).node
     }
     else {
       const specificRenderer = ShapeToRenderer[shape.shapeName]
       if (specificRenderer) {
         const renderer = new specificRenderer(position, params)
-        renderer.el.setAttribute(`data-jp-id`, sid)
+        renderer.node.attrs["data-jp-id"] = sid
         this.renderers[sid] = renderer
-        return renderer.el
+        return renderer.node
       }
     }
 

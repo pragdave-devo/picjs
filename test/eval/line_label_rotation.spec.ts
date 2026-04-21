@@ -124,15 +124,24 @@ describe(`line label SVG rendering`, () => {
     const shapes = d.shapes()
 
     const renderer = new Renderer(null)
-    const elements = renderer.render(shapes)
+    const nodes = renderer.render(shapes)
 
-    // Find the text element for the label (linkedom may uppercase tagName)
-    const allElements = elements.flatMap(el => [el, ...Array.from(el.querySelectorAll(`*`))])
-    const textEl = allElements.find(el => el.tagName.toLowerCase() === `text`)
-    expect(textEl).toBeDefined()
+    // Find the text node for the label
+    const findTextNode = (node: any): any => {
+      if (node.tag === 'text') return node
+      for (const child of node.children || []) {
+        if (typeof child !== 'string') {
+          const found = findTextNode(child)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    const textNode = nodes.map(findTextNode).find(n => n !== null)
+    expect(textNode).toBeDefined()
 
     // The text element should have a rotation transform (from the line tangent)
-    const transform = textEl!.getAttribute(`transform`)
+    const transform = textNode.attrs.transform
     expect(transform).toBeTruthy()
     expect(transform).toContain(`rotate(`)
   })
@@ -143,14 +152,24 @@ describe(`line label SVG rendering`, () => {
     const shapes = d.shapes()
 
     const renderer = new Renderer(null)
-    const elements = renderer.render(shapes)
+    const nodes = renderer.render(shapes)
 
-    const allElements = elements.flatMap(el => [el, ...Array.from(el.querySelectorAll(`*`))])
-    const textEl = allElements.find(el => el.tagName.toLowerCase() === `text`)
-    expect(textEl).toBeDefined()
+    // Find the text node
+    const findTextNode = (node: any): any => {
+      if (node.tag === 'text') return node
+      for (const child of node.children || []) {
+        if (typeof child !== 'string') {
+          const found = findTextNode(child)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    const textNode = nodes.map(findTextNode).find((n: any) => n !== null)
+    expect(textNode).toBeDefined()
 
     // Horizontal label should not have rotation
-    const transform = textEl!.getAttribute(`transform`)
+    const transform = textNode.attrs.transform
     if (transform) {
       expect(transform).not.toContain(`rotate(`)
     }
@@ -165,17 +184,24 @@ describe(`line label SVG rendering`, () => {
     const shapes = d.shapes()
 
     const renderer = new Renderer(null)
-    const elements = renderer.render(shapes)
+    const nodes = renderer.render(shapes)
 
     // Find the wrapping <g> with the rotation transform
-    const allElements = elements.flatMap(el => [el, ...Array.from(el.querySelectorAll(`*`))])
-    const rotatedG = allElements.find(el => {
-      const t = el.getAttribute?.(`transform`) || ``
-      return t.includes(`rotate(45`)
-    })
+    const findRotatedG = (node: any): any => {
+      const t = node.attrs?.transform || ``
+      if (t.includes(`rotate(45`)) return node
+      for (const child of node.children || []) {
+        if (typeof child !== 'string') {
+          const found = findRotatedG(child)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    const rotatedG = nodes.map(findRotatedG).find((n: any) => n !== null)
     expect(rotatedG).toBeDefined()
 
-    const transform = rotatedG!.getAttribute(`transform`)!
+    const transform = rotatedG.attrs.transform
     const match = transform.match(/rotate\([^,]+,\s*([^,]+),\s*([^)]+)\)/)
     expect(match).toBeTruthy()
     const cx = parseFloat(match![1])
@@ -190,18 +216,28 @@ describe(`line label SVG rendering`, () => {
     const shapes = d.shapes()
 
     const renderer = new Renderer(null)
-    const elements = renderer.render(shapes)
+    const nodes = renderer.render(shapes)
 
     // Should have a <g> wrapping the box and label
-    const gEl = elements.find(el => el.tagName.toLowerCase() === `g`)
-    expect(gEl).toBeDefined()
-    const groupTransform = gEl!.getAttribute(`transform`)
+    const gNode = nodes.find((n: any) => n.tag === 'g')
+    expect(gNode).toBeDefined()
+    const groupTransform = gNode!.attrs.transform
     expect(groupTransform).toContain(`rotate(30`)
 
     // The text element inside should NOT have its own rotation
-    const textEl = Array.from(gEl!.querySelectorAll(`*`)).find(el => el.tagName.toLowerCase() === `text`)
-    expect(textEl).toBeDefined()
-    const textTransform = textEl!.getAttribute(`transform`)
+    const findTextNode = (node: any): any => {
+      if (node.tag === 'text') return node
+      for (const child of node.children || []) {
+        if (typeof child !== 'string') {
+          const found = findTextNode(child)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    const textNode = findTextNode(gNode)
+    expect(textNode).toBeDefined()
+    const textTransform = textNode.attrs.transform
     if (textTransform) {
       expect(textTransform).not.toContain(`rotate(`)
     }
