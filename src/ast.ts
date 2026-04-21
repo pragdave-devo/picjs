@@ -1,4 +1,4 @@
-import { Location } from "./parser.js"
+import { Location } from "./location.js"
 import { Cardinals, XY } from "./position.js"
 import { WithConstraint } from "./shapes/_base.js"
 

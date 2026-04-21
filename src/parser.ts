@@ -1,17 +1,7 @@
 import * as AST from "./ast.js"
 import type { SyntaxError as PEGSyntaxError } from "./peg_parser/jp.js"
 
-export interface LocationPoint {
-  line: number
-  column: number
-  offset: number
-}
-
-export interface Location {
-  start: LocationPoint
-  end: LocationPoint
-  content?: string  // optional, can be added for error display
-}
+export type { Location, LocationPoint } from "./location.js"
 
 export type SyntaxError = PEGSyntaxError
 

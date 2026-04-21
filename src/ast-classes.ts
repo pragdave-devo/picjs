@@ -1,4 +1,4 @@
-import { Location } from "./parser.js"
+import { Location } from "./location.js"
 import { XY } from "./position.js"
 
 export class Base {

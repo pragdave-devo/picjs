@@ -1,6 +1,6 @@
 import { RTE } from "./runtime_error.js"
 import * as AST from "./ast.js"
-import { Location } from "./parser.js"
+import { Location } from "./location.js"
 
 
 export abstract class Visitor {

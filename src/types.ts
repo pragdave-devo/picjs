@@ -30,7 +30,7 @@ registerHasMethodFactory((host) =>
     })
 )
 
-import { Location } from "./parser.js"
+import { Location } from "./location.js"
 import { XY } from "./position.js"
 
 export type LoggerInterface = (location: Location | undefined, result: any, source?: string) => void 
