@@ -3,7 +3,7 @@
  * Uses SvgNode serialization instead of DOM manipulation.
  */
 
-import { SvgNode, svgNode, serialize } from "./svg-node.js"
+import { SvgNode, svgNode, serialize, IdGenerator } from "./svg-node.js"
 
 export interface RenderResult {
   svg: string
@@ -17,6 +17,8 @@ export interface RenderOptions {
   padding?: number
   /** Include source as HTML comment in SVG (default: true) */
   includeSource?: boolean
+  /** Optional ID generation for animation runtime */
+  ids?: { prefix: string }
 }
 
 /**
@@ -58,6 +60,12 @@ export async function renderToString(source: string, options: RenderOptions = {}
     // Create dispatcher without DOM (svgHolder = null)
     // The Dispatcher will skip DOM manipulation and renderers will produce SvgNode trees
     const dispatcher = new Dispatcher(nullLogger, null, 1)
+
+    // Set up ID generator if requested
+    if (options.ids) {
+      const idGen = new IdGenerator(options.ids.prefix)
+      dispatcher.setIdGenerator(idGen)
+    }
 
     // Run the interpreter
     dispatcher.start(parsed.ast)

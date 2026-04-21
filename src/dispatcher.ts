@@ -5,7 +5,7 @@ import { Timeline } from "./timeline.js"
 import { ShapeGraph } from "./shape_graph.js"
 import { WithConstraint } from "./shapes/_base.js"
 import { LineLike, SBase, SLabel, SPolyline } from "./shapes.js"
-import { SvgNode, serialize } from "./svg-node.js"
+import { SvgNode, serialize, IdGenerator } from "./svg-node.js"
 import { Location } from "./location.js"
 import { Binding } from "./binding.js"
 import { XY, Cardinals } from "./position.js"
@@ -105,6 +105,10 @@ export class Dispatcher {
       this.renderUpdatedShapes()
     }
     return this.lastRenderNodes
+  }
+
+  setIdGenerator(gen: IdGenerator) {
+    this.renderer.setIdGenerator(gen)
   }
 
   //////////////////////////////////////////////////  timeline

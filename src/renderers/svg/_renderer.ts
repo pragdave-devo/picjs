@@ -9,7 +9,7 @@ import { Rect }     from "./rect.js"
 import * as Shape from "../../shapes.js"
 import { RenderParameters } from "../../types.js"
 import { SGroup } from "../../shapes/sgroup.js"
-import { SvgNode, svgNode } from "../../svg-node.js"
+import { SvgNode, svgNode, IdGenerator } from "../../svg-node.js"
 
 import { SvgBase } from "./_base.js"
 
@@ -31,8 +31,13 @@ export class Renderer {
 
   renderers: { [sid: string]: SvgBase } = {}
   parentGroups: { [sid: string]: SvgNode } = {}
+  idGenerator?: IdGenerator
 
   constructor(_dispatcher: unknown) {
+  }
+
+  setIdGenerator(gen: IdGenerator) {
+    this.idGenerator = gen
   }
 
   render(shapes: Shape.SBase[]) {
@@ -65,15 +70,20 @@ export class Renderer {
 
       if (shape instanceof SGroup) {
         // Render group with transform, then render children inside
+        // ID is assigned inside renderGroup
         const groupEl = this.renderGroup(shape)
         elements.push(groupEl)
       }
       else if (shape.children.length > 0) {
+        // Composite shape - ID assigned inside renderParentWithChildren
         const groupEl = this.renderParentWithChildren(shape)
         elements.push(groupEl)
       }
       else if (sid in this.renderers) {
         const renderer = this.renderers[sid].rerender(shape.requiredPosition(), params)
+        if (this.idGenerator) {
+          renderer.node.attrs.id = this.idGenerator.next()
+        }
         elements.push(renderer.node)
       }
       else {
@@ -81,6 +91,9 @@ export class Renderer {
         if (specificRenderer) {
           const renderer = new specificRenderer(shape.requiredPosition(), params)
           renderer.node.attrs["data-jp-id"] = sid
+          if (this.idGenerator) {
+            renderer.node.attrs.id = this.idGenerator.next()
+          }
           this.renderers[sid] = renderer
           elements.push(renderer.node)
         }
@@ -102,9 +115,12 @@ export class Renderer {
       groupTransform = `rotate(${rotation}, ${center.x}, ${center.y})`
     }
 
+    // Generate main ID for the group if IdGenerator is present
+    const mainId = this.idGenerator?.next()
+
     // Render parent without rotation
     const parentParams = { ...shape.params, rotation: 0 }
-    const parentNode = this.renderSingleShape(shape, position ? { ...position, rotation: 0 } : position, parentParams)
+    const parentNode = this.renderSingleShape(shape, position ? { ...position, rotation: 0 } : position, parentParams, mainId ? this.idGenerator!.sub(mainId, "s") : undefined)
 
     // Render children — strip rotation only when the parent's rotation is
     // lifted to the group.  Line labels carry their own rotation (from the
@@ -112,11 +128,12 @@ export class Renderer {
     const childNodes: SvgNode[] = []
     for (const child of shape.children) {
       const childPos = this.localPosition(child)
+      const childId = mainId ? this.idGenerator!.sub(mainId, "t") : undefined
       if (rotation) {
         const childParams = { ...child.params, rotation: 0 }
-        childNodes.push(this.renderSingleShape(child, childPos ? { ...childPos, rotation: 0 } : childPos, childParams))
+        childNodes.push(this.renderSingleShape(child, childPos ? { ...childPos, rotation: 0 } : childPos, childParams, childId))
       } else {
-        childNodes.push(this.renderSingleShape(child, childPos, child.params))
+        childNodes.push(this.renderSingleShape(child, childPos, child.params, childId))
       }
     }
 
@@ -132,6 +149,9 @@ export class Renderer {
     } else {
       delete groupNode.attrs.transform
     }
+    if (mainId) {
+      groupNode.attrs.id = mainId
+    }
 
     // Replace children
     groupNode.children = [parentNode, ...childNodes]
@@ -139,15 +159,22 @@ export class Renderer {
     return groupNode
   }
 
-  private renderSingleShape(shape: Shape.SBase, position: RenderParameters, params: Shape.Args): SvgNode {
+  private renderSingleShape(shape: Shape.SBase, position: RenderParameters, params: Shape.Args, explicitId?: string): SvgNode {
     const sid = shape.id
     if (sid in this.renderers) {
-      return this.renderers[sid].rerender(position, params).node
+      const node = this.renderers[sid].rerender(position, params).node
+      if (explicitId) {
+        node.attrs.id = explicitId
+      }
+      return node
     }
     const specificRenderer = ShapeToRenderer[shape.shapeName]
     if (specificRenderer) {
       const renderer = new specificRenderer(position, params)
       renderer.node.attrs["data-jp-id"] = sid
+      if (explicitId) {
+        renderer.node.attrs.id = explicitId
+      }
       this.renderers[sid] = renderer
       return renderer.node
     }
@@ -173,6 +200,11 @@ export class Renderer {
       groupRenderer = new Group(group.requiredPosition(), params)
       groupRenderer.node.attrs["data-jp-id"] = sid
       this.renderers[sid] = groupRenderer
+    }
+
+    // Assign ID if generator is present
+    if (this.idGenerator) {
+      groupRenderer.node.attrs.id = this.idGenerator.next()
     }
 
     // Identify shapes that are children of a parent (e.g. labels inside a box)
@@ -202,12 +234,13 @@ export class Renderer {
   }
 
   private renderChild(shape: Shape.SBase): SvgNode | null {
-    // Handle nested groups recursively
+    // Handle nested groups recursively - ID assigned inside renderGroup
     if (shape instanceof SGroup) {
       return this.renderGroup(shape)
     }
 
     // Handle shapes with children (e.g. rotated box with label inside a group)
+    // ID assigned inside renderParentWithChildren
     if (shape.children.length > 0) {
       return this.renderParentWithChildren(shape)
     }
@@ -217,13 +250,20 @@ export class Renderer {
     const position = this.localPosition(shape)
 
     if (sid in this.renderers) {
-      return this.renderers[sid].rerender(position, params).node
+      const node = this.renderers[sid].rerender(position, params).node
+      if (this.idGenerator) {
+        node.attrs.id = this.idGenerator.next()
+      }
+      return node
     }
     else {
       const specificRenderer = ShapeToRenderer[shape.shapeName]
       if (specificRenderer) {
         const renderer = new specificRenderer(position, params)
         renderer.node.attrs["data-jp-id"] = sid
+        if (this.idGenerator) {
+          renderer.node.attrs.id = this.idGenerator.next()
+        }
         this.renderers[sid] = renderer
         return renderer.node
       }
