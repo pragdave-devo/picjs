@@ -1,20 +1,44 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
-export default defineConfig({
-  build: {
-    outDir: resolve(__dirname, 'dist'),
+const target = process.env.BUILD_TARGET || 'main'
+
+const configs: Record<string, any> = {
+  main: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'picjs',
-      fileName: (format) => format === 'umd' ? 'picjs.umd.js' : 'picjs.js',
+      fileName: (format: string) => format === 'umd' ? 'picjs.umd.js' : 'picjs.js',
       formats: ['es', 'umd'],
     },
     rollupOptions: {
       output: {
         exports: 'named',
+        inlineDynamicImports: true,
       },
     },
+  },
+  runtime: {
+    lib: {
+      entry: resolve(__dirname, 'src/runtime.ts'),
+      name: 'picjsRuntime',
+      fileName: (format: string) => format === 'umd' ? 'picjs.runtime.umd.js' : 'runtime.js',
+      formats: ['es', 'umd'],
+    },
+    rollupOptions: {
+      output: {
+        exports: 'named',
+        inlineDynamicImports: true,
+      },
+    },
+  },
+}
+
+export default defineConfig({
+  build: {
+    outDir: resolve(__dirname, 'dist'),
+    emptyOutDir: target === 'main',
+    ...configs[target],
     minify: 'esbuild',
     sourcemap: true,
   },
