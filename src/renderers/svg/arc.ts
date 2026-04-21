@@ -20,6 +20,7 @@ export class Arc extends SvgBase {
   }
 
   private buildGroup() {
+    const id = this.node?.attrs["data-jp-id"]
     const strokeColor = this.attrs.stroke || 'currentColor'
     const groupAttrs: Record<string, string | number> = {}
     if (this.attrs.opacity !== undefined) {
@@ -29,6 +30,7 @@ export class Arc extends SvgBase {
     const lineNode = svgNode('path', this.attrs as Record<string, string | number>)
     const markerNodes = this.buildMarkers(strokeColor)
     this.node = svgNode('g', groupAttrs, [lineNode, ...markerNodes])
+    if (id !== undefined) this.node.attrs["data-jp-id"] = id
   }
 
   private buildMarkers(strokeColor: string): SvgNode[] {

@@ -30,9 +30,11 @@ export class Group extends SvgBase {
   }
 
   rerender(_position: RenderParameters, attrs: Shape.Args) {
+    const id = this.node?.attrs["data-jp-id"]
     this.attrs = this.convertToSVG(_position, attrs)
     const existingChildren = this.node ? this.node.children : []
     this.node = svgNode("g", this.attrs as Record<string, string | number>, existingChildren)
+    if (id !== undefined) this.node.attrs["data-jp-id"] = id
     return this
   }
 

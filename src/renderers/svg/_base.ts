@@ -17,8 +17,10 @@ export class SvgBase {
 
 
   rerender(position: RenderParameters, attrs: Shape.Args) {
+    const id = this.node?.attrs["data-jp-id"]
     this.attrs = toSvgAttrNames(this.convertToSVG(position, attrs))
     this.node = svgNode(this.node.tag, this.attrs as Record<string, string | number>)
+    if (id !== undefined) this.node.attrs["data-jp-id"] = id
     return this
   }
 

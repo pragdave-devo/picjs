@@ -18,6 +18,7 @@ export class Line extends SvgBase {
   }
 
   private buildGroup() {
+    const id = this.node?.attrs["data-jp-id"]
     const strokeColor = this.attrs.stroke || 'currentColor'
     const groupAttrs: Record<string, string | number> = {}
     if (this.attrs.transform) {
@@ -31,6 +32,7 @@ export class Line extends SvgBase {
     const lineNode = svgNode('path', this.attrs as Record<string, string | number>)
     const markerNodes = this.buildMarkers(strokeColor)
     this.node = svgNode('g', groupAttrs, [lineNode, ...markerNodes])
+    if (id !== undefined) this.node.attrs["data-jp-id"] = id
   }
 
   private buildMarkers(strokeColor: string): SvgNode[] {

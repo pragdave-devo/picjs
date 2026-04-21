@@ -176,17 +176,22 @@ export class Renderer {
     }
 
     // Identify shapes that are children of a parent (e.g. labels inside a box)
-    // so we skip them — they'll be rendered inside their parent's <g>
-    const parentOwned = new Set<Shape.SBase>()
+    // OR belong to a nested group — skip them, they're rendered inside their group
+    const skipShapes = new Set<Shape.SBase>()
     for (const child of group.groupChildren) {
       for (const c of child.children) {
-        parentOwned.add(c)
+        skipShapes.add(c)
+      }
+      if (child instanceof SGroup) {
+        for (const gc of child.groupChildren) {
+          skipShapes.add(gc)
+        }
       }
     }
 
     // Render children inside the group
     for (const child of group.groupChildren) {
-      if (parentOwned.has(child)) continue
+      if (skipShapes.has(child)) continue
       const childNode = this.renderChild(child)
       if (childNode) {
         groupRenderer.addChild(childNode)
