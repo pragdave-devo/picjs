@@ -1,13 +1,4 @@
-import { parseHTML } from "linkedom"
-// Set up DOM globals before importing modules that use redom
-const env = parseHTML(`<!DOCTYPE html><html><body></body></html>`)
-Object.assign(globalThis, {
-  SVGElement: env.SVGElement,
-  HTMLElement: env.HTMLElement,
-  Element: env.Element,
-  Node: env.Node,
-  document: env.document,
-})
+// No longer need linkedom — renderers produce SvgNode trees directly
 
 import { newDispatcher } from "../helpers/eval.js"
 import { ParseStatus } from "../../src/parser.js"

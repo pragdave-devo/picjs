@@ -1,9 +1,9 @@
 /**
  * Server-side rendering for picjs.
- * Uses linkedom to provide a virtual DOM for rendering SVG without a browser.
+ * Uses SvgNode serialization instead of DOM manipulation.
  */
 
-import { parseHTML } from "linkedom"
+import { SvgNode, svgNode, serialize } from "./svg-node.js"
 
 export interface RenderResult {
   svg: string
@@ -19,20 +19,6 @@ export interface RenderOptions {
   includeSource?: boolean
 }
 
-// Set up linkedom globals before dynamic imports
-function setupLinkedomGlobals() {
-  if (typeof globalThis.SVGElement === 'undefined') {
-    const env = parseHTML(`<!DOCTYPE html><html><body></body></html>`)
-    Object.assign(globalThis, {
-      SVGElement: env.SVGElement,
-      HTMLElement: env.HTMLElement,
-      Element: env.Element,
-      Node: env.Node,
-      document: env.document,
-    })
-  }
-}
-
 /**
  * Render picjs source code to an SVG string.
  *
@@ -43,10 +29,7 @@ function setupLinkedomGlobals() {
 export async function renderToString(source: string, options: RenderOptions = {}): Promise<RenderResult> {
   const { padding = 0.2, includeSource = true } = options
 
-  // Set up DOM globals before importing modules that use redom
-  setupLinkedomGlobals()
-
-  // Dynamic imports to ensure globals are set first
+  // Dynamic imports
   const [
     { parseToAST, ParseStatus },
     { Dispatcher },
@@ -71,36 +54,37 @@ export async function renderToString(source: string, options: RenderOptions = {}
     }
   }
 
-  // Create a virtual DOM with linkedom
-  const { document } = parseHTML(`<!DOCTYPE html><html><body></body></html>`)
-
-  // Create SVG element in the virtual DOM
-  const svgNS = "http://www.w3.org/2000/svg"
-  const svgElement = document.createElementNS(svgNS, "svg")
-  svgElement.setAttribute("xmlns", svgNS)
-  document.body.appendChild(svgElement)
-
   try {
-    // Create dispatcher with the virtual SVG element
-    // Cast needed: linkedom's SVGElement is API-compatible but not type-compatible with browser SVGElement
-    const dispatcher = new Dispatcher(nullLogger, svgElement as unknown as SVGElement, 1)
+    // Create dispatcher without DOM (svgHolder = null)
+    // The Dispatcher will skip DOM manipulation and renderers will produce SvgNode trees
+    const dispatcher = new Dispatcher(nullLogger, null, 1)
 
     // Run the interpreter
     dispatcher.start(parsed.ast)
     dispatcher.applyTimelineUpTo(0)
 
-    // Calculate bounding box and set viewBox
+    // Get rendered SvgNode array
+    const svgChildren = dispatcher.renderToSvgNodes()
+
+    // Calculate bounding box and create viewBox
     const bounds = calculateBoundingBox(dispatcher.shapes(), padding)
-    svgElement.setAttribute("viewBox", viewBoxFromBounds(bounds, padding))
+    const viewBox = viewBoxFromBounds(bounds, padding)
+
+    // Build root SVG element with cssPrefix class
+    const root = svgNode("svg", {
+      viewBox,
+      class: `_myopic-1`,
+      xmlns: "http://www.w3.org/2000/svg"
+    }, svgChildren)
+
+    // Serialize to string
+    let svg = serialize(root)
 
     // Add source as comment if requested
     if (includeSource) {
-      const comment = document.createComment(` picjs source:\n${source}\n`)
-      svgElement.insertBefore(comment, svgElement.firstChild)
+      const comment = `<!-- picjs source:\n${source}\n-->`
+      svg = svg.replace("<svg", `${comment}\n<svg`)
     }
-
-    // Serialize to string
-    const svg = svgElement.outerHTML
 
     return { svg, width: bounds.width, height: bounds.height }
 

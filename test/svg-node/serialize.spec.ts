@@ -42,3 +42,58 @@ describe("SvgNode serialization", () => {
     expect(serialize(node)).toBe(`<text x="5" y="10"></text>`)
   })
 })
+
+describe("renderToString", () => {
+  // Import dynamically to avoid importing parser before tests run
+  let renderToString: any
+
+  beforeAll(async () => {
+    const module = await import("../../src/render-to-string.js")
+    renderToString = module.renderToString
+  })
+
+  it("renders a Box to an SVG string", async () => {
+    const result = await renderToString("Box")
+    expect(result.error).toBeUndefined()
+    expect(result.svg).toContain("<svg")
+    expect(result.svg).toContain("<rect")
+    expect(result.svg).toContain("</svg>")
+    expect(result.width).toBeGreaterThan(0)
+    expect(result.height).toBeGreaterThan(0)
+  })
+
+  it("includes source comment when requested", async () => {
+    const result = await renderToString("Box", { includeSource: true })
+    expect(result.svg).toContain("<!-- picjs source:")
+    expect(result.svg).toContain("Box")
+  })
+
+  it("excludes source comment when not requested", async () => {
+    const result = await renderToString("Box", { includeSource: false })
+    expect(result.svg).not.toContain("<!-- picjs source:")
+  })
+
+  it("returns error for invalid source", async () => {
+    const result = await renderToString("!!invalid!!")
+    expect(result.error).toBeDefined()
+    expect(result.svg).toBe("")
+    expect(result.width).toBe(0)
+    expect(result.height).toBe(0)
+  })
+
+  it("includes cssPrefix class on root SVG", async () => {
+    const result = await renderToString("Box")
+    expect(result.svg).toContain('class="_myopic-1"')
+  })
+
+  it("includes xmlns attribute on root SVG", async () => {
+    const result = await renderToString("Box")
+    expect(result.svg).toContain('xmlns="http://www.w3.org/2000/svg"')
+  })
+
+  it("calculates correct dimensions", async () => {
+    const result = await renderToString("Box width 2 height 1")
+    expect(result.width).toBeGreaterThan(1.5) // should be > 2 with padding
+    expect(result.height).toBeGreaterThan(0.5) // should be > 1 with padding
+  })
+})

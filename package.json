@@ -24,7 +24,7 @@
   "scripts": {
     "build": "vite build && npm run build:cli",
     "build:lib": "vite build",
-    "build:cli": "esbuild src/cli.ts --bundle --platform=node --format=esm --outfile=dist/cli.js --external:linkedom --external:commander",
+    "build:cli": "esbuild src/cli.ts --bundle --platform=node --format=esm --outfile=dist/cli.js --external:commander",
     "dev": "vite",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "parser": "make src/peg_parser/jp.js"
@@ -58,7 +58,6 @@
     "codemirror": "^6.0.2",
     "commander": "^14.0.3",
     "culori": "^4.0.2",
-    "linkedom": "^0.18.12",
     "redom": "^3.29.1",
     "simple-markdown": "^0.7.3"
   }
