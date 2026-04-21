@@ -15,9 +15,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build parser
+        run: make src/peg_parser/jp.js src/peg_parser/jp-test.js
 
       - name: Run tests
         run: npm test
@@ -33,4 +37,9 @@ jobs:
             dist/picjs.js.map
             dist/picjs.umd.js
             dist/picjs.umd.js.map
-            dist/picjs.d.ts
+            dist/cli.js
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

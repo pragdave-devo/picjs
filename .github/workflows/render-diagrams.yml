@@ -22,11 +22,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build parser
+        run: make src/peg_parser/jp.js
+
       - name: Build picjs
         run: npm run build
 
       - name: Render diagrams in README.md
-        run: bin/picjs README.md
+        run: node dist/cli.js process README.md
 
       - name: Check for changes
         id: changes

@@ -29,8 +29,11 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Build jspic library
-        run: npm ci && npm run build
+      - name: Install dependencies and build parser
+        run: npm ci && make src/peg_parser/jp.js
+
+      - name: Build picjs library
+        run: npm run build
 
       - name: Install 11ty dependencies
         run: cd docs/_util && npm ci

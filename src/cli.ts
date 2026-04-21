@@ -2,11 +2,13 @@
 /**
  * CLI for processing markdown files with picjs code blocks.
  *
- * Workflow:
- * 1. Find ```picjs code blocks
- * 2. Check if there's a <!-- picjs:checksum --> comment and SVG after each
- * 3. If checksum matches, skip; otherwise regenerate SVG
- * 4. Code blocks are preserved for editing
+ * Block modes:
+ *   ```picjs           — render SVG, keep code block above it
+ *   ```picjs example   — render SVG, then show syntax-highlighted code below
+ *   ```picjs 2up       — side-by-side table: code on left, SVG on right
+ *
+ * Each rendered block is wrapped in a comment containing the source and
+ * a checksum so re-runs are idempotent.
  */
 
 import { Command } from "commander"
@@ -14,7 +16,6 @@ import * as fs from "fs"
 import * as path from "path"
 import * as crypto from "crypto"
 
-// Dynamically import render-to-string to set up linkedom globals first
 async function getRenderToString() {
   const { renderToString } = await import("./render-to-string.js")
   return renderToString
@@ -26,50 +27,90 @@ interface ProcessOptions {
   verbose?: boolean
 }
 
+type BlockMode = "plain" | "example" | "2up"
+
 function computeChecksum(source: string): string {
   return crypto.createHash('md5').update(source).digest('hex').slice(0, 8)
 }
 
 interface CodeBlock {
-  start: number           // Start index of code block
-  end: number             // End index of code block
-  source: string          // The picjs source code
-  checksum: string        // Checksum of the source
-  existingSvgEnd?: number // End of existing SVG (if any)
+  start: number
+  end: number
+  source: string
+  mode: BlockMode
+  checksum: string
+  renderedEnd?: number
   existingChecksum?: string
 }
+
+// Matches a rendered output block: <!-- picjs:CHECKSUM:MODE ... source ... --> then content
+// The content ends at <!-- /picjs -->
+const RENDERED_RE = /\s*<!-- picjs:([a-f0-9]+):(plain|example|2up)\n([\s\S]*?)-->\n([\s\S]*?)<!-- \/picjs -->/
 
 function findPicjsBlocks(content: string): CodeBlock[] {
   const blocks: CodeBlock[] = []
 
-  // Match fenced code blocks with picjs language
-  const fenceRegex = /^(```|~~~)picjs\s*\n([\s\S]*?)\n\1/gm
+  const fenceRegex = /^(```|~~~)picjs(?:\s+(example|2up))?\s*\n([\s\S]*?)\n\1/gm
 
   let match
   while ((match = fenceRegex.exec(content)) !== null) {
-    const source = match[2]
+    const mode = (match[2] || "plain") as BlockMode
+    const source = match[3]
     const checksum = computeChecksum(source)
 
     const block: CodeBlock = {
       start: match.index,
       end: match.index + match[0].length,
       source,
+      mode,
       checksum
     }
 
-    // Check if there's an existing picjs comment + SVG after this block
+    // Check for existing rendered output after the code block
     const afterBlock = content.slice(block.end)
-    const existingMatch = afterBlock.match(/^\s*<!--\s*picjs:([a-f0-9]+)\s*-->\s*<svg[\s\S]*?<\/svg>/i)
+    const existingMatch = afterBlock.match(RENDERED_RE)
 
-    if (existingMatch) {
+    if (existingMatch && afterBlock.indexOf(existingMatch[0]) === 0) {
       block.existingChecksum = existingMatch[1]
-      block.existingSvgEnd = block.end + existingMatch[0].length
+      block.renderedEnd = block.end + existingMatch[0].length
     }
 
     blocks.push(block)
   }
 
   return blocks
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function buildRenderedBlock(source: string, svg: string, mode: BlockMode, checksum: string): string {
+  const comment = `<!-- picjs:${checksum}:${mode}\n${source}\n-->`
+  const codeHtml = `<pre><code class="language-picjs">${escapeHtml(source)}</code></pre>`
+
+  let body: string
+  switch (mode) {
+    case "example":
+      body = `${svg}\n\n${codeHtml}`
+      break
+
+    case "2up":
+      body = [
+        `<table><tr>`,
+        `<td>\n\n${codeHtml}\n\n</td>`,
+        `<td>\n\n${svg}\n\n</td>`,
+        `</tr></table>`,
+      ].join("\n")
+      break
+
+    case "plain":
+    default:
+      body = svg
+      break
+  }
+
+  return `\n${comment}\n${body}\n<!-- /picjs -->`
 }
 
 async function processMarkdown(content: string, verbose: boolean): Promise<string> {
@@ -83,20 +124,17 @@ async function processMarkdown(content: string, verbose: boolean): Promise<strin
 
   if (verbose) console.log(`Found ${blocks.length} picjs block(s)`)
 
-  // Process blocks in reverse order to preserve indices
   let result = content
   for (let i = blocks.length - 1; i >= 0; i--) {
     const block = blocks[i]
 
-    // Check if we need to regenerate
     if (block.existingChecksum === block.checksum) {
       if (verbose) console.log(`Block ${i + 1}: unchanged (checksum ${block.checksum})`)
       continue
     }
 
-    if (verbose) console.log(`Block ${i + 1}: rendering...`)
+    if (verbose) console.log(`Block ${i + 1}: rendering (${block.mode})...`)
 
-    // Render the SVG
     const renderResult = await renderToString(block.source, {
       padding: 0.2,
       includeSource: false
@@ -107,14 +145,10 @@ async function processMarkdown(content: string, verbose: boolean): Promise<strin
       continue
     }
 
-    // Build the SVG insert: comment + SVG
-    const svgInsert = `\n<!-- picjs:${block.checksum} -->\n${renderResult.svg}`
+    const rendered = buildRenderedBlock(block.source, renderResult.svg, block.mode, block.checksum)
+    const replaceEnd = block.renderedEnd ?? block.end
 
-    // Determine what to replace
-    const replaceEnd = block.existingSvgEnd ?? block.end
-
-    // Keep the code block, replace/add the SVG after it
-    result = result.slice(0, block.end) + svgInsert + result.slice(replaceEnd)
+    result = result.slice(0, block.end) + rendered + result.slice(replaceEnd)
 
     if (verbose) console.log(`Block ${i + 1}: done`)
   }
@@ -151,7 +185,6 @@ async function watchFile(inputPath: string, options: ProcessOptions): Promise<vo
 
   fs.watch(inputPath, async (eventType) => {
     if (eventType === 'change') {
-      // Debounce rapid changes
       if (debounceTimer) clearTimeout(debounceTimer)
       debounceTimer = setTimeout(async () => {
         if (verbose) console.log(`File changed, reprocessing...`)

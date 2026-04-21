@@ -70,7 +70,9 @@
       "Bash(npm install:*)",
       "Bash(kill 4405 82773)",
       "Bash(pkill -f \"node.*vite\")",
-      "WebFetch(domain:peggyjs.org)"
+      "WebFetch(domain:peggyjs.org)",
+      "Bash(find /Users/dave.thomas/code/picjs/test -name \"*.spec.ts\" -exec grep -l \"+\" {} \\\\;)",
+      "Bash(find *)"
     ]
   }
 }

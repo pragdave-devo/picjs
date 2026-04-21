@@ -1,36 +1,36 @@
-Line.stroke = Box.fill
+Palette.current = "ocean"
 
 box_around = grp => {
   box at grp             behind grp
-       wid grp.wid*1.1   ht grp.ht*1.1
-       fill ~beige       stroke ~lightgrey
+       wid grp.wid*1.3   ht grp.ht*1.1
+       fill ~b7          stroke ~f1
 }
 
-pipeline = Group {
+pipeline = {
   Face s
-  Label "Internal Pipeline" .h4 fill ~green
+  Label "Internal Pipeline" .h4 fill ~f2
   Gap .2
   self.batch_writer = box wid 150% ht 60% "Batch Writer"
-  -> ("post" fill ~darkolivegreen)  ("commit" fill ~darkolivegreen)
-  self.trigger_evaluation = box same "Trigger\nEvaluation" fill ~darkolivegreen
-  -> ("Trigger" fill ~darkolivegreen)  ("Fired" fill ~darkolivegreen)
-  self.trigger_bridge = box same "Trigger\nBridge"
+  -> "post" "commit" 
+  self.trigger_evaluation = box same "Trigger" "Evaluation" fill ~b3
+  -> "Trigger" "Fired"
+  self.trigger_bridge = box same "Trigger" "Bridge"
 }
 
 box_around(pipeline)
 
-database = circle "Database" with .e at pipeline.batch_writer.w - ( 0.5, 0)
+database = circle "Database" fill ~b2 with .e at pipeline.batch_writer.w - ( 0.75, 0)
 
-services = Group {
+services = {
   Face s
-  Label "External API" .h4 fill ~green
+  Label "External API" .h4 fill ~f2
   Gap .2
   self.get_put_tuple = box wid 150% ht 60%  "Get/Put Tuple"
-  line <-> ("Validate" fill ~darkolivegreen)  above
+  line <-> "Validate" below
   box "Schemas" same
 
   Gap 0
-  line -> len .5 stroke ~black rot 90 dashed thick .02
+  line  len .5 stroke ~f1 rot 90 dotted thick .02
 
   self.playbooks = box wid 150% ht 60% fill ~darkolivegreen "Playbooks"
   Gap  0.2

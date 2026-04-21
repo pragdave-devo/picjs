@@ -12,14 +12,18 @@ palette = (name) => {
   })
 }
 
-{
-  box wid label_width fill ~none stroke ~none ("Theme" align .e .h2)
-  [1..8].each(n => {
-    box wid sample_width fill ~none stroke ~none ("b#{n}" .h3 align .c) 
-    Gap gap
-  })
-}
-Palette.names.each(name => {
+
+grid = {
+  // labels across the top
+  {
+    line len label_width stroke ~none
+    [1..8].each(n => {
+      box wid sample_width fill ~none stroke ~none ("~b#{n}" .h3 align .c) 
+      Gap gap
+    })
+  }
+  
+  Palette.names.each(name => {
   Face s
   {
     Face e
@@ -29,3 +33,6 @@ Palette.names.each(name => {
   }
   Gap gap*2
 })
+}
+
+axis = Label "Theme" rot -90 .h2  at grid.w
