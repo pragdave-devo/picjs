@@ -1,4 +1,12 @@
-# jp Attributes Reference
+---
+title: picjs Quick Reference
+description: Attribute matrix and quick reference
+layout: layouts/doc.njk
+eleventyNavigation:
+  key: Quick Reference
+  order: 3
+---
+# picjs Quick Reference
 
 ## Attribute List
 

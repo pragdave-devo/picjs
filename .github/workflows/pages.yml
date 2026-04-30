@@ -36,10 +36,10 @@ jobs:
         run: npm run build
 
       - name: Install 11ty dependencies
-        run: cd docs/_util && npm ci
+        run: cd docs && npm ci
 
       - name: Build docs with 11ty
-        run: cd docs/_util && npm run build
+        run: cd docs && npm run build
         env:
           PATH_PREFIX: /picjs/
 

@@ -1,4 +1,12 @@
-# jp Language Reference
+---
+title: picjs Language Reference
+description: Complete reference for the picjs language
+layout: layouts/doc.njk
+eleventyNavigation:
+  key: Language Reference
+  order: 2
+---
+# picjs Language Reference
 
 <details open><summary><strong>Contents</strong></summary>
 

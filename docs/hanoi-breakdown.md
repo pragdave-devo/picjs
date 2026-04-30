@@ -1,3 +1,11 @@
+---
+title: Hanoi Tower Breakdown
+description: Step-by-step walkthrough of the Hanoi animation
+layout: layouts/doc.njk
+eleventyNavigation:
+  key: Hanoi Breakdown
+  order: 4
+---
 # What's Going On in the Hanoi Code?
 
 ![Hanoi game in progress](./assets/hanoi1.png)

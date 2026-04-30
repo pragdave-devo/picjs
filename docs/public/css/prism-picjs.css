@@ -1,0 +1,19 @@
+/* Prism base tokens */
+.token.comment { color: #708090; font-style: italic; }
+.token.string { color: #690; }
+.token.number { color: #905; }
+.token.keyword { color: #07a; }
+.token.operator { color: #9a6e3a; }
+.token.punctuation { color: #999; }
+.token.variable { color: #e90; }
+.token.builtin { color: #dd4a68; }
+.token.class-name { color: #dd4a68; }
+
+/* picjs-specific tokens */
+.token.shape { color: #07a; font-weight: 600; }
+.token.command { color: #7c4dff; }
+.token.attribute { color: #0077aa; }
+.token.color { color: #e91e63; }
+.token.arrow { color: #e90; font-weight: 600; }
+.token.cardinal { color: #7c4dff; }
+.token.interpolation { color: #e90; }
