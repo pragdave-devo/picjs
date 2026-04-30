@@ -1,7 +1,19 @@
-{% if content | toc |safe %}
 <aside class="col-md-3 offset-md-1 p-3 mt-3">
-<div class="shadow-sm bg-light p-3 rounded">
-{{ content | toc | safe }}
+<div class="shadow-sm bg-light p-3 rounded" style="position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto;">
+<nav>
+<a class="d-block py-1" href="/">Home</a>
+{%- for navi in metadata.nav %}
+<a class="d-block py-1" href="{{navi.link}}">{{navi.name}}</a>
+{%- endfor %}
+</nav>
+{% set tocRaw = content | toc %}
+{% set tocContent = tocRaw | tocDisclosure %}
+{% if tocContent and tocContent | trim %}
+<hr>
+<div class="toc-nav" style="font-size: 0.9em;">
+<strong style="font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.05em; color: #666;">On this page:</strong>
+{{ tocContent | safe }}
+</div>
+{% endif %}
 </div>
 </aside>
-{% endif %}

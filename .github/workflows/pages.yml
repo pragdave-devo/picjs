@@ -3,7 +3,7 @@ name: Deploy Docs to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['docs/**', 'dist/**']
+    paths: ['docs/**', 'dist/**', 'examples/**', 'src/**']
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages

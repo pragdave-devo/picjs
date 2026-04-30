@@ -48,13 +48,15 @@ const picjsStyles = `
 `;
 
 function parseMeta(meta) {
-  const isAnimated = /\banimated\b/.test(meta);
-  const isStacked = /\bstacked\b/.test(meta);
-  const isExample = !isStacked && !isAnimated && /\bexample\b/.test(meta);
+  const isCode = /\bcode\b/.test(meta);
+  const isAnimated = !isCode && /\banimated\b/.test(meta);
+  const isStacked = !isCode && /\bstacked\b/.test(meta);
+  const isExample = !isCode && !isStacked && !isAnimated && /\bexample\b/.test(meta);
   const widthMatch = meta.match(/\bwidth=(\S+)/);
   const svgWidthMatch = meta.match(/\bsvgwidth=["']?([^"'\s]+)/);
   const scaleMatch = meta.match(/\bscale=(\S+)/);
   return {
+    isCode,
     isAnimated,
     isStacked,
     isExample,
@@ -91,7 +93,14 @@ function buildAnimatedBlock(source, svgHtml, containerStyle) {
 }
 
 function renderPicjsBlock(source, meta) {
-  const { isAnimated, isStacked, isExample, width, svgWidth, scale } = parseMeta(meta);
+  const { isCode, isAnimated, isStacked, isExample, width, svgWidth, scale } = parseMeta(meta);
+
+  if (isCode) {
+    const highlighted = Prism.highlight(source, Prism.languages.picjs, "picjs");
+    return {
+      html: `<pre class="language-picjs"><code class="language-picjs">${highlighted}</code></pre>`,
+    };
+  }
 
   const prefix = isAnimated ? `pj${animatedCounter++}` : null;
   const renderOpts = prefix ? { ids: { prefix } } : {};

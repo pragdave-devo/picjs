@@ -12,6 +12,8 @@ import deflist from "markdown-it-deflist";
 export default async function(eleventyConfig) {
 	eleventyConfig.addPassthroughCopy({ "./public/": "/" });
 	eleventyConfig.addPassthroughCopy({ "../dist/runtime.js": "assets/runtime.js" });
+	eleventyConfig.addPassthroughCopy({ "../dist/playground.js": "assets/playground.js" });
+	eleventyConfig.addPassthroughCopy({ "../examples/": "examples/" });
 	eleventyConfig.addPassthroughCopy({ "./assets/": "assets/" });
 
 	eleventyConfig.ignores.add("superpowers/**");
@@ -29,12 +31,51 @@ export default async function(eleventyConfig) {
 	eleventyConfig.addPlugin(pluginToc, {
 		tags: ['h2', 'h3', 'h4'],
 		wrapper: 'div',
-		wrapperClass: 'p-3 bold',
+		wrapperClass: '',
 		ul: true,
 		flat: false,
 	});
 	eleventyConfig.addPlugin(HtmlBasePlugin);
 	eleventyConfig.addPlugin(InputPathToUrlTransformPlugin);
+
+	eleventyConfig.addFilter("tocDisclosure", (html) => {
+		if (!html || !html.trim()) return "";
+		function convertList(ul, open) {
+			const items = [...ul.matchAll(/<li>([\s\S]*?)(?=<li>|<\/ul>$)/g)];
+			if (!items.length) return ul;
+			let result = "";
+			const liRegex = /<li>([\s\S]*?)<\/li>/g;
+			const topUl = ul.match(/^<ul>([\s\S]*)<\/ul>$/);
+			if (!topUl) return ul;
+			const inner = topUl[1];
+			const lis = [];
+			let depth = 0, start = 0;
+			for (let i = 0; i < inner.length; i++) {
+				if (inner.slice(i, i+4) === "<li>") {
+					if (depth === 0) start = i;
+					depth++;
+				} else if (inner.slice(i, i+5) === "</li>") {
+					depth--;
+					if (depth === 0) lis.push(inner.slice(start, i + 5));
+				}
+			}
+			for (const li of lis) {
+				const content = li.slice(4, -5);
+				const subUlMatch = content.match(/<ul>[\s\S]*<\/ul>/);
+				if (subUlMatch) {
+					const link = content.slice(0, subUlMatch.index);
+					const subHtml = convertList(subUlMatch[0], false);
+					result += `<details${open ? " open" : ""}><summary>${link.trim()}</summary>${subHtml}</details>`;
+				} else {
+					result += `<div class="toc-leaf">${content.trim()}</div>`;
+				}
+			}
+			return result;
+		}
+		const divMatch = html.match(/<div[^>]*>([\s\S]*)<\/div>/);
+		const ulHtml = divMatch ? divMatch[1].trim() : html.trim();
+		return convertList(ulHtml, true);
+	});
 
 	eleventyConfig.addFilter("readableDate", (dateObj, format, zone) => {
 		return DateTime.fromJSDate(dateObj, { zone: zone || "utc" }).toFormat(format || "dd LLLL yyyy");

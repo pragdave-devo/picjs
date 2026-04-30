@@ -26,9 +26,10 @@
     }
   },
   "scripts": {
-    "build": "npm run build:lib && npm run build:runtime && npm run build:cli",
+    "build": "npm run build:lib && npm run build:runtime && npm run build:playground && npm run build:cli",
     "build:lib": "BUILD_TARGET=main vite build",
     "build:runtime": "BUILD_TARGET=runtime vite build",
+    "build:playground": "BUILD_TARGET=playground vite build",
     "build:cli": "esbuild src/cli.ts --bundle --platform=node --format=esm --outfile=dist/cli.js --external:commander",
     "dev": "vite",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
