@@ -45,6 +45,7 @@
     "last 3 safari versions"
   ],
   "devDependencies": {
+    "@11ty/eleventy": "^3.1.5",
     "@babel/core": "^7.29.0",
     "@babel/register": "^7.28.6",
     "@types/culori": "^4.0.1",

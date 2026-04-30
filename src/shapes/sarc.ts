@@ -5,6 +5,7 @@ import { Cardinals, CardinalFactorsFromCenter, UnitVector, XY } from "../positio
 const DefaultLength = 0.625
 
 export class SArc extends LineLike {
+  override shapeName = "SArc"
 
   getCardinalOffsetsFromAnchor(cardinal: Cardinals) {
     const [ fx, fy ] = CardinalFactorsFromCenter[cardinal]
@@ -82,60 +83,92 @@ export class SArc extends LineLike {
     return `centerToCenter`
   }
 
-  // Return point and tangent angle at a given fraction along the arc (0.0 to 1.0)
-  pointAtPercent(t: number) {
+  private arcGeometry() {
     const start = this.start
     const end = this.end
-
-    // Chord midpoint
-    const midX = (start.x + end.x) / 2
-    const midY = (start.y + end.y) / 2
-
-    // Chord vector and length
     const chordX = end.x - start.x
     const chordY = end.y - start.y
     const chord = Math.hypot(chordX, chordY)
+    if (chord < 0.01) return null
 
-    if (chord < 0.01) {
-      // Degenerate arc — just return the point
-      return { x: start.x, y: start.y, tangentAngle: 0 }
-    }
-
-    // Radius (same formula as renderer: chord / (2 * cos(45°)))
+    const midX = (start.x + end.x) / 2
+    const midY = (start.y + end.y) / 2
     const two_cos_45 = 2.0 * Math.cos(Math.PI / 4.0)
     const r = chord / two_cos_45
-
-    // Unit chord vector and perpendicular
     const ux = chordX / chord
     const uy = chordY / chord
-    // Perpendicular: rotate 90° counterclockwise
     const px = -uy
     const py = ux
-
-    // Distance from midpoint to center: sqrt(r² - (chord/2)²)
     const halfChord = chord / 2
     const d = Math.sqrt(r * r - halfChord * halfChord)
-
-    // Center position depends on turn direction
     const sign = this.turn === `cw` ? 1 : -1
     const cx = midX + sign * px * d
     const cy = midY + sign * py * d
 
-    // Angles from center to start and end
-    const startAngle = Math.atan2(start.y - cy, start.x - cx)
+    let startAngle = Math.atan2(start.y - cy, start.x - cx)
     let endAngle = Math.atan2(end.y - cy, end.x - cx)
-
-    // Adjust end angle for correct arc direction
     if (this.turn === `cw`) {
       while (endAngle < startAngle) endAngle += 2 * Math.PI
     } else {
       while (endAngle > startAngle) endAngle -= 2 * Math.PI
     }
 
-    // Interpolate angle
-    const angle = startAngle + t * (endAngle - startAngle)
+    return { cx, cy, r, startAngle, endAngle }
+  }
 
-    // Point on arc
+  override get nw() {
+    const bb = this.arcBounds()
+    return { x: bb.minX, y: bb.minY }
+  }
+
+  override get se() {
+    const bb = this.arcBounds()
+    return { x: bb.maxX, y: bb.maxY }
+  }
+
+  private arcBounds() {
+    const start = this.start
+    const end = this.end
+    const geo = this.arcGeometry()
+
+    if (!geo) {
+      return { minX: start.x, minY: start.y, maxX: start.x, maxY: start.y }
+    }
+
+    const { cx, cy, r, startAngle, endAngle } = geo
+    let minX = Math.min(start.x, end.x)
+    let maxX = Math.max(start.x, end.x)
+    let minY = Math.min(start.y, end.y)
+    let maxY = Math.max(start.y, end.y)
+
+    const cardinalAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2]
+    const lo = Math.min(startAngle, endAngle)
+    const hi = Math.max(startAngle, endAngle)
+    for (const base of cardinalAngles) {
+      for (let a = base - 4 * Math.PI; a <= base + 4 * Math.PI; a += 2 * Math.PI) {
+        if (a >= lo && a <= hi) {
+          const px = cx + r * Math.cos(a)
+          const py = cy + r * Math.sin(a)
+          minX = Math.min(minX, px)
+          maxX = Math.max(maxX, px)
+          minY = Math.min(minY, py)
+          maxY = Math.max(maxY, py)
+        }
+      }
+    }
+    return { minX, minY, maxX, maxY }
+  }
+
+  // Return point and tangent angle at a given fraction along the arc (0.0 to 1.0)
+  pointAtPercent(t: number) {
+    const geo = this.arcGeometry()
+
+    if (!geo) {
+      return { x: this.start.x, y: this.start.y, tangentAngle: 0 }
+    }
+
+    const { cx, cy, r, startAngle, endAngle } = geo
+    const angle = startAngle + t * (endAngle - startAngle)
     const x = cx + r * Math.cos(angle)
     const y = cy + r * Math.sin(angle)
 

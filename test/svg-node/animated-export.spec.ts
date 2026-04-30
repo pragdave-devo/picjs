@@ -9,7 +9,8 @@ describe("animated HTML export", () => {
     )
     expect(html).toContain("<svg")
     expect(html).toContain('type="application/json"')
-    expect(html).toContain('data-picjs="p0"')
+    expect(html).toContain("data-picjs-ast")
+    expect(html).toContain("data-picjs-player")
     expect(html).toContain("picjs.runtime.min.js")
   })
 
@@ -18,7 +19,7 @@ describe("animated HTML export", () => {
       'Box',
       { prefix: "p0", runtimeUrl: "picjs.runtime.min.js" }
     )
-    const jsonMatch = html.match(/<script type="application\/json"[^>]*>([\s\S]*?)<\/script>/)
+    const jsonMatch = html.match(/<script type="application\/json" data-picjs-ast>([\s\S]*?)<\/script>/)
     expect(jsonMatch).not.toBeNull()
     const ast = JSON.parse(jsonMatch![1])
     expect(ast.type).toBe("Program")
@@ -40,7 +41,7 @@ describe("animated HTML export", () => {
     const h2 = await exportAnimatedHTML('Box', { prefix: "p1", runtimeUrl: "r.js" })
     expect(h1).toMatch(/id="p0[a-z]"/)
     expect(h2).toMatch(/id="p1[a-z]"/)
-    expect(h1).toContain('data-picjs="p0"')
-    expect(h2).toContain('data-picjs="p1"')
+    expect(h1).toContain("data-picjs-player")
+    expect(h2).toContain("data-picjs-player")
   })
 })

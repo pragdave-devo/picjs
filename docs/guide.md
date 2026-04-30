@@ -1,3 +1,12 @@
+---
+title: picjs Guide
+description: An introduction to picjs
+date: 2026-04-21
+layout: layouts/doc.njk
+eleventyNavigation:
+  key: picjs Guide
+  order: 1
+---
 # picjs: Constraint-Base Drawing and Animation Language
 
 > For reference material, have a look at [The picjs Reference](./picjs-reference) and

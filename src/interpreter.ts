@@ -602,6 +602,9 @@ export class Interpreter extends Visitor{
 
 
   VisitShape(node: AST.Shape) {
+    if (this.dispatcher.isReEvaluating && (node as any)._memoizedShape)
+      return (node as any)._memoizedShape
+
     const label = <AST.Shape>node.args.label
     const shapeLabels = node.args._shapeLabels as AST.Shape[] | undefined
     const lineLabels = node.args._labels as { text: AST.Node, pathPercent: number, side: string | null }[] | undefined
@@ -671,6 +674,7 @@ export class Interpreter extends Visitor{
       this.createLineLabels(shape, lineLabels)
     }
 
+    Object.defineProperty(node, '_memoizedShape', { value: shape, configurable: true })
     return shape
   }
 

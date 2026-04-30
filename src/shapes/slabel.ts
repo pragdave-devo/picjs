@@ -17,6 +17,7 @@ import { Palette } from "../palette.js"
 
 
 export class SLabel extends SBase {
+  override shapeName = "SLabel"
 
   setupParams(args: ShapeArgs) {
     super.setupParams(args)
@@ -38,9 +39,8 @@ export class SLabel extends SBase {
   // // of getting the size without temporarily rendering it
   calculateDimensions() {
     if (typeof document === 'undefined') {
-      // no DOM (test environment) — use fallback dimensions
-      this.params.width  ??= 1
-      this.params.height ??= 1
+      this.params.width  ??= estimateTextWidth(this.params.text || '', this.params.font_size || 0.14, this.params.font_family)
+      this.params.height ??= (this.params.font_size || 0.14) * 1.2
       return
     }
 
@@ -114,4 +114,31 @@ export class SLabel extends SBase {
   }
 }
 
+const FontAspectRatios: Record<string, number> = {
+  'serif':       0.46,
+  'sans-serif':  0.52,
+  'monospace':   0.50,
+  'roboto':      0.52,
+  'arial':       0.52,
+  'helvetica':   0.52,
+  'verdana':     0.55,
+  'georgia':     0.48,
+  'times new roman': 0.45,
+  'courier new': 0.43,
+  'fira sans':   0.50,
+  'consolas':    0.49,
+}
 
+function fontAspectRatio(fontFamily?: string): number {
+  if (!fontFamily) return 0.52
+  const lower = fontFamily.toLowerCase()
+  for (const [name, ratio] of Object.entries(FontAspectRatios)) {
+    if (lower.includes(name)) return ratio
+  }
+  return 0.52
+}
+
+function estimateTextWidth(text: string, fontSize: number, fontFamily?: string): number {
+  const ratio = fontAspectRatio(fontFamily)
+  return text.length * fontSize * ratio
+}

@@ -42,6 +42,10 @@ export default defineConfig({
     minify: 'esbuild',
     sourcemap: true,
   },
+  optimizeDeps: {
+    exclude: ['_site'],
+    entries: ['index.html'],
+  },
   server: {
     fs: {
       allow: ['..'],

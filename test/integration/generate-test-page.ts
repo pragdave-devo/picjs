@@ -1,5 +1,5 @@
 // test/integration/generate-test-page.ts
-import { renderToString } from "../../src/render-to-string.js"
+import { renderToStringAsync as renderToString } from "../../src/render-to-string.js"
 import { exportAnimatedHTML } from "../../src/export-animated.js"
 import { writeFileSync, mkdirSync } from "fs"
 import { resolve, dirname } from "path"

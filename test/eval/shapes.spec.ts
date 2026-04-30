@@ -325,6 +325,74 @@ describe(`multiple labels`, () => {
   })
 })
 
+describe(`with-constraint positioning`, () => {
+  it(`box with .nw at (box).e places nw exactly at first box's e`, () => {
+    const d = runProgram(`a = Box\nb = Box with .nw at a.e`)
+    const [a, b] = d.shapes().filter(s => s.shapeName === `SBox`)
+    expect(b.nw.x).toBeCloseTo(a.e.x)
+    expect(b.nw.y).toBeCloseTo(a.e.y)
+  })
+
+  it(`box "A" with .nw at (box "B").e places nw exactly at first box's e`, () => {
+    const d = runProgram(`a = Box "B"\nb = Box "A" with .nw at a.e`)
+    const boxes = d.shapes().filter(s => s.shapeName === `SBox`)
+    const [a, b] = boxes
+    expect(b.nw.x).toBeCloseTo(a.e.x)
+    expect(b.nw.y).toBeCloseTo(a.e.y)
+  })
+
+  it(`labels don't change box rect positions in rendered SVG`, async () => {
+    const { renderToStringAsync } = await import("../../src/render-to-string.js")
+
+    const plain = await renderToStringAsync(
+      `a = Box\nb = Box with .nw at a.e`, { includeSource: false }
+    )
+    const labelled = await renderToStringAsync(
+      `a = Box "B"\nb = Box "A" with .nw at a.e`, { includeSource: false }
+    )
+
+    const rectAttrs = (svg: string) =>
+      [...svg.matchAll(/<rect [^>]*>/g)].map(m => {
+        const x = m[0].match(/x="([^"]+)"/)![1]
+        const y = m[0].match(/y="([^"]+)"/)![1]
+        const w = m[0].match(/width="([^"]+)"/)![1]
+        const h = m[0].match(/height="([^"]+)"/)![1]
+        return { x: +x, y: +y, w: +w, h: +h }
+      })
+
+    const plainRects = rectAttrs(plain.svg)
+    const labelledRects = rectAttrs(labelled.svg)
+
+    expect(plainRects).toHaveLength(2)
+    expect(labelledRects).toHaveLength(2)
+
+    for (let i = 0; i < 2; i++) {
+      expect(labelledRects[i].x).toBeCloseTo(plainRects[i].x)
+      expect(labelledRects[i].y).toBeCloseTo(plainRects[i].y)
+      expect(labelledRects[i].w).toBeCloseTo(plainRects[i].w)
+      expect(labelledRects[i].h).toBeCloseTo(plainRects[i].h)
+    }
+  })
+
+  it(`large label text doesn't shift box positions (simulates browser text measurement)`, () => {
+    const short = runProgram(`a = Box "B"\nb = Box "A" with .nw at a.e`)
+    const long  = runProgram(`a = Box "A long label"\nb = Box "Another long label" with .nw at a.e`)
+
+    const shortBoxes = short.shapes().filter(s => s.shapeName === `SBox`)
+    const longBoxes  = long.shapes().filter(s => s.shapeName === `SBox`)
+
+    // Box dimensions should be identical regardless of label length (no fit)
+    expect(longBoxes[0].width).toBeCloseTo(shortBoxes[0].width)
+    expect(longBoxes[0].height).toBeCloseTo(shortBoxes[0].height)
+    expect(longBoxes[1].width).toBeCloseTo(shortBoxes[1].width)
+    expect(longBoxes[1].height).toBeCloseTo(shortBoxes[1].height)
+
+    // Constraint: b.nw == a.e regardless of label content
+    expect(longBoxes[1].nw.x).toBeCloseTo(longBoxes[0].e.x)
+    expect(longBoxes[1].nw.y).toBeCloseTo(longBoxes[0].e.y)
+  })
+})
+
 describe(`behind`, () => {
   it(`sets the behind reference on the shape`, () => {
     const d = runProgram(`a = Box\nb = Box behind a`)

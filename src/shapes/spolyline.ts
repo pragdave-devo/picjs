@@ -3,6 +3,7 @@ import { TColor, TNumber, TPosition } from "../types.js"
 import { Cardinals, CardinalFactorsFromCenter, XY } from "../position.js"
 
 export class SPolyline extends LineLike {
+  override shapeName = "SPolyline"
 
   // Thunk versions for dynamic evaluation
   get _start()      { return this.hidden._start }

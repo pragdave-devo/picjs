@@ -12,6 +12,7 @@ const CircleCardinalFactors: Record<Cardinals, [number, number]> = {
 }
 
 export class SCircle extends SBase {
+  override shapeName = "SCircle"
 
   missingDimensions() {
     return false

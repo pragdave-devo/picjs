@@ -72,7 +72,32 @@
       "Bash(pkill -f \"node.*vite\")",
       "WebFetch(domain:peggyjs.org)",
       "Bash(find /Users/dave.thomas/code/picjs/test -name \"*.spec.ts\" -exec grep -l \"+\" {} \\\\;)",
-      "Bash(find *)"
+      "Bash(find *)",
+      "Bash(git check-ignore *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(git worktree *)",
+      "Bash(DEBUG_RENDERER=1 npm test)",
+      "Bash(el: SVGElement)",
+      "Bash(node: SvgNode)",
+      "Bash(xmllint --format -)",
+      "Bash(npx madge *)",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__fill",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"vite.*5176\")",
+      "Bash(git -C /Users/dave.thomas/code/picjs status --short)",
+      "Bash(git -C /Users/dave.thomas/code/picjs branch --show-current)",
+      "Bash(git branch *)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d['exports'], indent=2\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('dependencies',{}\\), indent=2\\)\\); print\\(json.dumps\\(d.get\\('devDependencies',{}\\), indent=2\\)\\)\")",
+      "Bash(pkill -f \"vite.*5180\")",
+      "Read(//dev/**)",
+      "Bash(jobs -l)",
+      "Bash(md5 /Users/dave.thomas/code/picjs/doc-gen/docs11ty/_site/doc/guide/index.html)",
+      "WebFetch(domain:www.11ty.dev)",
+      "Bash(npx @11ty/eleventy --input content --output _site)",
+      "Bash(git *)",
+      "Bash(trash public/img/jamstackseo.jpg public/img/setting)",
+      "Bash(trash *)"
     ]
   }
 }

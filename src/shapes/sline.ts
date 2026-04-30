@@ -3,6 +3,7 @@ import { TColor, TNumber, TPosition } from "../types.js"
 import { Cardinals, CardinalFactorsFromCenter, UnitVector, XY } from "../position.js"
   
 export class SLine extends LineLike {
+  override shapeName = "SLine"
 
 
   // we aren't really anchored, but we can pretend 

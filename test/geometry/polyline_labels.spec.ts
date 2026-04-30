@@ -111,7 +111,7 @@ describe(`Polyline label positioning — above/below`, () => {
     // Both labels should be near x=10 (midpoint of path)
     expect(above.anchorX).toBeCloseTo(10, 0)
     // above should be offset from y=0
-    expect(above.anchorY).not.toBeCloseTo(0, 0)
+    expect(above.anchorY).not.toBeCloseTo(0, 1)
   })
 
   it(`below label is on opposite side from above label`, () => {

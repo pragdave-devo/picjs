@@ -86,8 +86,10 @@ export function linestyle(_position: RenderParameters, attrs: Shape.Args) {
 ////------------------------------------------------------------ rotatio
 
 export function rotation(position: RenderParameters, attrs: Shape.Args) {
-  if (!attrs.rotation)
+  if (!attrs.rotation) {
+    delete attrs.rotation
     return
+  }
 
   const center = position.rotationCenter
   if (!center || center.x === undefined)
