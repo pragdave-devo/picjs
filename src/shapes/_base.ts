@@ -155,6 +155,9 @@ export class SBase extends TBase<null> {
   }
 
   setupParams(args: ShapeArgs) {
+    if (args._shapeName) {
+      this.shapeName = args._shapeName
+    }
     this.params = this.dispatcher.getAllDefaultAttributes(
       `Shapes`,
       this.shapeName,
@@ -193,6 +196,11 @@ export class SBase extends TBase<null> {
 
   missingDimensions() {
     return !(`width` in this.params && `height` in this.params)
+  }
+
+  calculateDimensions() {
+    this.params.width  ??= 1
+    this.params.height ??= 1
   }
 
   requiredPosition(): RenderParameters {
@@ -408,7 +416,7 @@ export class SBase extends TBase<null> {
   }
 
   setAnimatablePosition(x: number, y: number) {
-    if (this.params.x != x || this.params.y != y) {
+    if (this.params.x != x || this.params.y != y || this.anchorX === null) {
       this.params.x = this.anchorX = x
       this.params.y = this.anchorY = y
       this.rememberRenderNeeded(true)

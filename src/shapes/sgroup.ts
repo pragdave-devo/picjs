@@ -19,6 +19,7 @@ import { XY } from "../position.js"
 // This leverages SVG's native transform system - no manual repositioning needed.
 
 export class SGroup extends SBase {
+  override shapeName = "SGroup"
 
   groupChildren: SBase[] = []
   predecessorShape?: SBase

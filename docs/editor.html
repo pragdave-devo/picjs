@@ -1,0 +1,375 @@
+---
+permalink: /editor/
+eleventyExcludeFromCollections: true
+---
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>picjs Editor</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: #1a1a2e;
+  color: #ccc;
+  font-family: sans-serif;
+}
+
+.playpen {
+  display: flex;
+  height: 100vh;
+  gap: 0;
+}
+
+.left-panel {
+  flex: 0 0 50%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 2px solid #333;
+  background: #1e1e2e;
+}
+
+.editor-title {
+  margin: 0;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7c9cbf;
+  background: #161622;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+#example-selector {
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  border: 1px solid #334;
+  border-radius: 4px;
+  background: #1e1e2e;
+  color: #aab;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: normal;
+}
+
+#example-selector:hover {
+  border-color: #446;
+}
+
+#run-btn {
+  margin-left: auto;
+  padding: 3px 12px;
+  font-size: 0.75rem;
+  border: 1px solid #3a5;
+  border-radius: 4px;
+  background: #1a2a1a;
+  color: #6c8;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+
+#run-btn:hover {
+  background: #2a3a2a;
+  border-color: #4b6;
+}
+
+.editor-copyright {
+  margin: 0;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.65rem;
+  color: #6688aa;
+  background: #161622;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+
+.left-panel .cm-editor {
+  flex: 1;
+  font-size: 14px;
+  min-height: 0;
+  height: 100%;
+  border: 2px solid #2a2a45;
+  border-top: none;
+}
+
+.left-panel .cm-scroller {
+  overflow: auto;
+}
+
+.right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 0.5rem;
+  gap: 0.5rem;
+}
+
+.svg-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #000 0%, #122232 67%, #000 100%);
+}
+
+[data-theme="light"] .svg-container {
+  background: linear-gradient(180deg, #e8edf2 0%, #f5f5f5 30%, #f5f5f5 70%, #e8edf2 100%);
+}
+
+#theme-btn {
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  border: 1px solid #446;
+  border-radius: 4px;
+  background: #1e1e2e;
+  color: #aab;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: normal;
+}
+
+#theme-btn:hover {
+  border-color: #668;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cm-error-line {
+  background-color: rgba(180, 30, 30, 0.35) !important;
+}
+
+.stackframe .source {
+  border-top: 0.5px solid #711;
+  font-family: monospace;
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.stackframe table {
+  padding-left: 0.5rem;
+  border-left: 3px solid #c77;
+  font-size: inherit;
+}
+
+.stackframe table table {
+  padding-left: 0pt;
+  border: none;
+}
+
+.stackframe th {
+  vertical-align: top;
+  font-weight: normal;
+  color: #f88;
+  text-align: left;
+}
+
+.stackframe td {
+  vertical-align: top;
+  color: #f66;
+  text-align: left;
+  padding-left: 1em;
+}
+
+pre:has(.error-area) {
+  max-height: min(6rem, 20vh);
+  overflow-y: auto;
+  margin: 0;
+}
+
+.error-area {
+  font-size: 80%;
+  color: #f66;
+  white-space: pre-wrap;
+}
+
+.ast-area {
+  font-size: 60%;
+  color: #626;
+}
+
+.log-area {
+  max-height: 20vh;
+  overflow-y: auto;
+}
+
+.log-line {
+  margin: 0;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.log-line .location-line,
+.log-line .location-col {
+  font-size: smaller;
+  color: #555;
+}
+
+.log-line .location-line {
+  display: inline-block;
+  width: 1.5rem;
+  text-align: right;
+}
+
+.location-col {
+  display: inline-block;
+  width: 1.5rem;
+  font-size: smaller;
+  margin-right: 0.5rem;
+}
+
+.log-line .location-line:after { content: ":" }
+
+.log-line .src { color: #449977; }
+.log-line .src:after { content: " = " }
+
+.log-line .result { color: #7bc; }
+
+.result-area {
+  font-family: monospace;
+  font-size: 13px;
+  border: 1px solid #2a2a45;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  background: #13131f;
+  color: #aab;
+}
+
+.dir-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+  border-left: 1px solid #2a3a50;
+}
+
+.dir-item {
+  display: flex;
+  gap: 0.4em;
+  align-items: baseline;
+  padding: 1px 0;
+  flex-wrap: wrap;
+}
+
+.dir-key {
+  color: #7c9cbf;
+  flex-shrink: 0;
+}
+
+.dir-value {
+  color: #c8d3e0;
+}
+
+.dir-node {
+  width: 100%;
+}
+
+summary.dir-typename {
+  cursor: pointer;
+  color: #e8c07a;
+  list-style: disclosure-closed;
+  display: list-item;
+  user-select: none;
+}
+
+details[open] > summary.dir-typename {
+  list-style: disclosure-open;
+  margin-bottom: 2px;
+}
+
+.swatch {
+  float: left;
+  width: 80px;
+  height: 80px;
+  margin: 0;
+  padding: 2em;
+  border: 1em solid #222;
+}
+
+.controls-bar {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: #111827;
+  border-top: 1px solid #1e293b;
+  border-bottom: 1px solid #1e293b;
+  padding: 6px 12px;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+.controls-bar button.ctrl-icon {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.controls-bar input[type="range"] {
+  flex: 1;
+  accent-color: #4a9eff;
+  cursor: pointer;
+}
+
+.ctrl-speeds {
+  display: flex;
+  gap: 2px;
+}
+
+.ctrl-speeds button {
+  background: none;
+  border: 1px solid #334155;
+  color: #64748b;
+  font-size: 11px;
+  font-family: monospace;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.ctrl-time {
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+  min-width: 70px;
+  text-align: right;
+}
+
+.pause-overlay {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background: #1e293b;
+  color: #fbbf24;
+  font-size: 0.9rem;
+  font-family: sans-serif;
+  border-top: 1px solid #334155;
+}
+</style>
+</head>
+<body>
+<script>window.__PICJS_EXAMPLES_BASE = '/examples/';</script>
+<script type="module" src="/assets/playground.js"></script>
+</body>
+</html>

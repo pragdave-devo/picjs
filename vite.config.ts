@@ -32,6 +32,19 @@ const configs: Record<string, any> = {
       },
     },
   },
+  playground: {
+    lib: {
+      entry: resolve(__dirname, 'src/jp-web.ts'),
+      name: 'picjsPlayground',
+      fileName: () => 'playground.js',
+      formats: ['es'],
+    },
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+      },
+    },
+  },
 }
 
 export default defineConfig({
@@ -41,6 +54,10 @@ export default defineConfig({
     ...configs[target],
     minify: 'esbuild',
     sourcemap: true,
+  },
+  optimizeDeps: {
+    exclude: ['_site'],
+    entries: ['index.html'],
   },
   server: {
     fs: {

@@ -47,6 +47,10 @@ const errorLineField = StateField.define<DecorationSet>({
   provide: f => EditorView.decorations.from(f),
 })
 
+// ─── Configuration ────────────────────────────────────────────────────────
+
+const examplesBase = (window as any).__PICJS_EXAMPLES_BASE ?? `/examples/`
+
 // ─── Example definitions ──────────────────────────────────────────────────
 //
 // Each entry is { file, description }. The file is fetched from examples/ at
@@ -503,7 +507,7 @@ exampleSelector.addEventListener(`change`, async () => {
   const file = exampleSelector.value
   if (!file) return
   try {
-    const resp = await fetch(`/examples/${file}`)
+    const resp = await fetch(`${examplesBase}${file}`)
     if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`)
     const src = await resp.text()
     editorView.dispatch({
@@ -528,6 +532,7 @@ themeBtn.addEventListener(`click`, () => {
 
 // ─── Bootstrap ─────────────────────────────────────────────────────────────
 
-mount(document.body, playpen)
+const mountTarget = document.getElementById(`playground-container`) ?? document.body
+mount(mountTarget, playpen)
 editorView.focus()
 if (savedSource) preview()

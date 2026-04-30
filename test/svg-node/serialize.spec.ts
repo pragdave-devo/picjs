@@ -49,7 +49,7 @@ describe("renderToString", () => {
 
   beforeAll(async () => {
     const module = await import("../../src/render-to-string.js")
-    renderToString = module.renderToString
+    renderToString = module.renderToStringAsync
   })
 
   it("renders a Box to an SVG string", async () => {

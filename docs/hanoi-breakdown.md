@@ -1,6 +1,14 @@
+---
+title: Hanoi Tower Breakdown
+description: Step-by-step walkthrough of the Hanoi animation
+layout: layouts/doc.njk
+eleventyNavigation:
+  key: Hanoi Breakdown
+  order: 4
+---
 # What's Going On in the Hanoi Code?
 
-![Hanoi game in progress](../gh-assets/hanoi1.png)
+![Hanoi game in progress](./assets/hanoi1.png)
 
 The code for the Hanoi animation is a little more complex that the other examples. That's because I
 used it as a testbed for language ideas, so it has a little bit of everything mixed in. Let's break
@@ -9,13 +17,13 @@ it down.
 
 * We start by setting up some parameters. 
 
-  ~~~ js
+  ~~~ picjs code
   NumDisks = 5
   ~~~
 
   This is just a regular variable assignment. Change it, and the game updates.
 
-  ~~~ js
+  ~~~ picjs code
   Box.pole.fill = ~brown.lighten(5%) 
   ~~~
 
@@ -28,7 +36,7 @@ it down.
   just syntactic sugar for `0.05`. 
 
 
-  ~~~ js
+  ~~~ picjs code
   DiskColor = rgb(220,180,140)
   ~~~
 
@@ -39,7 +47,7 @@ it down.
   also add new attributes by assigning to them. Perhaps surprisingly, we can use that simple idea to
   implement a kind of mixin: a function that adds state and functionality to another object.
 
-  ``` js
+  ``` picjs code
   canHaveDisks = (aPole) => {
     disks = []
     aPole.push = (disk) => {
@@ -66,7 +74,7 @@ it down.
 
 * Here's the function that creates a pole.
 
-  ``` js
+  ``` picjs code
   drawPole = (number) => {
     pole = Box 20x150 rad 4 .pole  at (100 + number*230, 300)
     Box .pole 160x20 rx 7.5 at pole.s - (0,10) // the base
@@ -91,13 +99,13 @@ it down.
 
 * Create the three poles:
 
-  ``` js
+  ``` picjs code
   poles = [0..2].map(drawPole)
   ```
 
 * Create the disks and add them to pole #0:
 
-  ``` js
+  ``` picjs code
   [NumDisks..1].each(d => {
     @ += 0.3
     disk =  Box ht 20 wid 40 + d*15 rx 10 ry 5 fill DiskColor.spin(d*40)
@@ -124,7 +132,7 @@ it down.
   decides which disk to move where. That comes later. This function is the second part: it handles
   the mechanics of updating the state of the poles and, along the way, animating the move.
 
-  ``` js
+  ``` picjs code
   moveDisk = (pFrom, pTo) => {
     distance = (pFrom.number - pTo.number).abs()  // will be 1 or 2
     disk = pFrom.pop()
@@ -152,7 +160,7 @@ it down.
 
 * Finally, we have the Hanoi algorithm itself.
 
-  ``` js
+  ``` picjs code
   hanoi = (n, pFrom, pTo, pVia) => {
     if (n > 0)  {
       hanoi(n-1, pFrom, pVia, pTo)
@@ -164,7 +172,7 @@ it down.
 
   * Let's call it and get those disks moving:
 
-  ``` js
+  ``` picjs code
     hanoi(NumDisks, poles[0], poles[2], poles[1])
   ```
 
@@ -172,7 +180,7 @@ it down.
 
 Here's the full program:
 
-``` js
+``` picjs code
 NumDisks = 5
 Box.pole.fill = ~brown.lighten(5%)  // ~brown is a named color
 DiskColor = rgb(220,180,140)

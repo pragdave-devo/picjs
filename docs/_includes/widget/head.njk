@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="{{ metadata.language }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="google-site-verification" content="jefB3FvHz2yQqU_cOk94BswcnjXJsmhUL1dQytsN9l8" />
+{% include "widget/seo.njk" %}
+{%- css %}{% include "public/css/index.css" %}{% endcss %}
+{%- css %}a,.nav-link {text-decoration:none;color: #495057;}img,iframe{max-width:100%;height:auto;}
+.toc-nav details, .toc-nav .toc-leaf { margin: 0; padding: 0.15rem 0 0.15rem 1.1em; }
+.toc-nav summary { cursor: pointer; padding: 0.15rem 0; list-style: none; margin-left: -1.1em; padding-left: 1.1em; text-indent: -1.1em; }
+.toc-nav summary::-webkit-details-marker { display: none; }
+.toc-nav summary::before { content: "▶ "; font-size: 0.55em; vertical-align: 0.15em; color: #999; display: inline-block; width: 1.1rem; text-indent: 0; }
+.toc-nav details[open] > summary::before { content: "▼ "; }
+.toc-nav a { color: #495057; }
+.toc-nav a:hover { color: #0077aa; }
+{% endcss %}
+{%- css %}{% include "public/css/prism-picjs.css" %}{% endcss %}
+<style>{% getBundle "css" %}</style>
+</head>
+<body class="text-muted">

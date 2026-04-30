@@ -49,11 +49,14 @@ export async function exportAnimatedHTML(
 
   const astJson = JSON.stringify(parsed.ast)
 
-  return `<div id="picjs-${prefix}">
+  return `<div class="picjs-player" data-picjs-player>
 ${svgStr}
-<script type="application/json" data-picjs="${prefix}">
+<script type="application/json" data-picjs-ast>
 ${astJson}
 </script>
 </div>
-<script src="${runtimeUrl}"></script>`
+<script type="module">
+import { initAnimations } from "${runtimeUrl}";
+initAnimations();
+</script>`
 }

@@ -26,7 +26,7 @@ export class ShapeGraph {
     if (!ctr)
       throw new Error(`Unknown shape type: "${name}"`)
 
-    const shape = new ctr(args, withConstraint, this.dispatcher)
+    const shape = new ctr({ ...args, _shapeName: name }, withConstraint, this.dispatcher)
     shape.astArgs = astArgs
     shape.id = `${name}-${this.sno++}`
 
@@ -128,6 +128,7 @@ export class ShapeGraph {
   renderUpdatedOn(renderer: Renderer) {
     // Re-evaluate dirty dependent shapes in topological order so that each
     // shape's dependencies are up-to-date before it is re-evaluated.
+    this.dispatcher.isReEvaluating = true
     for (const shape of this.dependencyGraph.evaluationOrder()) {
       if (!shape.needsRendering()) continue
 
@@ -150,6 +151,7 @@ export class ShapeGraph {
         }
       }
     }
+    this.dispatcher.isReEvaluating = false
 
     const renderList = this.applyBehindConstraints(
       this.allShapes.filter(shape => shape.visible)

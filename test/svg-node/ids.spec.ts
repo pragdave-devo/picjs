@@ -1,10 +1,9 @@
-import { renderToString } from "../../src/render-to-string.js"
+import { renderToStringAsync as renderToString } from "../../src/render-to-string.js"
 import { IdGenerator } from "../../src/svg-node.js"
 
 describe("Element ID generation", () => {
   it("does not add IDs by default", async () => {
     const result = await renderToString("Box")
-    // Should have data-jp-id but not id attribute (regex must check for space or quote before 'id=')
     expect(result.svg).toMatch(/data-jp-id="/)
     expect(result.svg).not.toMatch(/[\s"]id="/)
   })
@@ -22,8 +21,6 @@ describe("Element ID generation", () => {
 
   it("uses sub-IDs for composite shapes", async () => {
     const result = await renderToString('Box "hello"', { ids: { prefix: "p0" } })
-    // The composite shape wraps in a <g> with the main ID
-    // Inner shape gets -s suffix, label gets -t suffix
     expect(result.svg).toMatch(/id="p0a"/)
     expect(result.svg).toMatch(/id="p0a-s"/)
     expect(result.svg).toMatch(/id="p0a-t"/)

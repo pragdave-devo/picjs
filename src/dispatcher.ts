@@ -27,6 +27,7 @@ export class Dispatcher {
   // can record variable→shape dependencies.
   currentEvaluatingShape: SBase | null = null
   asideDepth = 0
+  isReEvaluating = false
 
   constructor(
     private logger: LoggerInterface,

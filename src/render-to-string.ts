@@ -3,7 +3,7 @@
  * Uses SvgNode serialization instead of DOM manipulation.
  */
 
-import { SvgNode, svgNode, serialize, IdGenerator } from "./svg-node.js"
+import { svgNode, serialize, IdGenerator } from "./svg-node.js"
 
 export interface RenderResult {
   svg: string
@@ -21,30 +21,81 @@ export interface RenderOptions {
   ids?: { prefix: string }
 }
 
-/**
- * Render picjs source code to an SVG string.
- *
- * @param source - The picjs source code
- * @param options - Rendering options
- * @returns Object containing svg string, dimensions, and optional error
- */
-export async function renderToString(source: string, options: RenderOptions = {}): Promise<RenderResult> {
-  const { padding = 0.2, includeSource = true } = options
+interface Deps {
+  parseToAST: any
+  ParseStatus: any
+  Dispatcher: any
+  pegParse: any
+  nullLogger: any
+  calculateBoundingBox: any
+  viewBoxFromBounds: any
+  resetTheme: any
+  applyPaletteToTheme: any
+  Palette: any
+}
 
-  // Dynamic imports
-  const [
-    { parseToAST, ParseStatus },
-    { Dispatcher },
-    { parse: pegParse },
-    { nullLogger, calculateBoundingBox, viewBoxFromBounds }
-  ] = await Promise.all([
+let _deps: Deps | null = null
+let _loading: Promise<void> | null = null
+
+function loadDeps(): Promise<void> {
+  if (_deps) return Promise.resolve()
+  if (_loading) return _loading
+  _loading = Promise.all([
     import("./parser.js"),
     import("./dispatcher.js"),
     import("./peg_parser/jp.js"),
-    import("./render-utils.js")
-  ])
+    import("./render-utils.js"),
+    import("./defaults.js"),
+    import("./palette.js"),
+  ]).then(([parser, dispatcher, peg, utils, defaults, palette]) => {
+    _deps = {
+      parseToAST: parser.parseToAST,
+      ParseStatus: parser.ParseStatus,
+      Dispatcher: dispatcher.Dispatcher,
+      pegParse: peg.parse,
+      nullLogger: utils.nullLogger,
+      calculateBoundingBox: utils.calculateBoundingBox,
+      viewBoxFromBounds: utils.viewBoxFromBounds,
+      resetTheme: defaults.resetTheme,
+      applyPaletteToTheme: defaults.applyPaletteToTheme,
+      Palette: palette.Palette,
+    }
+  })
+  return _loading
+}
 
-  // Parse the source
+/**
+ * Inject pre-loaded dependencies (used by index.ts to avoid async import).
+ */
+export function injectDeps(deps: Deps): void {
+  _deps = deps
+}
+
+/**
+ * Ensure dependencies are loaded. Call once before using renderToString.
+ */
+export async function ensureReady(): Promise<void> {
+  await loadDeps()
+}
+
+function getDeps() {
+  if (!_deps) throw new Error("picjs: call ensureReady() or renderToStringAsync() before renderToString()")
+  return _deps
+}
+
+/**
+ * Render picjs source to SVG (synchronous).
+ * Requires ensureReady() to have been called first in unbundled environments.
+ * In a bundled build, the dynamic imports resolve synchronously.
+ */
+export function renderToString(source: string, options: RenderOptions = {}): RenderResult {
+  const { padding = 0.2, includeSource = true } = options
+  const { parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, resetTheme, applyPaletteToTheme, Palette } = getDeps()
+
+  resetTheme()
+  Palette.setCurrent(`default`)
+  applyPaletteToTheme(Palette.getCurrentColors())
+
   const parsed = parseToAST(pegParse, source, `Start`, false)
 
   if (parsed.status !== ParseStatus.Ok) {
@@ -57,38 +108,28 @@ export async function renderToString(source: string, options: RenderOptions = {}
   }
 
   try {
-    // Create dispatcher without DOM (svgHolder = null)
-    // The Dispatcher will skip DOM manipulation and renderers will produce SvgNode trees
     const dispatcher = new Dispatcher(nullLogger, null, 1)
 
-    // Set up ID generator if requested
     if (options.ids) {
       const idGen = new IdGenerator(options.ids.prefix)
       dispatcher.setIdGenerator(idGen)
     }
 
-    // Run the interpreter
     dispatcher.start(parsed.ast)
     dispatcher.applyTimelineUpTo(0)
 
-    // Get rendered SvgNode array
     const svgChildren = dispatcher.renderToSvgNodes()
-
-    // Calculate bounding box and create viewBox
     const bounds = calculateBoundingBox(dispatcher.shapes(), padding)
     const viewBox = viewBoxFromBounds(bounds, padding)
 
-    // Build root SVG element with cssPrefix class
     const root = svgNode("svg", {
       viewBox,
       class: `_myopic-1`,
       xmlns: "http://www.w3.org/2000/svg"
     }, svgChildren)
 
-    // Serialize to string
     let svg = serialize(root)
 
-    // Add source as comment if requested
     if (includeSource) {
       const comment = `<!-- picjs source:\n${source}\n-->`
       svg = svg.replace("<svg", `${comment}\n<svg`)
@@ -108,11 +149,19 @@ export async function renderToString(source: string, options: RenderOptions = {}
 }
 
 /**
+ * Async version — loads dependencies then renders.
+ */
+export async function renderToStringAsync(source: string, options: RenderOptions = {}): Promise<RenderResult> {
+  await loadDeps()
+  return renderToString(source, options)
+}
+
+/**
  * Render picjs source and return just the SVG string.
  * Throws on error.
  */
-export async function render(source: string, options: RenderOptions = {}): Promise<string> {
-  const result = await renderToString(source, options)
+export function render(source: string, options: RenderOptions = {}): string {
+  const result = renderToString(source, options)
   if (result.error) {
     throw new Error(result.error)
   }

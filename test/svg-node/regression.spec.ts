@@ -1,5 +1,5 @@
 // test/svg-node/regression.spec.ts
-import { renderToString } from "../../src/render-to-string.js"
+import { renderToStringAsync as renderToString } from "../../src/render-to-string.js"
 
 const SOURCES = [
   { name: "single box", src: "Box" },

@@ -2,6 +2,7 @@ import { SBase, ShapeArgs } from "./_base.js"
 import { TNumber } from "../types.js"
 
 export class SOval extends SBase {
+  override shapeName = "SOval"
 
   handle_attr_rx()     { return new TNumber(this.rx) }
   handle_attr_ry()     { return new TNumber(this.ry) }

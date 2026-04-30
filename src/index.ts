@@ -1,16 +1,22 @@
-import { parseToAST } from "./parser.js"
+import { parseToAST, ParseStatus } from "./parser.js"
 import { Dispatcher } from "./dispatcher.js"
 export { RTE } from "./runtime_error.js"
 import { LoggerInterface } from "./types.js"
 
 import { parse as pegParse } from "./peg_parser/jp.js"
+import { nullLogger, calculateBoundingBox, viewBoxFromBounds } from "./render-utils.js"
+import { resetTheme, applyPaletteToTheme } from "./defaults.js"
+import { Palette } from "./palette.js"
+import { injectDeps } from "./render-to-string.js"
+
+injectDeps({ parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, resetTheme, applyPaletteToTheme, Palette })
 
 // Re-export browser integration
 export { render, renderAll, autoInit } from "./browser.js"
 export type { RenderOptions as BrowserRenderOptions } from "./browser.js"
 
-// Re-export server-side rendering (async)
-export { renderToString, render as renderAsync } from "./render-to-string.js"
+// Re-export server-side rendering
+export { renderToString, renderToStringAsync, render as renderAsync, ensureReady } from "./render-to-string.js"
 export type { RenderResult, RenderOptions as ServerRenderOptions } from "./render-to-string.js"
 
 export function parse(content: string) {
