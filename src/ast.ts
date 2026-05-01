@@ -200,6 +200,14 @@ export interface MoveTo extends Base {
   params: { [name: string]: any }
 }
 
+export interface MoveBy extends Base {
+  type: `MoveBy`
+  what: QualifiedLValue | VariableValue,
+  direction: { x: number, y: number },
+  distance: Node,
+  params: { [name: string]: any }
+}
+
 export interface Number extends Base {
   type: `Number`
   value: number
@@ -358,6 +366,7 @@ export type Node
   | Inspect
   | LayoutGap
   | LayoutGoto
+  | MoveBy
   | MoveTo
   | Number
   | Pause

@@ -4,12 +4,12 @@ export { RTE } from "./runtime_error.js"
 import { LoggerInterface } from "./types.js"
 
 import { parse as pegParse } from "./peg_parser/jp.js"
-import { nullLogger, calculateBoundingBox, viewBoxFromBounds } from "./render-utils.js"
+import { nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds } from "./render-utils.js"
 import { resetTheme, applyPaletteToTheme } from "./defaults.js"
 import { Palette } from "./palette.js"
 import { injectDeps } from "./render-to-string.js"
 
-injectDeps({ parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, resetTheme, applyPaletteToTheme, Palette })
+injectDeps({ parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds, resetTheme, applyPaletteToTheme, Palette })
 
 // Re-export browser integration
 export { render, renderAll, autoInit } from "./browser.js"

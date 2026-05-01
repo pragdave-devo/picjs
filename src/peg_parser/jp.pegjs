@@ -933,7 +933,27 @@ AnimationSequence
   / Animation
 
 Animation
-  = move __ what:Expression _ (to __)? place:Expression _ params:AnimationParams
+  = move __ what:Expression __ direction:CardinalVector __ distance:AdditiveExpression _ params:AnimationParams
+    {
+      return ast({
+        type: "MoveBy",
+        what,
+        direction,
+        distance,
+        params,
+      })
+    }
+  / move __ what:Expression __ direction:CardinalVector _ params:AnimationParams
+    {
+      return ast({
+        type: "MoveBy",
+        what,
+        direction,
+        distance: ast({ type: "Number", value: 1 }),
+        params,
+      })
+    }
+  / move __ what:Expression _ (to __)? place:Expression _ params:AnimationParams
     {
       return ast({
         type: "MoveTo",
@@ -1841,6 +1861,10 @@ CardinalVector
   / "se" !IdentifierPart { return { x:   1, y:   1 } }
   / "s"  !IdentifierPart { return { x:   0, y:   1 } }
   / "w"  !IdentifierPart { return { x:  -1, y:   0 } }
+  / "up"    !IdentifierPart { return { x:  0, y: -1 } }
+  / "down"  !IdentifierPart { return { x:  0, y:  1 } }
+  / "left"  !IdentifierPart { return { x: -1, y:  0 } }
+  / "right" !IdentifierPart { return { x:  1, y:  0 } }
   / "e"  !IdentifierPart { return { x:   1, y:   0 } }
 
 

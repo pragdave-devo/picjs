@@ -45,10 +45,13 @@ export class Label extends SvgBase {
 
   rerender(position: RenderParameters, attrs: Shape.Args) {
     super.rerender(position, attrs)
+    this.attrs[`dominant-baseline`] = `text-before-edge`
+    this.node.attrs[`dominant-baseline`] = `text-before-edge`
     this.maxwidth = attrs.maxwidth ? Number(attrs.maxwidth) : undefined
     this.lineHeight = attrs.line_height ? Number(attrs.line_height) : undefined
     this.align = attrs.align || `c`
     this.parentWidth = attrs._parentWidth ? Number(attrs._parentWidth) : undefined
+    this.previousText = undefined
     this.setText(attrs.text)
     return this
   }

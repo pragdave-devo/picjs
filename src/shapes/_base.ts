@@ -46,6 +46,14 @@ const AbbreviatedAttrNames: { [abbrev: string]: string } = {
   wid: `width`,
 }
 
+const ParamAliases: { [name: string]: string } = {
+  thickness: `stroke_width`,
+  radius: `r`,
+  rad: `r`,
+  ht: `height`,
+  wid: `width`,
+}
+
 
 let sID = 1
 
@@ -287,7 +295,7 @@ export class SBase extends TBase<null> {
 
   handle_attr_opacity()   { return new TNumber(this.params.opacity ?? 1) }
   handle_attr_rotation()  { return new TNumber(this.rotation)         }
-  handle_attr_thickness() { return new TNumber(this.params.thickness) }
+  handle_attr_thickness() { return new TNumber(this.params.stroke_width) }
 
   // cardinal points are dynamically generated based on the current center, width, and height
 
@@ -442,7 +450,8 @@ export class SBase extends TBase<null> {
   }
 
   setAnimatableAttr(attr: string, newValue: any) {
-    this.params[attr] = newValue.toNative()
+    const paramName = ParamAliases[attr] || attr
+    this.params[paramName] = newValue.toNative()
     if (attr === `rotation`)
       this.setRotationVector()
     this.rememberRenderNeeded()

@@ -2,6 +2,7 @@ import { parseToAST, ParseResult, ParseStatus  } from "./parser.js"
 import { RTE } from "./runtime_error.js"
 import { parse as pegParse } from "./peg_parser/jp.js"
 import { Dispatcher } from "./dispatcher.js"
+import { nullLogger, calculateBoundingBox, unionBounds } from "./render-utils.js"
 import { Location } from "./location.js"
 import { Binding } from "./binding.js"
 import { setTheme, getThemeName, resetTheme, applyPaletteToTheme } from "./defaults.js"
@@ -411,16 +412,29 @@ function preview() {
       // Render shapes at t=0
       dispatcher.applyTimelineUpTo(0)
 
-      // Compute viewBox from shape geometry. Use a preliminary viewBox
-      // first so font-size in user units maps to reasonable pixels,
-      // then measure with getBBox for accurate text bounds.
+      // Compute viewBox: start with getBBox for accurate text bounds at t=0,
+      // then union with geometry bounds at each animation boundary.
       svgHolder.setAttribute(`viewBox`, `0 0 10 7`)
-      // Force a layout so the preliminary viewBox takes effect
       svgHolder.getBoundingClientRect()
       const bbox = svgHolder.getBBox()
       const pad = 0.2
+      let bounds = { minX: bbox.x, minY: bbox.y, maxX: bbox.x + bbox.width, maxY: bbox.y + bbox.height, width: bbox.width, height: bbox.height }
+      const times = dispatcher.animationBoundaryTimes()
+      if (times.length > 1) {
+        const probeSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement
+        probeSvg.style.cssText = "position:absolute;left:-9999px;width:0;height:0"
+        document.body.appendChild(probeSvg)
+        for (const t of times) {
+          if (t === 0) continue
+          const probe = new Dispatcher(nullLogger, probeSvg, -1)
+          probe.start(parsed.ast)
+          probe.applyTimelineUpTo(t)
+          bounds = unionBounds(bounds, calculateBoundingBox(probe.shapes(), pad))
+        }
+        document.body.removeChild(probeSvg)
+      }
       svgHolder.setAttribute(`viewBox`,
-        `${bbox.x - pad} ${bbox.y - pad} ${bbox.width + pad * 2} ${bbox.height + pad * 2}`)
+        `${bounds.minX - pad} ${bounds.minY - pad} ${bounds.maxX - bounds.minX + pad * 2} ${bounds.maxY - bounds.minY + pad * 2}`)
 
       if (duration > 0) {
         // Has animations — show controls bar, set up for playback

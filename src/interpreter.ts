@@ -2,7 +2,7 @@ import { RTE } from "./runtime_error.js"
 import { Defaults } from "./defaults.js"
 import { Binding } from "./binding.js"
 import * as Shapes from "./shapes.js"
-import { MoveToAnimator, createAttributeAnimator, RotateAnimator, DrawAnimator, SetVariableAnimator } from "./animations.js"
+import { MoveToAnimator, MoveByAnimator, createAttributeAnimator, RotateAnimator, DrawAnimator, SetVariableAnimator } from "./animations.js"
 import { Visitor } from "./visitor.js"
 import { Cardinals, CardinalVectors, XY } from "./position.js"
 import { Dispatcher } from "./dispatcher.js"
@@ -437,7 +437,7 @@ export class Interpreter extends Visitor{
       cardinal = this.accept(cardinalAttr.qvalue)
     }
     else {
-      throw new RTE(`Don't know how to move ${JSON.stringify(node.what)}`)
+      throw new RTE(`Don't know how to move a ${node.what.type}`)
     }
 
     const mover = new MoveToAnimator(
@@ -447,7 +447,34 @@ export class Interpreter extends Visitor{
       this.visit_object(node.params)
     )
     this.dispatcher.addAnimation(mover)
-    return node.what
+    return shape
+  }
+
+  VisitMoveBy(node: AST.MoveBy) {
+    let shape
+
+    if (node.what.type === `VariableValue`) {
+      shape = this.accept(node.what)
+    }
+    else if (node.what.type === `QualifiedLValue`) {
+      shape = this.accept(node.what.left)
+    }
+    else {
+      throw new RTE(`Don't know how to move a ${node.what.type}`)
+    }
+
+    const distance = this.accept(node.distance).toNative()
+    const dx = node.direction.x * distance
+    const dy = node.direction.y * distance
+
+    const mover = new MoveByAnimator(
+      shape,
+      dx,
+      dy,
+      this.visit_object(node.params)
+    )
+    this.dispatcher.addAnimation(mover)
+    return shape
   }
 
   VisitNumber(node: AST.Number) {
@@ -586,7 +613,7 @@ export class Interpreter extends Visitor{
       this.visit_object(node.params)
     )
     this.dispatcher.addAnimation(setter)
-    return what
+    return this.accept(what.left)
   }
 
   VisitSetTime(_node: AST.Node) {

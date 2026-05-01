@@ -1,7 +1,7 @@
 import { Dispatcher } from "./dispatcher.js"
 import { Interpreter } from "./interpreter.js"
 import { PlaybackController } from "./jp-web-playback.js"
-import { nullLogger, calculateBoundingBox, viewBoxFromBounds } from "./render-utils.js"
+import { nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds } from "./render-utils.js"
 import * as AST from "./ast.js"
 
 const PLAYER_CSS = `
@@ -57,6 +57,15 @@ const PLAYER_CSS = `
   min-width: 8em;
   text-align: right;
   white-space: nowrap;
+}
+.picjs-player {
+  container-type: inline-size;
+}
+@container (max-width: 449px) {
+  .picjs-controls .picjs-speeds,
+  .picjs-controls .picjs-time {
+    display: none;
+  }
 }
 `
 
@@ -220,12 +229,29 @@ export class PicjsPlayer {
   }
 
   private computeViewBox() {
-    this.svgHolder.setAttribute("viewBox", "0 0 10 7")
-    this.svgHolder.getBoundingClientRect()
-    const bbox = this.svgHolder.getBBox()
     const pad = 0.2
-    this.svgHolder.setAttribute("viewBox",
-      `${bbox.x - pad} ${bbox.y - pad} ${bbox.width + pad * 2} ${bbox.height + pad * 2}`)
+    const dispatcher = this.dispatcher!
+    let bounds = calculateBoundingBox(dispatcher.shapes(), pad)
+
+    const times = dispatcher.animationBoundaryTimes()
+    if (times.length > 1) {
+      const probeSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+      probeSvg.style.position = "absolute"
+      probeSvg.style.left = "-9999px"
+      probeSvg.style.width = "0"
+      probeSvg.style.height = "0"
+      document.body.appendChild(probeSvg)
+      for (const t of times) {
+        if (t === 0) continue
+        const probe = new Dispatcher(nullLogger, probeSvg, -1)
+        probe.start(this.ast)
+        probe.applyTimelineUpTo(t)
+        bounds = unionBounds(bounds, calculateBoundingBox(probe.shapes(), pad))
+      }
+      document.body.removeChild(probeSvg)
+    }
+
+    this.svgHolder.setAttribute("viewBox", viewBoxFromBounds(bounds, pad))
   }
 
   private styleEl: HTMLStyleElement | null = null

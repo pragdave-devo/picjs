@@ -20,7 +20,7 @@ export class SPolyline extends LineLike {
   set end(_val: XY) { /* computed from waypoints */ }
 
   get closed(): boolean { return this.params.closed || this.hidden._closed || false }
-  get thickness()       { return this.params.thickness }
+  get thickness()       { return this.params.stroke_width }
   get stroke()          { return this.params.stroke }
   get line_path()       { return this.params.line_path }
 

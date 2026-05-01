@@ -16,7 +16,7 @@ export async function exportAnimatedHTML(
     { parseToAST, ParseStatus },
     { Dispatcher },
     { parse: pegParse },
-    { nullLogger, calculateBoundingBox, viewBoxFromBounds },
+    { nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds },
     { svgNode, serialize, IdGenerator },
   ] = await Promise.all([
     import("./parser.js"),
@@ -37,7 +37,16 @@ export async function exportAnimatedHTML(
   dispatcher.applyTimelineUpTo(0)
 
   const svgChildren = dispatcher.renderToSvgNodes()
-  const bounds = calculateBoundingBox(dispatcher.shapes(), padding)
+  let bounds = calculateBoundingBox(dispatcher.shapes(), padding)
+  const times = dispatcher.animationBoundaryTimes()
+  for (const t of times) {
+    if (t === 0) continue
+    const probe = new Dispatcher(nullLogger, null, -1)
+    probe.setIdGenerator(new IdGenerator(prefix + `_probe`))
+    probe.start(parsed.ast)
+    probe.applyTimelineUpTo(t)
+    bounds = unionBounds(bounds, calculateBoundingBox(probe.shapes(), padding))
+  }
   const viewBox = viewBoxFromBounds(bounds, padding)
 
   const root = svgNode("svg", {

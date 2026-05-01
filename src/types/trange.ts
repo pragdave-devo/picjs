@@ -32,7 +32,7 @@ export const Easing:Record<EasingNames, EaseFn> = {
 }
 
 function combine(inFn: EaseFn, outFn: EaseFn) {
-  return (x: number) => x < 0.5 ? inFn(x) : outFn(x)
+  return (x: number) => x < 0.5 ? inFn(2 * x) / 2 : (1 + outFn(2 * x - 1)) / 2
 }
 
 Easing.cubicInOut = Easing.cubic = combine(Easing.cubicIn, Easing.cubicOut)

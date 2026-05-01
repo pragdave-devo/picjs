@@ -9,8 +9,8 @@ eleventyNavigation:
 ---
 # picjs: Constraint-Base Drawing and Animation Language
 
-> For reference material, have a look at [The picjs Reference](./picjs-reference.md) and
-> the [Quick Reference Card](./quick-reference.md).
+> For reference material, have a look at [The picjs Reference](./picjs-reference) and
+> the [Quick Reference Card](./quick-reference).
 
 Before we start, a few notes:
 
@@ -440,7 +440,7 @@ details = {
   box "Syd"
 }
 
-box fill ~b7 :
+box fill ~b7
     wid details.width * 120%
     ht details.height * 120%
     at details
@@ -518,370 +518,181 @@ function that created it.
 
 ### Attributes Are Dynamic
 
+Every value in picjs can have attributes. Many value types have predefined attributes. When you
+write `box.fill = ~b2` you're setting the `fill` attribute of a Box value, and when you write `len =
+aline.length` you're accessing the `length` atteribute of a line.
+The [quick reference](./quick-reference) starts with a list of all predefined attributes, and the
+[full reference](picjs-reference) goes into more detail.
+
+You can also add your own attributes to a value. If your attribute name is a valid variable name,
+you just reference it as `value.some_name`. If the name isn't a valid variable name, use the syntax
+`value[attr name]`. Both versions can be used both to fetch the current value and set a new value
+(using assignment).
+
+
 ### Functions Can Be Mixins
 
-# Part 2: Language Guide
 
-picjs is a simple expression-oriented language with a prototype-based object system.
+# Animation
 
-## Overall Syntax
+picjs let's you change attributes of drawing objects over time.
 
-Comments start `//` and run to the end of the line.
-
-A program is a list of _expressions_. There are no terminators; expressions end when the parser
-comes across something that doesn't below in that expression. Whitespace (including newlines) serves
-only to separate tokens that would othereise run together.
-
-In the code
-
-``` js
-box wid 2 -> circle "end"
-```
-
-The word `box` starts a shape expression. `wid 2` ae valid parameters to `box`, but the `->` is not,
-so it starts a new expression. `circle "end"` is the third expression.
-
-The previous code is parsed identially to
-
-``` js
-box  wid
-2
---> circle
-"end"
-```
-
-In general, I write simple compound expressions in one line, but split each onto its own line when
-it starts to get complicated.
-
-### Everything has a value
-
-Because everything is an expression, everything has a value. The value of a `box` expression is the
-bo shape it creates. The value of an assignment is the value that was assigned. This is powerful.
-It's also potentially ugly:
-
-~~~ picjs example
-box "A" with .nw at (box "B").e
+~~~ picjs example animated
+a = box "Hello"
+move a.c to a.se take 2
 ~~~
 
+Hit the Play control to the left of the timeline, and the box should move. Posiion the scribber back
+and forth, and the box's position will reflect the time.
 
-## Data Types
+~~~ picjs example animated
+a = box "Hello"
+Gap
+b = circle "World"
+l = line from a to b
 
-Number
-: `1   1.23   .5   50%`
+// animation
+move a to (2,1) 
+move b to (1,-1)
+set a.fill to ~b4
+set b.fill to ~b6
+set b.rad to .7
+set l.thickness to .1
+~~~
 
-Boolean
-: `true    false`
+You might be surprised that all the animations run concurrently, rather than one after the other. It
+turns ot that is one of the subtle superpowers of picjs.
 
-Color
-:  * `rgb(r,g,b)   hsb(h,s,b)   oklch(l,c,h)` (may have additional `a` parameter)
-   * `0xrrggbb    0xrrggbbaa`
-   * `~namedcolor`
+picjs has a special variable, `@`, which represents the time (in seconds) when animations will run. 
+Whenever you create
+an animation (using `move`, `set`, and `draw`), that animation starts at whatever time is currently
+in `@`. The initial value of `@` is zero, and so all the animations in the code above run starting at 0.
 
-String
-:  * `'characters'`
-     The literal string containing characters. `\'` can be used to include a single quote.
+We can change `@` to change how the animations work. We'll also use the `take` attribute to set
+durations for the different effects.
 
-   * `"characters"`
+~~~ picjs example animated
+a = box "Hello"
+Gap e
+b = circle "World"
+l = line from a to b
 
-     A string with potential substitutions:
+// animation
+move a to (2,1) take 3 
+@ = .5
+move b to (1,-1)
+set a.fill to ~b4
+set b.fill to ~b6
+@ = 1.5
+set b.rad to .7
+@ = 0
+set l.thickness to .1
+~~~
 
-     * `\xdd` the character with the given hex code
-     * `\n` a newline
-     * `\\` a backslash
-     * `\"' a double quote
-     * `#{expression}` the value of _expression_, converted to a string.
+Notice we can set `@` to any value, including ones before the current animation time. 
 
-   * `"""`
+### Chaining Animations
 
-     Start of a multiline string. Terminated by a line containing just `"""`. Acts like a
-     double-quoted string.
+Sometimes, though, you do want animations to run sequentially. `then` to the rescue.
 
-Position
-: `( expr, expr )` or `(expr expr)`
+~~~ picjs example animated
+a = box "Hello"
+Gap
+b = circle "World"
+l = line from a to b
 
-Array
-: `[ expr, ... ]`
+move a to (1,1)
+then move b to (1,-1)
+then set l.thickness to .2
+~~~
 
-Range
-: `[expr..expr]`
+### More About `@`
 
-   Both expressions should be he same type, and that type should support
-   interpolation.
+The `@` value has some other tricks up it's temporal sleeve. It has a number of attributes:
 
-Function
-:  `(params) => { body }`
+| Expression | Value |
+|-----------|-------------|
+| `@` | Current time (shorthand for `@.now`) |
+| `@.now` | Current time |
+| `@.max_time` | Maximum time in the timeline |
+| `@.last_animation_start` | Start time of most recent animation |
+| `@.last_animation_end` | End time of most recent animation |
+| `@.start_from` | Time offset for next animation |
 
-    _params_ is a comma separated list of parameter names. If there is only one name, the
-    parentheses may be omitted. If there are no parameters, then either use `()` or put nothing
-    before the `=>`.
+Assigning to `@.now` is the same as assigning to `@`: it sets the current time.
 
-    The _body_ is one or more expressions. If there's only one expression, the braces may be
-    omitted. The value of a function is the value of the last expression evaluated.
+`@.start_from` can also be assigned to. When set, it determines the time that the next animation
+will start, but doesn't change `@.now`. This is raely used, but has a place when you want to
+schedule a future animation without intefering with calculations that use `@`.
 
-    ``` js
-    double = n => n * 2
+Then there's the strange `@@` sigil. It's an abbreviation for
 
-    pos = (r, theta) => r*(sin(theta), cos(theta))
-
-    circle_box = => {
-      b = box
-      circle rad .3 fill ~f2 at b
-    }
-    ```
-
-
-### Attributes
-
-Every value can have attributes. Some of those attributes are inherent to the type of th value; an
-arrey has a `length` attribute, for example. You can access the attributes using either dot notation
-or as a lookup.
-
-``` js
-list = [1, 2, 3]
-list.length     // = 3
-list["length"]  // = 3
-attr = "length"
-list[attr]      // = 3
+``` picjs code
+@.now = @.last_animation_end
 ```
 
-Attributes can be of any type, including functions:
+Called after an animation, it updates the value of `@` so that a subsequent animation will start
+immediately after the previous one. For adjacent animations, it's like using `then`. It'w more
+useful when you have your animations broken into chunks, and you want to symchronie their execution.
 
-``` js
-list = [1, 2, 3]
-list.push(4)
-list   // = [1,2,3,4]
-```
+### Easing
 
-#### Custom Attributes
+As with _interpolations`, you can add an easing function to animations: 
+`linear`, `cubicIn`, `cubicOut`, `cubic`, `cubicInOut`, `quadIn`, `quadOut`, `quad`, `quadInOut`, and `bounce.`
 
-You can add your own attributes to any value: they pop into existence when they are assigned to.
+### Lines and Arrows
 
-#### Group Attributes
+Lines and arrows have two distinct types of animation. We've already see the first: their start and
+end points track the shapes they are attached to, and they have attributes like `stroke` to set the
+color and `thickness` to set their width.
 
-Inside a group, the variable `self` is a reference to the group object, and assigning to
-`self.attr_name` creates an attribute on that group. This is useful for refencing individual shapes
-in a group.
+But lines can also be animated when they are drawn: they grow from their start to their end.
 
-``` picjs example
-g = {
-  box ->
-  self.middle = box
-  -> box
-}
+For this to work, we have to tell the line not to draw itself initially using the `nodraw` property.
+We can then animate it using the `draw` animator.
 
-circle with .n at g.middle.s
-```
+~~~ picjs example animated
+c1 = circle rad .1
+c2 = circle rad .1 at c1.c + (2, 1)
 
-### Expression Types
+l = line -> from c1 to c2 nodraw
 
-#### Assignment
+draw l take 2 ease quad
+~~~
 
-```js
-name = expression
-name.attrname = expression
-name[attrname] = expression
-```
-The value of an assignment is the value that was assigned. This means you can chain assignments:
+### Attachment
 
-```
-a = b = c = 1
-```
+You probably notice that if you join two shapes with a line and move one of the shapes, the line
+adjusts so it is still attached.
 
-#### Conditionals
+This is example of _shape attachment_. Two shapes are attached when the position of one _explicitly_
+depends on the position of the other. This dependency is created when you use a constraint. 
 
-``` js
-if (expr) body else body
-if (expr) body
-```
+~~~ picjs example animated
+b1 = box fill ~b1
+b2 = box fill ~b2
+b3 = box fill ~b3
+b4 = box fill ~b4 with .w at b3.e
 
-`body` can be a single expression or multiple expressions between braces.
+move b1 up .5
+move b3 up .5
+~~~
 
-The value of an `if` is the value of the last expression evaluated.
+The first three boxes are unconstrained. Box `b2` is next to `b1`, but that just because the layout
+mechanism put it there. The position of `b4`, however, is _defined_ in terms of `b3`. Moving `b1`
+has no impact on `b2`, but when `b3` moves, the constraint means that `b4` moves with it.
 
-#### Debug Print
+Now let's repeat the experiment, but moving `b2` and `b4`.
 
-```
-?? expression
-```
+~~~ picjs example animated
+b1 = box fill ~b1
+b2 = box fill ~b2
+b3 = box fill ~b3
+b4 = box fill ~b4 with .w at b3.e
 
-Displays the expression and it's value. If you're running the playground, it's shown below the
-drawing area. Otherwise it is displayed on the console.
+move b2 up .5
+move b4 up .5
+~~~
 
-
-# Build-In Shapes, Attributes, and Functions
-
-
-## Attribute List
-
-Every attribute, what type of value it takes, and what it does.
-
-| Attribute | Value | Description |
-|-----------|-------|-------------|
-| `align` | cardinal (`.n`, `.w`, `.c`, etc.) | Text alignment within a label |
-| `at` | position | Place shape at a specific position |
-| `behind` | shape reference | Render this shape behind the referenced shape |
-| `close` | — (flag) | Close a polyline into a polygon |
-| `dashed` | — (flag) | Dashed stroke line style |
-| `dotted` | — (flag) | Dotted stroke line style |
-| `ease` | string | Easing function for an animation |
-| `fill` | color | Fill color |
-| `fit` | — (flag) | Auto-size shape to fit its label content |
-| `font` | font-spec | CSS font specification (style, weight, size, family) |
-| `font_family` | string | Font family name(s) |
-| `font_size` | size | Font size (CSS units or keywords) |
-| `font_stretch` | keyword/percentage | Font stretch |
-| `font_style` | keyword | Font style (`italic`, `oblique`) |
-| `font_variant` | keyword | Font variant (`small-caps`) |
-| `font_weight` | keyword/number | Font weight (`bold`, `lighter`, `100`–`900`) |
-| `from` | position | Line/arc start point |
-| `height` / `ht` | number | Shape height |
-| `length` / `len` | number | Line length |
-| `line_height` | number | Line spacing for multi-line labels |
-| `line_end` | `>` / `o` / `\|` | End marker on a line |
-| `line_path` | `straight` / `smooth` / `stepped` | Line interpolation style |
-| `line_start` | `<` / `o` / `\|` | Start marker on a line |
-| `maxwidth` | number | Maximum text width before wrapping |
-| `nodraw` | — (flag) | Create shape with draw_progress=0 (invisible until animated) |
-| `opacity` | number (0–1) | Shape opacity |
-| `radius` / `rad` / `r` | number | Circle/ellipse radius, or polyline corner radius |
-| `rotation` / `rot` | number (degrees) | Rotation angle |
-| `rx` | number | Horizontal corner radius |
-| `ry` | number | Vertical corner radius |
-| `same` | — (flag) | Copy attributes from previous shape of same type |
-| `smooth` / `curve` / `curved` | — (flag) | Smooth (bezier) line path |
-| `solid` | — (flag) | Solid stroke line style |
-| `stepped` / `step` | — (flag) | Stepped (right-angle) line path |
-| `straight` | — (flag) | Straight line path (default) |
-| `stroke` | color | Stroke color |
-| `stroke_width` | number | Stroke width (see also `thickness`) |
-| `take` | number | Animation duration |
-| `thickness` / `thick` | number | Stroke width (alias for `stroke_width`) |
-| `to` | position | Line/arc end point |
-| `turn` | `cw` / `ccw` / angle | Arc turn direction |
-| `width` / `wid` | number | Shape width |
-| `with` | constraint | Position constraint (see [Constraint](#constraint)) |
-| `x` | number | X position |
-| `y` | number | Y position |
-| `.<class>` | — | CSS class applied to the SVG element |
-
-### Labels (special attribute syntax)
-
-| Syntax | Context | Description |
-|--------|---------|-------------|
-| `"text"` | shape attribute | Simple label |
-| `("text" fill ~red .cls 14pt)` | shape attribute | Rich label with styling |
-| `"text" above` | line attribute | Line label positioned above path |
-| `"text" at 25% below` | line attribute | Line label at 25% along path, below |
-| `"text" inside` / `outside` | line/arc attribute | Label on inside/outside of curve |
-
-### Constraint
-
-| Syntax | Description |
-|--------|-------------|
-| `with .<cardinal> at <place>` | Pin cardinal point to a position |
-| `with at <place>` | Pin center to a position |
-| `with self.<name>.<cardinal> at <place>` | Pin a named sub-element's cardinal point |
-
----
-
-## Attribute–Shape Matrix
-
-Columns are the built-in shapes and objects. Rows are attributes.
-
-- ✓ = attribute is accepted. If the shape has a default value, it follows the checkmark.
-- ✗ = attribute cannot be used with this shape.
-
-Default values shown are for the `.normal` class using the Dark theme.
-Theme-variable names (like `BoxFill0`) resolve to specific colors at runtime.
-
-| Attribute | Box | Circle | Ellipse | Oval | Line | Polyline | Arc | Label | Group | Skip | Point |
-|-----------|:---:|:------:|:-------:|:----:|:----:|:--------:|:---:|:-----:|:-----:|:----:|:-----:|
-| **Labels** | | | | | | | | | | | |
-| `"text"` (label) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ ¹ | ✓ | ✗ | ✗ |
-| rich label `(...)` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ ¹ | ✓ | ✗ | ✗ |
-| line label positioning (`above`/`below`/`at %`) | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| **Position** | | | | | | | | | | | |
-| `at` / `(x,y)` | ✓ | ✓ | ✓ | ✓ | ✗ ² | ✗ ² | ✗ ² | ✓ | ✓ | ✓ | ✗ |
-| `x` | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ |
-| `y` | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ |
-| `from` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| `to` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ | ✗ |
-| `with` (constraint) | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ |
-| **Size** | | | | | | | | | | | |
-| `width` / `wid` | ✓ (1) | ✗ | ✗ | ✓ (1) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `height` / `ht` | ✓ (0.75) | ✗ | ✗ | ✓ (0.75) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `W x H` | ✓ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `radius` / `rad` / `r` | ✗ | ✓ (0.5) | ✗ | ✗ | ✗ | ✓ ³ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `rx` | ✓ (0.06) | ✗ | ✓ (0.5) | ✓ ⁴ | ✗ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `ry` | ✓ (0.06) | ✗ | ✓ (0.5) | ✓ ⁴ | ✗ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `length` / `len` | ✗ | ✗ | ✗ | ✗ | ✓ (1) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| **Appearance** | | | | | | | | | | | |
-| `fill` | ✓ (#1a7a9a) | ✓ (#1a7a9a) | ✓ (#1a7a9a) | ✓ (#1a7a9a) | ✓ | ✓ (none) | ✓ | ✓ (#ffffff) | ✓ | ✗ | ✗ |
-| `stroke` | ✓ (none) | ✓ (none) | ✓ (none) | ✓ (none) | ✓ (#5aacff) | ✓ (#5aacff) | ✓ (#5aacff) | ✓ | ✓ | ✗ | ✗ |
-| `thickness` / `stroke_width` | ✓ (0.015) | ✓ (0.015) | ✓ (0.015) | ✓ (0.015) | ✓ (0.04) | ✓ (0.04) | ✓ (0.04) | ✓ | ✓ | ✗ | ✗ |
-| `solid` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `dotted` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `dashed` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `opacity` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `rotation` / `rot` | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✗ | ✓ (0) |
-| `rotation ... about` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| **Line-specific** | | | | | | | | | | | |
-| line endings (`->`, `<~>`, etc.) | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| `straight` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `stepped` / `step` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `smooth` / `curve` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `nodraw` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| `turn` (`cw`/`ccw`/angle) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (cw) | ✗ | ✗ | ✗ | ✗ |
-| **Text** | | | | | | | | | | | |
-| `align` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (c) | ✗ | ✗ | ✗ |
-| `font` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
-| `font_size` (as keyword: `14pt`, `large`, etc.) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (0.14) | ✗ | ✗ | ✗ |
-| `maxwidth` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
-| `line_height` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (0) | ✗ | ✗ | ✗ |
-| **Other** | | | | | | | | | | | |
-| `fit` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `same` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `behind` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `.<class>` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-
-**Notes:**
-
-1. Label takes its text as a required first argument (`Label "text"`), not via a label attribute.
-2. Lines use `from`/`to` for positioning, not `at`.
-3. On polylines, `radius` sets corner rounding at waypoints (sets both `rx` and `ry`).
-4. Oval auto-rounds: `rx`/`ry` default to half the smaller dimension (pill shape). Can be overridden.
-
-### Label style classes
-
-Labels have built-in style classes that set alignment, color, and font size:
-
-| Class | Align | Font Size | Color (Dark theme) |
-|-------|:-----:|:---------:|:------------------:|
-| `.normal` | center | 0.14 | #ffffff |
-| `.h1` | west | 0.63 | #ffc233 |
-| `.h2` | west | 0.42 | #e8713a |
-| `.h3` | west | 0.28 | #d4a020 |
-| `.h4` | west | 0.21 | #6ab040 |
-| `.p` | west | (inherited) | (inherited) |
-
-### Box/Circle/Polyline color variants
-
-Shapes have color variant classes that change the fill:
-
-| Class | Fill (Dark theme) | Fill (Light theme) |
-|-------|:-----------------:|:------------------:|
-| `.normal` | #1a7a9a (cerulean) | #7cc8e0 (soft blue) |
-| `.v1` | #7b2d8e (purple) | #c49ed8 (soft purple) |
-| `.v2` | #2d6e2d (green) | #8ac08a (soft green) |
-| `.v3` | #a84800 (orange) | #e8a070 (soft orange) |
-| `.v4` | #0a6e68 (teal) | #7ac8c0 (soft teal) |
-
-
-
-## Built-In Functions
-
-
-
-# Part 3: Examples
-
-Missing
+Perhaps surprisingly, `b4` doesn't move. The constraint glues it to `b3`, and the animation respects
+that.

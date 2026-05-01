@@ -1,5 +1,8 @@
 # Picjs: A language for creating animated web graphics.
 
+Marvel at the examples below, then wander over to the [documentation and
+playground](https://pragdave-devo.github.io/picjs/).
+
 ### Hello World!
 
 ![A simple flow chart with three boxes, connected by arrows](./gh-assets/hello.png)

@@ -126,6 +126,43 @@ export class MoveToAnimator extends AnimatorBase {
   }
 }
 
+export class MoveByAnimator extends AnimatorBase {
+
+  protected shape
+  protected dx: number
+  protected dy: number
+  private endPos: TPosition | null = null
+
+  constructor(
+    shape: Shape.SBase,
+    dx: number,
+    dy: number,
+    params: AnimationParams
+  ) {
+    super(params)
+    this.shape = shape
+    this.dx = dx
+    this.dy = dy
+  }
+
+  start() {
+    if (!this.endPos) {
+      const origin = this.shape.getAnimatablePosition()
+      this.endPos = new TPosition({ x: origin.x + this.dx, y: origin.y + this.dy })
+    }
+    const start = this.shape.getAnimatablePosition()
+    this.setupRange(start, this.endPos)
+  }
+
+  _step(nextValue: TPosition) {
+    this.shape.setAnimatablePosition(nextValue.x, nextValue.y)
+  }
+
+  stop() {
+    super.stop()
+  }
+}
+
 export class RotateAnimator extends AnimatorBase {
   protected shape
   protected angle

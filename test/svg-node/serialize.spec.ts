@@ -97,3 +97,46 @@ describe("renderToString", () => {
     expect(result.height).toBeGreaterThan(0.5) // should be > 1 with padding
   })
 })
+
+describe("animation-aware viewBox", () => {
+  let renderToString: any
+
+  beforeAll(async () => {
+    const module = await import("../../src/render-to-string.js")
+    renderToString = module.renderToStringAsync
+  })
+
+  function parseViewBox(result: any): { x: number, y: number, w: number, h: number } {
+    const m = result.svg.match(/viewBox="([^"]+)"/)
+    const [x, y, w, h] = m[1].split(" ").map(Number)
+    return { x, y, w, h }
+  }
+
+  it("static diagram has tight viewBox", async () => {
+    const result = await renderToString(`box "A" at (1,1)`, { ids: { prefix: "t" } })
+    const vb = parseViewBox(result)
+    expect(vb.w).toBeLessThan(3)
+  })
+
+  it("viewBox expands to cover animation endpoint", async () => {
+    const staticResult = await renderToString(`box "A" at (1,1)`, { ids: { prefix: "t" } })
+    const animResult = await renderToString(`a = box "A" at (1,1)\nmove a to (8,1) take 2`, { ids: { prefix: "t" } })
+    const staticVb = parseViewBox(staticResult)
+    const animVb = parseViewBox(animResult)
+    expect(animVb.w).toBeGreaterThan(staticVb.w + 5)
+  })
+
+  it("viewBox covers intermediate animation positions", async () => {
+    const src = `a = box "A" at (1,1)\nmove a to (10,1) then move a to (1,1)`
+    const result = await renderToString(src, { ids: { prefix: "t" } })
+    const vb = parseViewBox(result)
+    expect(vb.x + vb.w).toBeGreaterThan(9)
+  })
+
+  it("viewBox covers vertical animation", async () => {
+    const src = `a = box "A" at (1,1)\nmove a down 5 take 1`
+    const result = await renderToString(src, { ids: { prefix: "t" } })
+    const vb = parseViewBox(result)
+    expect(vb.y + vb.h).toBeGreaterThan(5)
+  })
+})

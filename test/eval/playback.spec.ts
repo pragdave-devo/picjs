@@ -45,6 +45,69 @@ describe(`timeline`, () => {
     })
   })
 
+  describe(`animation results are assignable`, () => {
+    it(`m = move b to ... returns the shape`, () => {
+      const dispatcher = runProgram(`b = Box (100,100)\nm = move b to (200,100)`)
+      const shapes = dispatcher.shapes()
+      expect(shapes.length).toBe(1)
+    })
+
+    it(`s = set b.width ... returns the shape`, () => {
+      const dispatcher = runProgram(`b = Box (100,100)\ns = set b.width 200`)
+      const shapes = dispatcher.shapes()
+      expect(shapes.length).toBe(1)
+    })
+
+    it(`move result can be used in a chained expression`, () => {
+      const dispatcher = runProgram(`b = Box (100,100)\nm = move b to (200,100) take 2`)
+      dispatcher.applyTimelineUpTo(3)
+      const shapes = dispatcher.shapes()
+      expect(shapes[0].x).toBeCloseTo(200)
+    })
+  })
+
+  describe(`relative move (move by direction)`, () => {
+    it(`moves shape by direction and distance`, () => {
+      const dispatcher = runProgram(`b = Box (100,100)\nmove b down 50`)
+      dispatcher.applyTimelineUpTo(1)
+      const shapes = dispatcher.shapes()
+      expect(shapes[0].x).toBeCloseTo(100)
+      expect(shapes[0].y).toBeCloseTo(150)
+    })
+
+    it(`defaults distance to 1`, () => {
+      const dispatcher = runProgram(`b = Box (100,100)\nmove b right`)
+      dispatcher.applyTimelineUpTo(1)
+      const shapes = dispatcher.shapes()
+      expect(shapes[0].x).toBeCloseTo(101)
+      expect(shapes[0].y).toBeCloseTo(100)
+    })
+
+    it(`supports diagonal directions`, () => {
+      const dispatcher = runProgram(`b = Box (100,100)\nmove b ne 10`)
+      dispatcher.applyTimelineUpTo(1)
+      const shapes = dispatcher.shapes()
+      expect(shapes[0].x).toBeCloseTo(110)
+      expect(shapes[0].y).toBeCloseTo(90)
+    })
+
+    it(`supports take and ease params`, () => {
+      const dispatcher = runProgram(`b = Box (100,100)\nmove b east 50 take 2`)
+      dispatcher.applyTimelineUpTo(1) // halfway
+      const shapes = dispatcher.shapes()
+      expect(shapes[0].x).toBeGreaterThan(100)
+      expect(shapes[0].x).toBeLessThan(150)
+    })
+
+    it(`chains with then`, () => {
+      const dispatcher = runProgram(`b = Box (100,100)\nmove b down 50 then move b right 30`)
+      dispatcher.applyTimelineUpTo(2)
+      const shapes = dispatcher.shapes()
+      expect(shapes[0].x).toBeCloseTo(130)
+      expect(shapes[0].y).toBeCloseTo(150)
+    })
+  })
+
   describe(`totalDuration`, () => {
     it(`returns 0 when there are no animations`, () => {
       const dispatcher = runProgram(`Box`)

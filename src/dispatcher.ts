@@ -122,6 +122,10 @@ export class Dispatcher {
     return this.timeline.totalDuration()
   }
 
+  animationBoundaryTimes(): number[] {
+    return this.timeline.animationBoundaryTimes()
+  }
+
   getAnimationRunner(): AnimationRunner {
     return this.timeline.animationRunner
   }

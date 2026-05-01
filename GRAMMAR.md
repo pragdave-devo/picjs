@@ -383,7 +383,9 @@ AnimationSequence
                 = Animation ( _ 'then' __ Animation )+
                 | Animation ;
 
-Animation       = 'move' __ Expression _ ( 'to' __ )? Expression _ AnimationParams
+Animation       = 'move' __ Expression __ CardinalVector __ AdditiveExpression _ AnimationParams
+                | 'move' __ Expression __ CardinalVector _ AnimationParams
+                | 'move' __ Expression _ ( 'to' __ )? Expression _ AnimationParams
                 | 'rotate' __ Expression __ 'by' __ Expression _ 'about' __ PositionValue _ AnimationParams
                 | 'rotate' __ Expression __ 'by' __ Expression _ AnimationParams
                 | 'set' __ LValue ( _ ',' _ | __ ( 'to' __ )? ) Expression _ AnimationParams
@@ -753,7 +755,11 @@ CardinalVector  = 'northwest' !IdentifierPart
                 | 'se' !IdentifierPart
                 | 's'  !IdentifierPart
                 | 'w'  !IdentifierPart
-                | 'e'  !IdentifierPart ;
+                | 'e'  !IdentifierPart
+                | 'up'    !IdentifierPart
+                | 'down'  !IdentifierPart
+                | 'left'  !IdentifierPart
+                | 'right' !IdentifierPart ;
 ```
 
 ### Group Element Constraints

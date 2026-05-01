@@ -51,7 +51,7 @@ function parseMeta(meta) {
   const isCode = /\bcode\b/.test(meta);
   const isAnimated = !isCode && /\banimated\b/.test(meta);
   const isStacked = !isCode && /\bstacked\b/.test(meta);
-  const isExample = !isCode && !isStacked && !isAnimated && /\bexample\b/.test(meta);
+  const isExample = !isCode && /\bexample\b/.test(meta);
   const widthMatch = meta.match(/\bwidth=(\S+)/);
   const svgWidthMatch = meta.match(/\bsvgwidth=["']?([^"'\s]+)/);
   const scaleMatch = meta.match(/\bscale=(\S+)/);
@@ -121,6 +121,23 @@ function renderPicjsBlock(source, meta) {
     svgHtml = result.svg.replace("<svg", `<svg style="width: ${cssWidth}rem; height: auto"`);
   } else {
     svgHtml = result.svg;
+  }
+
+  if (isAnimated && (isExample || isStacked)) {
+    const cls = isStacked ? "picjs-stacked" : "picjs-example";
+    const displaySource = source.replace(/^[ \t]*\/\/-\n([\s\S]*?)\n[ \t]*\/\/\+\n?/gm, "");
+    const highlighted = Prism.highlight(displaySource, Prism.languages.picjs, "picjs");
+    const escapedSource = highlighted.replace(/\n/g, "&#10;");
+    const playerHtml = buildAnimatedBlock(source, svgHtml, "");
+    return {
+      html:
+        `<div class="${cls}"${containerStyle}>` +
+        `<pre class="picjs-source language-picjs"><code class="language-picjs">${escapedSource}</code></pre>` +
+        `<div class="picjs-diagram">${playerHtml}</div>` +
+        `</div>`,
+      needsStyles: true,
+      needsRuntime: true,
+    };
   }
 
   if (isAnimated) {

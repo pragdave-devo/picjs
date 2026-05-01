@@ -135,6 +135,19 @@ export class Timeline {
     return this.timeline.toArray()
   }
 
+  animationBoundaryTimes(): number[] {
+    const times = new Set<number>()
+    times.add(0)
+    for (const entry of this.entries()) {
+      const e = entry.element
+      if (e instanceof TLE.Animation) {
+        times.add(e.start)
+        if (e.end < BigNumber) times.add(e.end)
+      }
+    }
+    return [...times].sort((a, b) => a - b)
+  }
+
   dump() {
     this.entries().forEach(entry => entry.element.dump())
   }

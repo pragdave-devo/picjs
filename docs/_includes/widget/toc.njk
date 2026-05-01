@@ -1,9 +1,9 @@
 <aside class="col-md-3 offset-md-1 p-3 mt-3">
 <div class="shadow-sm bg-light p-3 rounded" style="position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto;">
 <nav>
-<a class="d-block py-1" href="/">Home</a>
+<a class="d-block py-1" href="/" {% if page.url == "/" %}style="font-weight: 700"{% endif %}>Home</a>
 {%- for navi in metadata.nav %}
-<a class="d-block py-1" href="{{navi.link}}">{{navi.name}}</a>
+<a class="d-block py-1" href="{{navi.link}}" {% if page.url == navi.link %}style="font-weight: 700"{% endif %}>{{navi.name}}</a>
 {%- endfor %}
 </nav>
 {% set tocRaw = content | toc %}

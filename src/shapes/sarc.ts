@@ -29,7 +29,7 @@ export class SArc extends LineLike {
   get end()            { return this.params.end }
   set end(val)         { this.params.end = val }
 
-  get thickness()      { return this.params.thickness }
+  get thickness()      { return this.params.stroke_width }
 
   // turn can be a plain string (from defaults) or AST node { type: "String", value: "cw" }
   get turn(): string | undefined {

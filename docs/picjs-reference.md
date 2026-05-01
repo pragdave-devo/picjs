@@ -931,15 +931,21 @@ Animations modify shapes over time.
 
 ### move
 
-Move a shape to a new position.
+Move a shape to an absolute position or by a relative offset.
 
 ```
 move <shape> [to] <position> [take <duration>] [ease <name>]
+move <shape> <direction> [<distance>] [take <duration>] [ease <name>]
 ```
+
+Directions: `up`, `down`, `left`, `right`, `north`, `south`, `east`, `west`, `n`, `s`, `e`, `w`, `ne`, `nw`, `se`, `sw`, `northeast`, `northwest`, `southeast`, `southwest`. Distance defaults to 1 if omitted.
 
 ```
 move box1 to (3, 4) take 2 ease cubic
 move circle1.ne (5, 5)
+move box1 down 2
+move box1 right 3 take 1.5
+move box1 ne 1 take 2 ease quad
 ```
 
 ### rotate

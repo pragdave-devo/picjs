@@ -32,7 +32,7 @@ export class SLine extends LineLike {
   get end()               { return this.params.end             }
   set end(val)            { this.params.end = val              }
 
-  get thickness()         { return this.params.thickness       }
+  get thickness()         { return this.params.stroke_width    }
   get stroke()            { return this.params.stroke          }
   get width()             { return Math.abs(this.start.x - this.end.x) }
   get height()            { return Math.abs(this.start.y - this.end.y) }

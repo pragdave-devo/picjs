@@ -6,7 +6,7 @@
 import { parseToAST, ParseStatus } from "./parser.js"
 import { Dispatcher } from "./dispatcher.js"
 import { parse as pegParse } from "./peg_parser/jp.js"
-import { nullLogger, calculateBoundingBox, viewBoxFromBounds } from "./render-utils.js"
+import { nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds } from "./render-utils.js"
 
 export interface RenderOptions {
   /** Padding around the content (default: 0.2) */
@@ -52,8 +52,22 @@ export function render(element: Element, options: RenderOptions = {}): SVGElemen
     dispatcher.start(parsed.ast)
     dispatcher.applyTimelineUpTo(0)
 
-    // Calculate bounding box and set viewBox
-    const bounds = calculateBoundingBox(dispatcher.shapes(), padding)
+    // Calculate bounding box covering all animation states
+    let bounds = calculateBoundingBox(dispatcher.shapes(), padding)
+    const times = dispatcher.animationBoundaryTimes()
+    if (times.length > 1) {
+      const probeSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+      probeSvg.style.cssText = "position:absolute;left:-9999px;width:0;height:0"
+      document.body.appendChild(probeSvg)
+      for (const t of times) {
+        if (t === 0) continue
+        const probe = new Dispatcher(nullLogger, probeSvg, -1)
+        probe.start(parsed.ast)
+        probe.applyTimelineUpTo(t)
+        bounds = unionBounds(bounds, calculateBoundingBox(probe.shapes(), padding))
+      }
+      document.body.removeChild(probeSvg)
+    }
     svgElement.setAttribute("viewBox", viewBoxFromBounds(bounds, padding))
 
     // Preserve source as comment

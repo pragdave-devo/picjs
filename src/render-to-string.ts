@@ -29,6 +29,7 @@ interface Deps {
   nullLogger: any
   calculateBoundingBox: any
   viewBoxFromBounds: any
+  unionBounds: any
   resetTheme: any
   applyPaletteToTheme: any
   Palette: any
@@ -56,6 +57,7 @@ function loadDeps(): Promise<void> {
       nullLogger: utils.nullLogger,
       calculateBoundingBox: utils.calculateBoundingBox,
       viewBoxFromBounds: utils.viewBoxFromBounds,
+      unionBounds: utils.unionBounds,
       resetTheme: defaults.resetTheme,
       applyPaletteToTheme: defaults.applyPaletteToTheme,
       Palette: palette.Palette,
@@ -90,7 +92,7 @@ function getDeps() {
  */
 export function renderToString(source: string, options: RenderOptions = {}): RenderResult {
   const { padding = 0.2, includeSource = true } = options
-  const { parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, resetTheme, applyPaletteToTheme, Palette } = getDeps()
+  const { parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds, resetTheme, applyPaletteToTheme, Palette } = getDeps()
 
   resetTheme()
   Palette.setCurrent(`default`)
@@ -119,7 +121,22 @@ export function renderToString(source: string, options: RenderOptions = {}): Ren
     dispatcher.applyTimelineUpTo(0)
 
     const svgChildren = dispatcher.renderToSvgNodes()
-    const bounds = calculateBoundingBox(dispatcher.shapes(), padding)
+
+    let bounds = calculateBoundingBox(dispatcher.shapes(), padding)
+
+    const boundaryTimes = dispatcher.animationBoundaryTimes()
+    if (boundaryTimes.length > 1) {
+      for (const t of boundaryTimes) {
+        if (t === 0) continue
+        const probe = new Dispatcher(nullLogger, null, 1)
+        if (options.ids) probe.setIdGenerator(new IdGenerator(options.ids.prefix + `_probe`))
+        probe.start(parsed.ast)
+        probe.applyTimelineUpTo(t)
+        const tBounds = calculateBoundingBox(probe.shapes(), padding)
+        bounds = unionBounds(bounds, tBounds)
+      }
+    }
+
     const viewBox = viewBoxFromBounds(bounds, padding)
 
     const root = svgNode("svg", {

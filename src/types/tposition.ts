@@ -87,6 +87,17 @@ export class TPosition extends TBase<XY> {
   get x() { return this.value.x }
   get y() { return this.value.y }
 
+  setAtAttr(name: string, value: any) {
+    if (name === `x`) {
+      this.value.x = (value instanceof TNumber) ? value.value : value.toNative()
+      return this
+    }
+    if (name === `y`) {
+      this.value.y = (value instanceof TNumber) ? value.value : value.toNative()
+      return this
+    }
+    return super.setAtAttr(name, value)
+  }
 
   // helpers
 

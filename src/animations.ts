@@ -1,4 +1,4 @@
-export { MoveToAnimator } from "./animators/_base.js"
+export { MoveToAnimator, MoveByAnimator } from "./animators/_base.js"
 export { RotateAnimator } from "./animators/_base.js"
 export { createAttributeAnimator } from "./animators/_base.js"
 export { DrawAnimator } from "./animators/draw.js"
