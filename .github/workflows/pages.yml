@@ -36,7 +36,7 @@ jobs:
         run: npm run build
 
       - name: Install 11ty dependencies
-        run: cd docs && npm ci
+        run: cd docs && npm install
 
       - name: Build docs with 11ty
         run: cd docs && npm run build
