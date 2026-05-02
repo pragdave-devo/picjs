@@ -23,7 +23,7 @@ registerHasMethodFactory((host) =>
   new TNative(`has`, [`attr_name`],
     `return true if the object has the named attribute`,
     (_interpreter, attr_name) => {
-      const name = String(attr_name)
+      const name = String(attr_name?.value ?? attr_name)
       if (name in host.attrs) return new TBool(true)
       if ((`handle_attr_` + name) in host) return new TBool(true)
       return new TBool(false)

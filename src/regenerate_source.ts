@@ -190,6 +190,15 @@ export class RegenerateSource extends Visitor{
     // node.withConstraint,   // defer evaluation
   }
 
+  VisitInterpolatedString(node: AST.InterpolatedString) {
+    const parts = node.parts.map(part => {
+      if (part.type === `String`)
+        return (part as AST.String).value
+      return `#{${this.accept(part)}}`
+    })
+    return `"${parts.join(``)}"`
+  }
+
   VisitString(node: AST.String) {
     return `"${node.value}"`
   }

@@ -78,32 +78,80 @@ export class Arc extends SvgBase {
   normalizeAttrs() {
   }
 
+  private arcGeometry(start: XY, end: XY) {
+    const chordX = end.x - start.x
+    const chordY = end.y - start.y
+    const chord = Math.hypot(chordX, chordY)
+    if (chord < 1e-6) return null
+
+    const turnValue = typeof this.attrs.turn === `string` ? this.attrs.turn : this.attrs.turn?.value
+    const isCW = turnValue === `cw`
+
+    const r = chord / two_cos_45
+    const ux = chordX / chord
+    const uy = chordY / chord
+    const px = -uy
+    const py = ux
+    const halfChord = chord / 2
+    const d = Math.sqrt(r * r - halfChord * halfChord)
+    const sign = isCW ? 1 : -1
+    const cx = (start.x + end.x) / 2 + sign * px * d
+    const cy = (start.y + end.y) / 2 + sign * py * d
+
+    let startAngle = Math.atan2(start.y - cy, start.x - cx)
+    let endAngle   = Math.atan2(end.y - cy, end.x - cx)
+    if (isCW) {
+      while (endAngle < startAngle) endAngle += 2 * Math.PI
+    } else {
+      while (endAngle > startAngle) endAngle -= 2 * Math.PI
+    }
+
+    return { cx, cy, r, startAngle, endAngle, isCW }
+  }
+
   pathForLine() {
     const start = this.attrs.start
     const end = this.attrs.end
 
-    const deltaX = end.x - start.x
-    const deltaY = end.y - start.y
+    const chordX = end.x - start.x
+    const chordY = end.y - start.y
+    const chordAngleDeg = Math.atan2(chordY, chordX) / 0.0174533
 
-    const angle = Math.atan2(deltaY, deltaX) / 0.0174533
+    const geo = this.arcGeometry(start, end)
+    if (!geo) {
+      return ` M ${start.x} ${start.y} L ${end.x} ${end.y}`
+    }
 
-    const rx = Math.hypot(end.x - start.x, end.y - start.y) / two_cos_45
-    const ry = rx
+    const { cx, cy, r, startAngle, endAngle, isCW } = geo
+    const rx = r
+    const ry = r
+    const turn = isCW ? 1 : 0
+    const tangentOffset = isCW ? Math.PI / 2 : -Math.PI / 2
+
+    const startTangent = startAngle + tangentOffset
+    const endTangent   = endAngle + tangentOffset
+
+    // Markers mutate pos to the arrow base — use that as the arc endpoint
+    // so the stroke meets the arrow exactly.
+    const arcStart = { ...start }
+    const arcEnd   = { ...end }
 
     if (this.attrs.line_start) {
-      this.pendingMarkers.push(this.markerPath(this.attrs.line_start, start, -1, angle))
+      const { length: w } = arrowDimensions(this.attrs[`stroke_width`])
+      const baseAngle = startAngle + (isCW ? 1 : -1) * (w / r)
+      const baseTangent = baseAngle + tangentOffset
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_start, arcStart, -1, baseTangent))
     }
 
     if (this.attrs.line_end) {
-      this.pendingMarkers.push(this.markerPath(this.attrs.line_end, end, +1, angle))
+      const { length: w } = arrowDimensions(this.attrs[`stroke_width`])
+      const baseAngle = endAngle - (isCW ? 1 : -1) * (w / r)
+      const baseTangent = baseAngle + tangentOffset
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_end, arcEnd, +1, baseTangent))
     }
 
-    // turn can be plain string "cw" or AST node { type: "String", value: "cw" }
-    const turnValue = typeof this.attrs.turn === `string` ? this.attrs.turn : this.attrs.turn?.value
-    const turn = turnValue === `cw` ? 1 : 0
-
-    return ` M ${start.x} ${start.y}` +
-    ` A ${rx} ${ry} ${angle} 0 ${turn} ${end.x} ${end.y} `
+    return ` M ${arcStart.x} ${arcStart.y}` +
+    ` A ${rx} ${ry} ${chordAngleDeg} 0 ${turn} ${arcEnd.x} ${arcEnd.y} `
   }
 
   markerPath(type: string, pos: XY, dir: LineDirection, angle: number) {

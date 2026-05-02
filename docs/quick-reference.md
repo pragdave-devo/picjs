@@ -17,7 +17,7 @@ Every attribute, what type of value it takes, and what it does.
 | `align` | cardinal (`.n`, `.w`, `.c`, etc.) | Text alignment within a label |
 | `at` | position | Place shape at a specific position |
 | `behind` | shape reference | Render this shape behind the referenced shape |
-| `close` | — (flag) | Close a polyline into a polygon |
+| `close` | — (flag) | Close a polyline into a polygon (polyline only) |
 | `dashed` | — (flag) | Dashed stroke line style |
 | `dotted` | — (flag) | Dotted stroke line style |
 | `ease` | string | Easing function for an animation |
@@ -91,55 +91,56 @@ Columns are the built-in shapes and objects. Rows are attributes.
 Default values shown are for the `.normal` class using the Dark theme.
 Theme-variable names (like `BoxFill0`) resolve to specific colors at runtime.
 
-| Attribute | Box | Circle | Ellipse | Oval | Line | Polyline | Arc | Label | Group | Skip | Point |
-|-----------|:---:|:------:|:-------:|:----:|:----:|:--------:|:---:|:-----:|:-----:|:----:|:-----:|
-| **Labels** | | | | | | | | | | | |
-| `"text"` (label) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ ¹ | ✓ | ✗ | ✗ |
-| rich label `(...)` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ ¹ | ✓ | ✗ | ✗ |
-| line label positioning (`above`/`below`/`at %`) | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| **Position** | | | | | | | | | | | |
-| `at` / `(x,y)` | ✓ | ✓ | ✓ | ✓ | ✗ ² | ✗ ² | ✗ ² | ✓ | ✓ | ✓ | ✗ |
-| `x` | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ |
-| `y` | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ |
-| `from` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| `to` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ | ✗ |
-| `with` (constraint) | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ |
-| **Size** | | | | | | | | | | | |
-| `width` / `wid` | ✓ (1) | ✗ | ✗ | ✓ (1) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `height` / `ht` | ✓ (0.75) | ✗ | ✗ | ✓ (0.75) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `W x H` | ✓ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `radius` / `rad` / `r` | ✗ | ✓ (0.5) | ✗ | ✗ | ✗ | ✓ ³ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `rx` | ✓ (0.06) | ✗ | ✓ (0.5) | ✓ ⁴ | ✗ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `ry` | ✓ (0.06) | ✗ | ✓ (0.5) | ✓ ⁴ | ✗ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `length` / `len` | ✗ | ✗ | ✗ | ✗ | ✓ (1) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| **Appearance** | | | | | | | | | | | |
-| `fill` | ✓ (#1a7a9a) | ✓ (#1a7a9a) | ✓ (#1a7a9a) | ✓ (#1a7a9a) | ✓ | ✓ (none) | ✓ | ✓ (#ffffff) | ✓ | ✗ | ✗ |
-| `stroke` | ✓ (none) | ✓ (none) | ✓ (none) | ✓ (none) | ✓ (#5aacff) | ✓ (#5aacff) | ✓ (#5aacff) | ✓ | ✓ | ✗ | ✗ |
-| `thickness` / `stroke_width` | ✓ (0.015) | ✓ (0.015) | ✓ (0.015) | ✓ (0.015) | ✓ (0.04) | ✓ (0.04) | ✓ (0.04) | ✓ | ✓ | ✗ | ✗ |
-| `solid` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `dotted` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `dashed` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `opacity` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `rotation` / `rot` | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✗ | ✓ (0) |
-| `rotation ... about` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| **Line-specific** | | | | | | | | | | | |
-| line endings (`->`, `<~>`, etc.) | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| `straight` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `stepped` / `step` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `smooth` / `curve` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `nodraw` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| `turn` (`cw`/`ccw`/angle) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (cw) | ✗ | ✗ | ✗ | ✗ |
-| **Text** | | | | | | | | | | | |
-| `align` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (c) | ✗ | ✗ | ✗ |
-| `font` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
-| `font_size` (as keyword: `14pt`, `large`, etc.) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (0.14) | ✗ | ✗ | ✗ |
-| `maxwidth` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
-| `line_height` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (0) | ✗ | ✗ | ✗ |
-| **Other** | | | | | | | | | | | |
-| `fit` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `same` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `behind` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `.<class>` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Attribute | Box | Circle | Ellipse | Oval | Line | Polyline | Arc | Label | Group |
+|-----------|:---:|:------:|:-------:|:----:|:----:|:--------:|:---:|:-----:|:-----:|
+| **Labels** | | | | | | | | | |
+| `"text"` (label) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ ¹ | ✓ |
+| rich label `(...)` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ ¹ | ✓ |
+| line label positioning (`above`/`below`/`at %`) | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ |
+| **Position** | | | | | | | | | |
+| `at` / `(x,y)` | ✓ | ✓ | ✓ | ✓ | ✗ ² | ✗ ² | ✗ ² | ✓ | ✓ |
+| `x` | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ |
+| `y` | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ |
+| `from` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ |
+| `to` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ |
+| `with` (constraint) | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ |
+| **Size** | | | | | | | | | |
+| `width` / `wid` | ✓ (1) | ✗ | ✗ | ✓ (1) | ✗ | ✗ | ✗ | ✗ | ✗ |
+| `height` / `ht` | ✓ (0.75) | ✗ | ✗ | ✓ (0.75) | ✗ | ✗ | ✗ | ✗ | ✗ |
+| `W x H` | ✓ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
+| `radius` / `rad` / `r` | ✗ | ✓ (0.5) | ✗ | ✗ | ✗ | ✓ ³ | ✗ | ✗ | ✗ |
+| `rx` | ✓ (0.06) | ✗ | ✓ (0.5) | ✓ ⁴ | ✗ | ✓ | ✗ | ✗ | ✗ |
+| `ry` | ✓ (0.06) | ✗ | ✓ (0.5) | ✓ ⁴ | ✗ | ✓ | ✗ | ✗ | ✗ |
+| `length` / `len` | ✗ | ✗ | ✗ | ✗ | ✓ (1) | ✗ | ✗ | ✗ | ✗ |
+| **Appearance** | | | | | | | | | |
+| `fill` | ✓ (#1a7a9a) | ✓ (#1a7a9a) | ✓ (#1a7a9a) | ✓ (#1a7a9a) | ✓ | ✓ (none) | ✓ | ✓ (#ffffff) | ✓ |
+| `stroke` | ✓ (none) | ✓ (none) | ✓ (none) | ✓ (none) | ✓ (#5aacff) | ✓ (#5aacff) | ✓ (#5aacff) | ✓ | ✓ |
+| `thickness` / `stroke_width` | ✓ (0.015) | ✓ (0.015) | ✓ (0.015) | ✓ (0.015) | ✓ (0.04) | ✓ (0.04) | ✓ (0.04) | ✓ | ✓ |
+| `solid` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `dotted` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `dashed` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `opacity` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `rotation` / `rot` | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) | ✓ (0) |
+| `rotation ... about` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Line-specific** | | | | | | | | | |
+| line endings (`->`, `<~>`, etc.) | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ |
+| `straight` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ |
+| `stepped` / `step` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ |
+| `smooth` / `curve` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ |
+| `close` | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
+| `nodraw` | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ |
+| `turn` (`cw`/`ccw`/angle) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (cw) | ✗ | ✗ |
+| **Text** | | | | | | | | | |
+| `align` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (c) | ✗ |
+| `font` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✗ |
+| `font_size` (as keyword: `14pt`, `large`, etc.) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (0.14) | ✗ |
+| `maxwidth` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✗ |
+| `line_height` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (0) | ✗ |
+| **Other** | | | | | | | | | |
+| `fit` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `same` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `behind` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `.<class>` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 **Notes:**
 

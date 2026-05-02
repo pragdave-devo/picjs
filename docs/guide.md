@@ -1,20 +1,18 @@
 ---
 title: picjs Guide
-description: An introduction to picjs
+description: An introduction to picjs, a constraint-based drawing and animation language
 date: 2026-04-21
 layout: layouts/doc.njk
 eleventyNavigation:
   key: picjs Guide
   order: 1
 ---
-# picjs: Constraint-Base Drawing and Animation Language
-
-> For reference material, have a look at [The picjs Reference](./picjs-reference) and
-> the [Quick Reference Card](./quick-reference).
+> (For reference material, have a look at [The picjs Reference](./picjs-reference) and
+> the [Quick Reference Card](./quick-reference)).
 
 Before we start, a few notes:
 
-* Play along with the examples in the guide using the [online editor](https://picjs.dev/editor) or install picjs locally using npm:
+* Play along with the examples in the guide using the [online editor](./editor) or install picjs locally using npm:
 
   ```console
   $ npm install -g picjs
@@ -41,7 +39,7 @@ Before we start, a few notes:
   The `picjs` command will convert each diagram in a file into SVG. It will then insert the SVG, and
   also include the original picjs as an HTML comment, along with a checksum. The resulting file will
   display the SVG in place of the diagram. If you want to alter a diagram, edit the picjs source in
-  the comment and rerun the comand. It will compare the checksum with that of the source, and
+  the comment and rerun the command. It will compare the checksum with that of the source, and
   regenerate the SVG if the source has changed.
 
 Enough boring stuff. Let's draw some pictures.
@@ -136,7 +134,7 @@ Each of the coordinates can be an expression:
   circle at (2*sin(theta), 2*cos(theta))
 })
 ```
-(The `[0..359].steps(20, theta => {...})` syntax iterates of the range from zero to 359, taking 20
+(The `[0..359].steps(10, theta => {...})` syntax iterates over the range from zero to 359, taking 10
 steps, and passing the current interpolated value to the function as `theta`.)
 
 Positions are also values, so you can perform arithmetic on them:
@@ -211,12 +209,12 @@ In addition you can use the color functions `rgb`, `hsl`, and `oklch`. They each
 parameters, along with a fourth optional opacity.
 
 However, if you want consistency, use a color palette. Picjs ships with a number of palettes,
-and each has eight foreground colours (`~f1`–`f8`) and eight background colors (`~b1`–`~b8`).
+and each has eight foreground colors (`~f1`–`~f8`) and eight background colors (`~b1`–`~b8`).
 
 As a general guide, the `~b1` is darker than `~b2` and so on, but that depends on the palette.
 
-The colors are chosen so that using a given foreground color on a background of the same number
-background color will ensure WCAG accessibility.
+The colors are chosen so that using a given foreground color on a background color of the same
+number will ensure WCAG accessibility.
 
 ~~~ picjs example
 Palette.current = "sunset"
@@ -230,7 +228,7 @@ b4 = box fill ~b4 with .nw at b3
 The `Palette` object lets you switch the palette used for all subsequent objects. You can also
 define your own palettes by assigning to `Palette.b1`, `Palette.b2` and so on.
 
-There's a table showing the available palettes at the [end of this document](#palette).
+There's a table showing the available palettes in the [editor](./editor/?example=palette.picjs).
 
 ### Color Interpolation
 
@@ -289,7 +287,7 @@ box ht .3 wid 5*Box.width rad 0  "Grayscale" fill ~gray
 ## Other Shape Attributes
 
 `fill` and `stroke` are two of the dozens of attributes that `picjs` supports. They let you
-change the width, height, corner radius and fonts used. Down towards the of this document you'll
+change the width, height, corner radius, and fonts used. Down towards the end of this document you'll
 find the details.
 
 ## Basic Programming
@@ -304,7 +302,7 @@ arc from b1.n to b2.n
 ~~~
 
 picjs has lists, ranges, strings, booleans, and positions. It comes with the usual set of operators
-(`+`, `-`) and so on, and it tries to apply them polymorhpically:
+(`+`, `-`) and so on, and it tries to apply them polymorphically:
 
 ``` js
 1 + 2         // 3
@@ -324,7 +322,7 @@ else
 
 _condition_ is an expression evaluating to a boolean.
 
-_expression_or_block_ is either a single expression of a set of expressions enclosed in braces.
+_expression_or_block_ is either a single expression or a set of expressions enclosed in braces.
 
 ``` js
 if (name == "Dave")
@@ -396,7 +394,7 @@ The value of a block is the value of the last expression executed. The value of 
 shape object (an instance of `Group`).
 
 The shapes inside a group are positioned relative to the group as a whole, and so when you
-position the greoup, you position the shapes it contains. Also, if you set the `Face` direction
+position the group, you position the shapes it contains. Also, if you set the `Face` direction
 in a group, it is restored when the group exits.
 
 This is a common pattern for centering variable height lists.
@@ -440,7 +438,7 @@ details = {
   box "Syd"
 }
 
-box fill ~b7
+box fill ~b7 :
     wid details.width * 120%
     ht details.height * 120%
     at details
@@ -488,8 +486,8 @@ surround({
 }, "Team Two")
 ```
 
-There are two subtlties here. First, inside the `surround` function we put the box and label
-inside their own group, which lets up put them both behind the shape.
+There are two subtleties here. First, inside the `surround` function we put the box and label
+inside their own group, which lets us put them both behind the shape.
 
 Second, we don't have to store the group we're wrapping in a variable. The second team is passed
 as a literal group to `surround`.
@@ -520,29 +518,102 @@ function that created it.
 
 Every value in picjs can have attributes. Many value types have predefined attributes. When you
 write `box.fill = ~b2` you're setting the `fill` attribute of a Box value, and when you write `len =
-aline.length` you're accessing the `length` atteribute of a line.
+aline.length` you're accessing the `length` attribute of a line.
 The [quick reference](./quick-reference) starts with a list of all predefined attributes, and the
-[full reference](picjs-reference) goes into more detail.
+[full reference](./picjs-reference) goes into more detail.
 
 You can also add your own attributes to a value. If your attribute name is a valid variable name,
 you just reference it as `value.some_name`. If the name isn't a valid variable name, use the syntax
 `value[attr name]`. Both versions can be used both to fetch the current value and set a new value
 (using assignment).
 
+One use of this is to add flags to certain shapes. For example, in an animation of the Towers of
+Hanoi, you might want to add an attribute to each disk saying which tower it is currently on.
 
-### Functions Can Be Mixins
+Because functions are values, you can assign them to attributes. On its own, this ability is not
+particularly useful. But a simple trick means you can use it to implement the equivalent of object
+constructors.
 
+### Functions + Closures == Constructors
+
+Let's make a box that can hold other, smaller, boxes. Having created the outer box, we'd like it to
+have a `.add` function that places its argument at the next available position in the box.
+
+
+``` picjs example
+make_container_of = shape => {
+   next_nw = (0,0)
+   shape.add = other => {
+      other.nw = (shape.nw + next_nw)
+      next_nw.x += other.width
+      if (other.width + next_nw.x > shape.width) {
+        next_nw.x = 0
+        next_nw.y += 1
+      }
+  }
+  shape
+}
+
+b = make_container_of(box 4x4)
+
+[~red..~blue].steps(8, shade => {
+  b.add(box "A" fill shade)
+  b.add(box "B" fill shade.desaturate(.5))
+})
+```
+
+We'll start towards the end of the code.
+
+`b = make_container_of(box 4x4)` first creates a 4-by-4 box, then passes it to the
+`make_container_of` function. This function augments the box with an `add` function.
+
+The skeleton of this function is:
+
+``` picjs code
+make_container_of = shape => {
+  // ...
+  shape.add = other => {
+    // ...
+  }
+  shape
+}
+```
+This creates an `add` attribute on the shape we pass in. The value of that attribute is a function
+that takes the shape we're adding. We'll get to that next.
+
+Finally, the function returns the shape.
+
+How does `add` work? It relies on the fact that function definitions act as closures.
+
+``` picjs code
+next_nw = (0,0)
+shape.add = other => {
+   other.nw = (shape.nw + next_nw)
+   next_nw.x += other.width
+   if (other.width + next_nw.x > shape.width) {
+     next_nw.x = 0
+     next_nw.y += 1
+   }
+}
+```
+We create a variable `next_nw` in the outer scope. This is the position within the outer shape that
+we want to position the northwest corner of the next box we add. Then comes the `add` function body.
+It makes copious use of the variables `shape` and `next_nw`. Both of these are defined outside the
+body of `add`, so they are automatically enclosed: this particular incantation of `add` will have
+these variables accessible even after `make_container_of` returns, and those variables will be
+unique to that particular function. If we call `make_container_of` again on a new shape, then it
+will have different `shape` and `next_nw` variables.
 
 # Animation
 
-picjs let's you change attributes of drawing objects over time.
+picjs lets you change attributes of drawing objects over time.
 
 ~~~ picjs example animated
 a = box "Hello"
 move a.c to a.se take 2
 ~~~
 
-Hit the Play control to the left of the timeline, and the box should move. Posiion the scribber back
+Hit the Play control to the left of the timeline, and the box should move. Position the scrubber back
 and forth, and the box's position will reflect the time.
 
 ~~~ picjs example animated
@@ -557,11 +628,10 @@ move b to (1,-1)
 set a.fill to ~b4
 set b.fill to ~b6
 set b.rad to .7
-set l.thickness to .1
-~~~
+set l.thickness to .1~~~
 
 You might be surprised that all the animations run concurrently, rather than one after the other. It
-turns ot that is one of the subtle superpowers of picjs.
+turns out that is one of the subtle superpowers of picjs.
 
 picjs has a special variable, `@`, which represents the time (in seconds) when animations will run. 
 Whenever you create
@@ -573,7 +643,7 @@ durations for the different effects.
 
 ~~~ picjs example animated
 a = box "Hello"
-Gap e
+Gap
 b = circle "World"
 l = line from a to b
 
@@ -608,7 +678,7 @@ then set l.thickness to .2
 
 ### More About `@`
 
-The `@` value has some other tricks up it's temporal sleeve. It has a number of attributes:
+The `@` value has some other tricks up its temporal sleeve. It has a number of attributes:
 
 | Expression | Value |
 |-----------|-------------|
@@ -622,8 +692,8 @@ The `@` value has some other tricks up it's temporal sleeve. It has a number of 
 Assigning to `@.now` is the same as assigning to `@`: it sets the current time.
 
 `@.start_from` can also be assigned to. When set, it determines the time that the next animation
-will start, but doesn't change `@.now`. This is raely used, but has a place when you want to
-schedule a future animation without intefering with calculations that use `@`.
+will start, but doesn't change `@.now`. This is rarely used, but has a place when you want to
+schedule a future animation without interfering with calculations that use `@`.
 
 Then there's the strange `@@` sigil. It's an abbreviation for
 
@@ -632,17 +702,17 @@ Then there's the strange `@@` sigil. It's an abbreviation for
 ```
 
 Called after an animation, it updates the value of `@` so that a subsequent animation will start
-immediately after the previous one. For adjacent animations, it's like using `then`. It'w more
-useful when you have your animations broken into chunks, and you want to symchronie their execution.
+immediately after the previous one. For adjacent animations, it's like using `then`. It's more
+useful when you have your animations broken into chunks, and you want to synchronize their execution.
 
 ### Easing
 
-As with _interpolations`, you can add an easing function to animations: 
-`linear`, `cubicIn`, `cubicOut`, `cubic`, `cubicInOut`, `quadIn`, `quadOut`, `quad`, `quadInOut`, and `bounce.`
+As with _interpolations_, you can add an easing function to animations:
+`linear`, `cubicIn`, `cubicOut`, `cubic`, `cubicInOut`, `quadIn`, `quadOut`, `quad`, `quadInOut`, and `bounce`.
 
 ### Lines and Arrows
 
-Lines and arrows have two distinct types of animation. We've already see the first: their start and
+Lines and arrows have two distinct types of animation. We've already seen the first: their start and
 end points track the shapes they are attached to, and they have attributes like `stroke` to set the
 color and `thickness` to set their width.
 
@@ -662,10 +732,10 @@ draw l take 2 ease quad
 
 ### Attachment
 
-You probably notice that if you join two shapes with a line and move one of the shapes, the line
+You'll probably notice that if you join two shapes with a line and move one of the shapes, the line
 adjusts so it is still attached.
 
-This is example of _shape attachment_. Two shapes are attached when the position of one _explicitly_
+This is an example of _shape attachment_. Two shapes are attached when the position of one _explicitly_
 depends on the position of the other. This dependency is created when you use a constraint. 
 
 ~~~ picjs example animated
@@ -696,3 +766,17 @@ move b4 up .5
 
 Perhaps surprisingly, `b4` doesn't move. The constraint glues it to `b3`, and the animation respects
 that.
+
+# Next...
+
+* Open up the [playground](./playground) and draw stuff.
+* While you're in the [playground](./playground), look at the examples for more ideas.
+* If you come up with cool images and animations, send them to me (dave@pragdave.me): I'd like to
+  start a gallery.
+
+Have fun.
+
+Dave
+    
+
+

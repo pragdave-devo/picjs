@@ -67,4 +67,21 @@ describe(`lists`, () => {
   describe(`map ignores extra arguments`, () => {
     t(`double = (x) => x * 2\n[1, 2, 3].map(double)`, list([ n2, n4, n6 ]))
   })
+
+  describe(`setAtIndex extends the list when index is beyond current length`, () => {
+    t(`a = []\na[0] = 10\na[0]`, n(10))
+    t(`a = []\na[2] = 99\na.length`, n3)
+    t(`a = []\na[2] = 99\na[2]`, n(99))
+  })
+
+  describe(`setAtIndex then getAtIndex round-trips with numeric keys`, () => {
+    t(`a = [1]\na[0] = 42\na[0]`, n(42))
+    t(`a = [0, 0, 0]\na[2] = 9\na`, list([ n(0), n(0), n9 ]))
+  })
+
+  describe(`out-of-bounds index throws`, () => {
+    it(`a = [] then a[1] throws`, () => {
+      expect(() => valueOf(`a = []\na[1]`)).toThrow()
+    })
+  })
 })

@@ -12,9 +12,9 @@ Palette.current = "shuksan"
 box "Input" -> box "Process" fill ~b2 -> box "Output"
 ```
 picjs supports themes, controlled by the Palette object. Here we select the `shuksan` theme
-which defines light and dark versions of six foreground and six background collors. The outer two
+which defines light and dark versions of eight foreground and eight background colors. The outer two
 boxes use the theme-default background, while the middle box uses the second background color,
-`~b2`. 
+`~b2`.
 
 ### Simple Turtle Graphics
 
@@ -44,21 +44,21 @@ petals.times(n => {
 </td>
 <td width="50%">
 
-![Image drawn using arcs and 8-fold symmetry](./gh-assets/petal.png)
+![Image drawn using arcs and 17-fold rotational symmetry](./gh-assets/petal.png)
 
 </td>
 </tr>
 </table>
 
 The `petal` function draws a petal shape by repeating a set of three arcs four times. There's no
-need for positioning: by defaults shapes follow on from each other.
+need for positioning: by default shapes follow on from each other.
 
 We then call the `petal` function 17 times, rotating the face of the turtle by 360/17 degrees each
 time, and spinning the (hue of the) color by 30 degrees each time.
 
 ### Run Towers of Hanoi, animating each move:
 
-![Screen shot of the animation in action](./gh-assets/hanoi1.png)
+![Screenshot of the animation in action](./gh-assets/hanoi1.png)
 
 ~~~ js 
 NumDisks = 5
@@ -136,8 +136,8 @@ There's a lot going on here; so I wrote a [separate breakdown](docs/hanoi-breakd
 
 **Server-side (Node.js):**
 ```typescript
-import { renderToString } from 'picjs/server'
-const { svg, width, height } = await renderToString('box "Hello"')
+import { renderToStringAsync } from 'picjs/server'
+const { svg, width, height } = await renderToStringAsync('box "Hello"')
 ```
 
 **CLI (for markdown files):**
@@ -159,13 +159,13 @@ The CLI preserves code blocks and caches rendered SVGs—unchanged blocks are sk
 
 * Timeline handling
 
-* Built-in types include boolean, color, font,  function, list, number, position, range, and string. 
+* Built-in types include boolean, color, font, function, list, number, position, range, and string.
 
 * Ranges allow interpolation (`45% * [~red..~blue]` is a color almost halfway between red and blue).
 
 * Shapes may be positioned absolutely or relative to each other. Relative positioning can be one-off,
   or can act as a constraint (if the target shape moves, the dependent shape follows it to maintain the
-  constraint.
+  constraint).
 
 * Shapes can be grouped together, and groups can be nested. A group becomes shape-like, and so can
   be positioned and animated like any other shape.
@@ -175,7 +175,7 @@ The CLI preserves code blocks and caches rendered SVGs—unchanged blocks are sk
 * Attributes can be animated. Where possible, the animation will interpolate the start and end values. Where
   not possible, the animation will do a cross fade (WIP).
 
-* Comes with a browser based environment to let you experiment and debug your code.
+* Comes with a browser-based environment to let you experiment and debug your code.
 
 ## License
 

@@ -10,7 +10,7 @@ eleventyNavigation:
 
 ![Hanoi game in progress](./assets/hanoi1.png)
 
-The code for the Hanoi animation is a little more complex that the other examples. That's because I
+The code for the Hanoi animation is a little more complex than the other examples. That's because I
 used it as a testbed for language ideas, so it has a little bit of everything mixed in. Let's break
 it down.
 
@@ -63,12 +63,12 @@ it down.
 
   In the Hanoi project, we have three poles, and each pole has a stack of disks. We want each pole
   to be able to push and pop onto and from those stacks, so we write a function that takes a pole
-  and;
+  and:
 
   * associates a list `disks` with it. Because the `push` and `pop` functions reference `disks`, it
     becomes a closure; each pole gets its own `disks` list.
 
-  * create `push` and `pop` proerties on the pole. Each is a function that delegates to the disk
+  * creates `push` and `pop` properties on the pole. Each is a function that delegates to the disk
     stack. The push function also returns the position of the bottom of the disk (which is simply
     the number of disks on the pole times the height of each disk, with a little padding).
 
@@ -143,7 +143,7 @@ it down.
   }
   ```
 
-  * Its nice if the disks move between poles at a constant speed, which means that moving from pole
+  * It's nice if the disks move between poles at a constant speed, which means that moving from pole
     0 to pole 2 should take twice as long as moving to the center pole. That's why we calculate the
     distance moved.
 

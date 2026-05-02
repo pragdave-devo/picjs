@@ -14,12 +14,13 @@ eleventyNavigation:
 - [Comments](#comments)
 - [Shapes](#shapes)
   - [Box](#box)
-  - [Circle, Ellipse, Oval](#circle-ellipse-oval)
+  - [Circle](#circle)
+  - [Ellipse](#ellipse)
+  - [Oval](#oval)
   - [Line](#line)
   - [Polyline](#polyline)
   - [Arc](#arc)
   - [Label](#label)
-  - [Skip](#skip)
 - [Layout](#layout)
   - [Face](#face)
   - [Gap](#gap)
@@ -259,16 +260,6 @@ Label "Title" .h1
 Label "Subtitle" fill ~blue
 ```
 
-### Skip
-
-Moves the layout cursor to a specific position without drawing anything.
-
-```
-Skip to <position>
-Skip (<x>, <y>)
-Skip x <expr> y <expr>
-```
-
 ## Layout
 
 Shapes are placed automatically based on the current layout direction and cursor position.
@@ -417,7 +408,7 @@ y <expr>             // set y only
 
 ### Size
 
-Box-specific size options:
+Box and Oval size options:
 
 ```
 <width> x <height>   // e.g., 2 x 1
@@ -427,7 +418,7 @@ height <expr>        // or ht <expr>
 
 ### Radius
 
-Circle/Ellipse/Oval radius:
+Circle radius (sets both dimensions equally):
 
 ```
 radius <expr>        // or rad <expr> or r <expr>
@@ -435,7 +426,7 @@ radius <expr>        // or rad <expr> or r <expr>
 
 ### Corner Radii
 
-Box corner rounding and polyline corner rounding:
+Box, Ellipse, Oval, and Polyline corner rounding:
 
 ```
 rx <expr>            // horizontal corner radius
@@ -688,9 +679,7 @@ Colors in various formats:
 | Color model | `rgb(255, 0, 0)`, `hsl(0, 100, 50)` |
 | Dynamic color | `~#{expr}` |
 
-Named colors can be one of the standard [web color
-  names](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/named-color), a
-  foreground or background palette color (`~f1`..`~f8`, `~b1`..`~b8`), or `~none` (for transparent).
+Named colors can be one of the standard [web color names](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/named-color), a foreground or background palette color (`~f1`..`~f8`, `~b1`..`~b8`), or `~none` (for transparent).
 
 
 **Color models:** `rgb`, `hsl`, `hsv`, `oklch` (case-insensitive, optional `a` suffix for alpha variant).
@@ -784,7 +773,7 @@ The `@` symbol accesses the animation timeline object.
 | `@.last_animation_start` | Start time of most recent animation |
 | `@.last_animation_end` | End time of most recent animation |
 | `@.start_from` | Time offset for next animation |
-| `@@` | Advance timeline (SetTime) |
+| `@@` | Set `@` to the end of the last animation |
 
 Assignment: `@ = <expr>` sets `@.now`. `@.start_from = <expr>` is also settable.
 
@@ -1042,9 +1031,9 @@ The `@` symbol is a special identifier for the timeline.
 **Reserved words** (cannot be used as identifiers):
 
 Shapes: `Arc`, `Aside`, `Box`, `Circle`, `Ellipse`, `Face`, `Gap`, `Goto`,
-`Group`, `Line`, `Label`, `Oval`, `Skip`
+`Group`, `Line`, `Label`, `Oval`
 
-Animations: `draw`, `move`, `pause`, `rotate`, `set`, `then`, `wait`
+Animations: `draw`, `move`, `pause`, `rotate`, `set`, `then`
 
 Keywords: `if`, `else`
 

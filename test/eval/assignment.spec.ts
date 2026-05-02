@@ -44,4 +44,16 @@ describe(`assignment`, () => {
     t(`l = [1 2 3] l[1] = 99 l`, [1,99,3])
     t(`l = [1 2 3] l[1] += 1 l`, [1,3,3])
   })
+
+  describe(`index access with numeric keys acts as attribute storage`, () => {
+    t(`a = "obj" a[1] = 42 a[1]`, 42)
+    t(`a = "obj" a[5] = 99 a[5]`, 99)
+  })
+
+  describe(`has() works with numeric and string keys`, () => {
+    t(`a = "obj" a["x"] = 1 a.has("x")`, true)
+    t(`a = "obj" a.has("x")`, false)
+    t(`a = "obj" a[3] = 1 a.has(3)`, true)
+    t(`a = "obj" a.has(3)`, false)
+  })
 })

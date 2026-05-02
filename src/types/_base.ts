@@ -76,15 +76,13 @@ export class TBase<ValueType, > {
   }
 
   getAtIndex(index: any) {
-    if (typeof index?.value === `string`)
-      return this.getAtAttr(index.value)
-    this.operatorNotSupported(`[${index}]`)
+    const key = String(index?.value ?? index)
+    return this.getAtAttr(key)
   }
 
   setAtIndex(index: any, value: any) {
-    if (typeof index?.value === `string`)
-      this.setAtAttr(index.value, value)
-    this.operatorNotSupported(`[${index}] = ${value.toNative()}`)
+    const key = String(index?.value ?? index)
+    return this.setAtAttr(key, value)
   }
 
   // end of the bunch of callbacks

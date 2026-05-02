@@ -52,11 +52,14 @@ export class TList extends TBase<TA[]> {
       return
     }
 
-    if (index < 0) {
-      throw new RTE(`List index "${index} is less than zero. This isn't PHP or JavaScript...`)
+    const i = (index instanceof TNumber) ? index.value : index
+
+    if (i < 0) {
+      throw new RTE(`List index ${i} is less than zero`)
     }
 
-    this.value[index] = value
+    this.value.length = Math.max(this.value.length, i + 1)
+    this.value[i] = value
   }
 
   // computed attributes
@@ -127,11 +130,11 @@ export class TList extends TBase<TA[]> {
     return this.value[index]
   }
   toNative() {
-    return this.value.map(v => v.toNative())
+    return this.value.map(v => v?.toNative())
   }
 
   toString() {
-    const contents = this.value.map(v => v.toString())
+    const contents = this.value.map(v => v?.toString() ?? ``)
     return `[ ${contents.join(`, `)} ]`
   }
 }
