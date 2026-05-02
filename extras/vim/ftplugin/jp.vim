@@ -8,7 +8,7 @@ let b:did_ftplugin = 1
 
 setlocal commentstring=//\ %s
 setlocal comments=://
-setlocal suffixesadd=.pic,.picjs,.jp
+setlocal suffixesadd=.picjs,.jp
 
 " Match braces, parens, brackets
 setlocal matchpairs+=<:>

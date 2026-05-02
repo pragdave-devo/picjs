@@ -10,12 +10,12 @@ from setuptools import setup
 
 setup(
     name='pygments_myopic',
-    version='0.1.0',
-    description='Myopic Lexer for Pygments',
+    version='0.2.0',
+    description='PicJS Lexer for Pygments',
     author='pragdave',
     author_email='pragdave@gmail.com',
     license='MIT',
-    keywords='syntax highlighting myopic',
+    keywords='syntax highlighting picjs',
     url='http://github.com/pragdave/pygments-myopic/',
     packages=['pygments_myopic'],
     install_requires=['Pygments >= 2.7.4'],
@@ -23,7 +23,7 @@ setup(
     platforms=['any'],
     entry_points={
         'pygments.lexers': [
-            'MyopicLexer = pygments_myopic:MyopicLexer'
+            'PicjsLexer = pygments_myopic:PicjsLexer'
         ],
     },
     zip_safe=False

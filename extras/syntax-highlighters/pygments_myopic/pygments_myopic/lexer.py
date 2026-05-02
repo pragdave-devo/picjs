@@ -3,150 +3,123 @@ from pygments.token import *
 
 import re
 
-       # Text:                          foreground,
-       #  Escape:                        cyan,
-       #  Error:                         red,
 
-       #  Keyword:                       violet,
-       #  Keyword.Constant:              cyan,
-       #  Keyword.Declaration:           violet,
-       #  Keyword.Namespace:             'italic ' + cyan,
-       #  Keyword.Pseudo:                cyan,
-       #  Keyword.Type:                  violet,
-
-       #  Name:                          foreground,
-       #  Name.Attribute:                violet,
-       #  Name.Builtin:                  blue,
-       #  Name.Builtin.Pseudo:           cyan,
-       #  Name.Class:                    yellow,
-       #  Name.Constant:                 foreground,
-       #  Name.Decorator:                blue,
-       #  Name.Entity:                   cyan,
-       #  Name.Exception:                yellow,
-       #  Name.Function:                 blue,
-       #  Name.Function.Magic:           blue,
-       #  Name.Label:                    blue,
-       #  Name.Property:                 yellow,
-       #  Name.Namespace:                yellow,
-       #  Name.Other:                    foreground,
-       #  Name.Tag:                      red,
-       #  Name.Variable:                 cyan,
-       #  Name.Variable.Class:           cyan,
-       #  Name.Variable.Global:          cyan,
-       #  Name.Variable.Instance:        cyan,
-       #  Name.Variable.Magic:           blue,
-
-       #  Literal:                       green,
-       #  Literal.Date:                  green,
-
-       #  String:                        green,
-       #  String.Affix:                  violet,
-       #  String.Backtick:               green,
-       #  String.Char:                   green,
-       #  String.Delimiter:              foreground,
-       #  String.Doc:                    'italic ' + faded,
-       #  String.Double:                 green,
-       #  String.Escape:                 foreground,
-       #  String.Heredoc:                green,
-       #  String.Interpol:               cyan,
-       #  String.Other:                  green,
-       #  String.Regex:                  cyan,
-       #  String.Single:                 green,
-       #  String.Symbol:                 cyan,
-
-       #  Number:                        orange,
-
-       #  Operator:                      cyan,
-       #  Operator.Word:                 'italic ' + cyan,
-
-       #  Punctuation:                   cyan,
-
-       #  Comment:                       'italic ' + faded,
-
-       #  Generic:                       foreground,
-       #  Generic.Deleted:               red,
-       #  Generic.Emph:                  cyan,
-       #  Generic.Error:                 red,
-       #  Generic.Heading:               green,
-       #  Generic.Inserted:              green,
-       #  Generic.Output:                faded,
-       #  Generic.Prompt:                yellow,
-       #  Generic.Strong:                red,
-       #  Generic.Subheading:            cyan,
-       #  Generic.Traceback:             red,
-    # }
-
-
-
-
-class MyopicLexer(RegexLexer):
-    name = 'Myopic'
-    aliases = ['myopic']
-    filenames = ['*.myopic', '*.pic']
+class PicjsLexer(RegexLexer):
+    name = 'PicJS'
+    aliases = ['picjs', 'jp']
+    filenames = ['*.picjs', '*.jp']
     flags = re.M | re.X
 
     shapes = (words((
           'Arc',
+          'Aside',
           'Box',
           'Circle',
           'Ellipse',
-          'Face',
+          'Gap',
+          'Goto',
+          'Group',
           'Line',
           'Label',
           'Oval',
+          'Shape',
           'Skip',
-          ), suffix=r'\b'), Name.Builtin) #, 'attributes_present')
+          'arc',
+          'box',
+          'circle',
+          'ellipse',
+          'line',
+          'oval',
+          ), suffix=r'\b'), Name.Builtin)
+
+    commands = (words((
+        'Face',
+        ), suffix=r'\b'), Name.Builtin)
 
     animators = (words((
-        'move',  
-        'set',    
-        'then',   
-        'wait'  
+        'draw',
+        'move',
+        'pause',
+        'rotate',
+        'set',
+        'then',
         ), suffix=r'\b'), Name.Function.Magic)
 
     attribute_names = (words((
-               'align',        
-               'at',           
-               'ccw',          
-               'curved',
+               'above',
+               'align',
+               'at',
+               'behind',
+               'below',
+               'ccw',
+               'close',
                'curve',
-               'cw',           
-               'dashed',       
-               'dotted',       
-               'ease',         
-               'fill',         
-               'font',         
-               'from',         
-               'height',       
-               'ht',           
-               'len',       
-               'length', 
-               'r', 
+               'curved',
+               'cw',
+               'dashed',
+               'dotted',
+               'ease',
+               'fill',
+               'fit',
+               'font',
+               'font_family',
+               'font_size',
+               'font_stretch',
+               'font_style',
+               'font_variant',
+               'font_weight',
+               'from',
+               'height',
+               'ht',
+               'inside',
+               'len',
+               'length',
+               'line_height',
+               'maxwidth',
+               'nodraw',
+               'opacity',
+               'outside',
+               'r',
                'rad',
                'radius',
-               'rx',           
-               'ry',           
+               'rotation',
+               'rot',
+               'rx',
+               'ry',
+               'same',
                'smooth',
-               'solid',        
-               'step',     
+               'solid',
+               'step',
                'stepped',
-               'straight',     
-               'stroke',       
-               'take',         
-               'thick',        
-               'thickness',    
-               'to',           
-               'turn',         
-               'wid',          
-               'width',        
-               'with',         
-               'x',            
-               'y'            
+               'straight',
+               'stroke',
+               'stroke_width',
+               'take',
+               'thick',
+               'thickness',
+               'to',
+               'turn',
+               'wid',
+               'width',
+               'with',
+               'x',
+               'y',
               ), prefix=r'(\.|\b)', suffix=r'\b'), Name.Attribute)
-   
+
+    directions = (words((
+               'north', 'northeast', 'northwest',
+               'south', 'southeast', 'southwest',
+               'east', 'west',
+               'up', 'down', 'left', 'right',
+              ), suffix=r'\b'), Keyword.Pseudo)
+
     cardinals = (words((
                   'n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw', 'c'
-                ), prefix=r'(\.|\b)', suffix=r'\b'), Name.Attribute)
+                ), prefix=r'\.', suffix=r'\b'), Name.Attribute)
+
+    waypoints = (words((
+               'about', 'until', 'even', 'level', 'each', 'by',
+              ), suffix=r'\b'), Keyword.Pseudo)
 
     tokens = {
         'root': [
@@ -155,12 +128,18 @@ class MyopicLexer(RegexLexer):
             (r'//(.*?)\n', Comment.Single),
 
             shapes,
+            commands,
             animators,
-            attribute_names, 
+            waypoints,
+            attribute_names,
+            directions,
             cardinals,
 
             (r'\?\?', Name.Label),
+            (r'@@', Name.Label),
             (r'@', Name.Property),
+            (r'\$[a-zA-Z_][a-zA-Z0-9_]*', Name.Variable),
+            (r'\bself\b', Name.Variable),
             (r'(true|false)\b', Keyword.Constant),
             (r'(if|else)\b', Keyword),
 
@@ -169,11 +148,50 @@ class MyopicLexer(RegexLexer):
             (r'[0-9]+[eE]-?[0-9]+%?', Number.Float),
             (r'[0-9]+%?', Number.Integer),
 
+            (r'"""', String.Double, 'triple_double'),
+            (r"'''", String.Single, 'triple_single'),
+            (r'"', String.Double, 'double_string'),
+            (r"'", String.Single, 'single_string'),
+
             (r'[{}()\[\],.]', Punctuation),
+            (r'=>', Keyword.Declaration),
+            (r'&&|\|\|', Operator),
+            (r'\.\.', Operator),
+            (r'[=!<>]=', Operator),
             (r'[+\-*/&|<>^!=]', Operator),
 
-            (r'=>', Keyword.Declaration),
             (r'\#[0-9A-Fa-f]{3,8}', Name.Property),
-            (r'~[a-z]+[0-9]*', Name.Property),
-        ]
+            (r'~[a-zA-Z][a-zA-Z0-9]*', Name.Property),
+            (r'\b(oklch|rgb|hsl|hsv)a?\b', Name.Property),
+        ],
+        'double_string': [
+            (r'#\{', String.Interpol, 'interpolation'),
+            (r'\\[bfnrtv\\"#]', String.Escape),
+            (r'[^"\\#]+', String.Double),
+            (r'#', String.Double),
+            (r'"', String.Double, '#pop'),
+        ],
+        'single_string': [
+            (r"\\[bfnrtv\\']", String.Escape),
+            (r"[^'\\]+", String.Single),
+            (r"'", String.Single, '#pop'),
+        ],
+        'triple_double': [
+            (r'#\{', String.Interpol, 'interpolation'),
+            (r'\\[bfnrtv\\"#]', String.Escape),
+            (r'"""', String.Double, '#pop'),
+            (r'[^"\\#]+', String.Double),
+            (r'#', String.Double),
+            (r'"', String.Double),
+        ],
+        'triple_single': [
+            (r"\\[bfnrtv\\']", String.Escape),
+            (r"'''", String.Single, '#pop'),
+            (r"[^'\\]+", String.Single),
+            (r"'", String.Single),
+        ],
+        'interpolation': [
+            (r'\}', String.Interpol, '#pop'),
+            (r'[^}]+', String.Interpol),
+        ],
     }

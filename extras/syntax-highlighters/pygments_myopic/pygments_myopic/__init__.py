@@ -1,1 +1,1 @@
-from pygments_myopic.lexer import MyopicLexer
+from pygments_myopic.lexer import PicjsLexer

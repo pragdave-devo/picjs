@@ -4,9 +4,10 @@ import { InputPathToUrlTransformPlugin, HtmlBasePlugin } from "@11ty/eleventy";
 import pluginSyntaxHighlight from "@11ty/eleventy-plugin-syntaxhighlight";
 import pluginBundle from "@11ty/eleventy-plugin-bundle";
 import pluginNavigation from "@11ty/eleventy-navigation";
-import definePicjs from "./_plugins/prism-picjs.js";
+import Prism from "prismjs";
 import pluginToc from "eleventy-plugin-toc";
-import picjsPlugin from "./_plugins/picjs.js";
+import picjsPlugin from "../extras/plugins/eleventy/picjs.js";
+import definePicjs from "../extras/syntax-highlighters/prism-picjs.js";
 import deflist from "markdown-it-deflist";
 
 export default async function(eleventyConfig) {
@@ -19,7 +20,7 @@ export default async function(eleventyConfig) {
 	eleventyConfig.ignores.add("superpowers/**");
 	eleventyConfig.ignores.add("tools/**");
 
-	eleventyConfig.addPlugin(picjsPlugin);
+	eleventyConfig.addPlugin(picjsPlugin, { prism: Prism });
 	eleventyConfig.addPlugin(pluginSyntaxHighlight, {
 		preAttributes: { tabindex: 0 },
 		init: function({ Prism }) {

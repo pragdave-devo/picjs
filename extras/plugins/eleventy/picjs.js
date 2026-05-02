@@ -1,8 +1,7 @@
-import { renderToString, parse } from "../../dist/picjs.js";
-import Prism from "prismjs";
-import definePicjs from "./prism-picjs.js";
+import { renderToString, parse } from "../../../dist/picjs.js";
+import definePicjs from "../../syntax-highlighters/prism-picjs.js";
 
-definePicjs(Prism);
+let Prism;
 
 const picjsStyles = `
 .picjs-example {
@@ -199,7 +198,11 @@ function markdownItPlugin(md) {
   };
 }
 
-export default function picjsPlugin(eleventyConfig) {
+export default function picjsPlugin(eleventyConfig, { prism } = {}) {
+  if (prism) {
+    Prism = prism;
+    definePicjs(Prism);
+  }
   eleventyConfig.amendLibrary("md", (md) => md.use(markdownItPlugin));
 
   eleventyConfig.addTransform("picjs", async function (content) {

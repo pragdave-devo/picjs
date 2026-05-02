@@ -37,15 +37,15 @@ syn region  jpColorArgs     start='(' end=')' contained contains=jpNumber,jpPerc
 
 " --- Shape names (capitalized = type-like) ----------------------------------
 
-syn keyword jpShape     Arc Box Circle Ellipse Oval Line Label Skip Shape
+syn keyword jpShape     Arc Aside Box Circle Ellipse Oval Group Line Label Skip Shape
 
 " --- Shape names (lowercase aliases) ----------------------------------------
 
-syn keyword jpShapeLow  arc box circle line
+syn keyword jpShapeLow  arc box circle ellipse line oval
 
 " --- Layout commands --------------------------------------------------------
 
-syn keyword jpCommand   Face Gap Goto Aside Group
+syn keyword jpCommand   Face Gap Goto
 
 " --- Control flow -----------------------------------------------------------
 
@@ -57,7 +57,7 @@ syn keyword jpBoolean   true false
 
 " --- Animation keywords -----------------------------------------------------
 
-syn keyword jpAnimation move rotate draw set then wait
+syn keyword jpAnimation move rotate draw set then pause
 
 " --- Attribute keywords (contextual, but worth highlighting) ----------------
 
@@ -66,8 +66,10 @@ syn keyword jpAttribute
       \ width wid height ht length len
       \ radius rad rotation rot
       \ rx ry
-      \ align font
-      \ same behind nodraw invis close
+      \ align font font_family font_size font_style font_variant font_weight font_stretch
+      \ maxwidth line_height stroke_width
+      \ same behind nodraw close
+      \ opacity fit
       \ above below inside outside
       \ straight stepped step smooth curve curved
 
@@ -81,11 +83,12 @@ syn keyword jpDirection
       \ north northeast northwest
       \ south southeast southwest
       \ east west
+      \ up down left right
       \ n ne nw s se sw e w
 
 " --- Waypoint / path keywords -----------------------------------------------
 
-syn keyword jpKeyword   until even level
+syn keyword jpKeyword   until even level about
 
 " --- Animation parameters ---------------------------------------------------
 
@@ -132,7 +135,7 @@ syn match   jpTimeline  '@\>'
 
 " --- Shape class (.normal, .h1, .pole, etc) ---------------------------------
 
-syn match   jpClass     '\<\(Arc\|Box\|Circle\|Ellipse\|Oval\|Line\|Label\|Skip\)\(\.[a-zA-Z_][a-zA-Z0-9_]*\)\+' contains=jpShape
+syn match   jpClass     '\<\(Arc\|Aside\|Box\|Circle\|Ellipse\|Group\|Oval\|Line\|Label\|Skip\)\(\.[a-zA-Z_][a-zA-Z0-9_]*\)\+' contains=jpShape
 
 " --- Size expression (e.g. 20x150, 150%) -----------------------------------
 
