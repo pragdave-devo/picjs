@@ -7,3 +7,4 @@ docs/_html/
 npm-access
 .vite/
 .worktrees/
+.claude/settings.local.json
