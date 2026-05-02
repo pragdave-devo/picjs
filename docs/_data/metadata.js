@@ -1,7 +1,7 @@
 export default {
 	title: "picjs",
 	description: "picjs: Constraint-Based Drawing and Animation Language",
-	url: "https://picjs.dev",
+	url: "https://pragdave-devo.github.io/picjs/",
 	language: "en",
 	locale: "en_EN",
 	author: {
