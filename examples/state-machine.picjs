@@ -1,0 +1,62 @@
+
+// Shows:
+//   Aside:  draw without updating position
+//   Polylines: line to a then to b then to c ...
+//              radius on polylines
+//   `until even with` to set a position where the current direction is perpendicular
+//   to a point
+
+Label.font_size = .2
+
+// draw an event in a green circle without disrupting the current position
+
+event = (where, trigger) => {
+  Aside {
+    circle rad .15 at where (trigger) fill ~green
+  }
+}
+
+// Draw a horizontal transition line with a labelled even t
+straight_transition = (trigger) => {
+  event((line ->), trigger)
+}
+
+// draw a line that goes down from a state, then across to the
+// start, and then back up
+
+back_to_start = (fr, start, trigger, level) => {
+  l = line ->
+        from fr
+        south level*.6 + .3
+        then west until even with start
+        then to start.s
+        rx .2
+
+  event(l.s, trigger)
+}
+
+fsm = Group {
+  start      = Circle "start"
+               straight_transition("9")
+  saw9       = Circle "9 seen"
+              straight_transition("1")
+  saw1       = Circle "1st 1"
+              straight_transition("1")
+  saw1_again = Circle "2nd 1"
+
+  start_loop = Line -> from start.sw
+      west .7
+      then north until even with start.nw
+      then to start.nw
+      rx .2
+
+  event(start_loop.w, "*")
+
+  back_to_start(saw9, start, "*", 1)
+  back_to_start(saw1, start, "*", 2)
+  back_to_start(saw1_again, start, "*", 3)
+}
+
+Label "FSM That Recognizes '9 1 1'" .h2
+      with .s at fsm.n - (0, .5)
+

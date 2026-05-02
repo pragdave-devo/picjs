@@ -1,0 +1,44 @@
+h = 1
+dh = .2
+dw = .3
+Box.fill = ~b4
+Line.stroke = ~f4
+Box.stroke = ~f6
+Label.fill = ~f6
+
+whole = {
+  Ptr = {
+    Face e
+    Box.height =  h
+    Box.width = dw
+    self.A = box
+    self.B = box
+    self.C = box
+    box fill ~none stroke ~none wid 2*dw (". . ." x-large)
+    self.D = box
+  }
+  
+
+Block = {
+    Face e
+    Box.width = 2*dw
+    Box.height = 2*dw
+    movewid = 2*dh
+    self.A = box
+    Gap .25
+    self.B = box
+    Gap same
+    self.C = box
+    Gap same
+    box fill ~none stroke ~none   (". . ." x-large)
+    Gap same
+    self.D = box
+  } with .n at Ptr.s + (0,h)
+
+  line -> from Ptr.A.c to Block.A.nw + (dh,0)
+  line -> from Ptr.B.c to Block.B.nw + (dh,0)
+  line -> from Ptr.C.c to Block.C.nw + (dh,0)
+  line -> from Ptr.D.c to Block.D.nw + (dh,0)
+}
+
+box fill ~b6  dashed ht whole.ht+dw wid whole.wid+dw at whole behind whole

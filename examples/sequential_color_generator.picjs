@@ -1,0 +1,10 @@
+// picjs lets you interpolate between more than just numbers. Here we're
+// using `..` to interpolate between colors, and `steps` to call
+// a function for 20 colors between the two.
+
+BaseColor = oklch(60%, .35, 20)
+row = 0
+[ BaseColor..BaseColor.spin(180) ].steps(20, rowcolor => {
+   Skip to (0, row += 1)
+   [rowcolor..rowcolor.spin(90)].steps(20, color => circle rad .5  fill color)
+})

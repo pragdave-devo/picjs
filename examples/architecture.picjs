@@ -1,0 +1,45 @@
+Palette.current = "ocean"
+
+box_around = grp => {
+  box at grp             behind grp
+       wid grp.wid*1.3   ht grp.ht*1.1
+       fill ~b7          stroke ~f1
+}
+
+pipeline = {
+  Face s
+  Label "Internal Pipeline" .h4 fill ~f2
+  Gap .2
+  self.batch_writer = box wid 150% ht 60% "Batch Writer"
+  -> "post" "commit" 
+  self.trigger_evaluation = box same "Trigger" "Evaluation" fill ~b3
+  -> "Trigger" "Fired"
+  self.trigger_bridge = box same "Trigger" "Bridge"
+}
+
+box_around(pipeline)
+
+database = circle "Database" fill ~b2 with .e at pipeline.batch_writer.w - ( 0.75, 0)
+
+services = {
+  Face s
+  Label "External API" .h4 fill ~f2
+  Gap .2
+  self.get_put_tuple = box wid 150% ht 60%  "Get/Put Tuple"
+  line <-> "Validate" below
+  box "Schemas" same
+
+  Gap 0
+  line  len .5 stroke ~f1 rot 90 dotted thick .02
+
+  self.playbooks = box wid 150% ht 60% fill ~darkolivegreen "Playbooks"
+  Gap  0.2
+  self.agents = box same "Agents"
+} with .nw at pipeline.ne + (1,0)
+
+Line  -> from pipeline.batch_writer    to database
+Line  -> from services.get_put_tuple.w to pipeline.batch_writer.e
+Line <-> from services.playbooks.w     to pipeline.trigger_evaluation.e smooth
+Line <-> from services.agents          to pipeline.trigger_bridge
+
+box_around(services)

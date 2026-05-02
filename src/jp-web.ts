@@ -58,19 +58,18 @@ const examplesBase = (window as any).__PICJS_EXAMPLES_BASE ?? `/examples/`
 // selection time.  Add, remove, or reorder entries here to change the dropdown.
 
 const examples: { file: string; description: string }[] = [
-{ file: "911.pic",                        description: "A state machine" },
-{ file: "architecture.pic",               description: "Basic Architecture diagram" },
-{ file: "economy.pic",                    description: "Simple model of supply and demand" },
-{ file: "gear.pic",                       description: "Prametric gear" },
-{ file: "hanoi.pic",                      description: "Hanoi animation" },
-{ file: "kernighan.pic",                  description: "Diagram from Kernighan's PIC paper" },
-{ file: "line-labels.pic",                description: "Demo of labelling on lines" },
-{ file: "palette.pic",                    description: "Themes and palettes" },
-{ file: "petal.pic",                      description: "Petals/Pattens" },
-{ file: "sequential_color_generator.pic", description: "Color interpolation" },
-{ file: "snail.pic",                      description: "Spiral with sequential colors" },
-{ file: "spiro.picjs",                    description: "Spirograph" },
-
+  { file: "911.picjs",                        description: "A state machine" },
+  { file: "architecture.picjs",               description: "Basic Architecture diagram" },
+  { file: "economy.picjs",                    description: "Simple model of supply and demand" },
+  { file: "gear.picjs",                       description: "Parametric gear" },
+  { file: "hanoi.picjs",                      description: "Hanoi animation" },
+  { file: "kernighan.picjs",                  description: "Diagram from Kernighan's PIC paper" },
+  { file: "line-labels.picjs",                description: "Demo of labelling on lines" },
+  { file: "palette.picjs",                    description: "Themes and palettes" },
+  { file: "petal.picjs",                      description: "Petals/Pattens" },
+  { file: "sequential_color_generator.picjs", description: "Color interpolation" },
+  { file: "snail.picjs",                      description: "Spiral with sequential colors" },
+  { file: "spiro.picjs",                      description: "Spirograph" },
 ]
 
 // ─── DOM elements ──────────────────────────────────────────────────────────
@@ -517,9 +516,7 @@ window.addEventListener(`unhandledrejection`, (ev) => {
 
 // ─── Example selector ─────────────────────────────────────────────────────
 
-exampleSelector.addEventListener(`change`, async () => {
-  const file = exampleSelector.value
-  if (!file) return
+async function loadExample(file: string) {
   try {
     const resp = await fetch(`${examplesBase}${file}`)
     if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`)
@@ -531,7 +528,15 @@ exampleSelector.addEventListener(`change`, async () => {
   } catch (e) {
     errorArea.textContent = `Failed to load example: ${e}`
   }
-  // Keep showing the selected example name (don't reset to placeholder)
+}
+
+exampleSelector.addEventListener(`change`, async () => {
+  const file = exampleSelector.value
+  if (!file) return
+  const url = new URL(window.location.href)
+  url.searchParams.set(`example`, file)
+  history.pushState(null, ``, url)
+  await loadExample(file)
 })
 
 runBtn.addEventListener(`click`, () => preview())
@@ -549,4 +554,19 @@ themeBtn.addEventListener(`click`, () => {
 const mountTarget = document.getElementById(`playground-container`) ?? document.body
 mount(mountTarget, playpen)
 editorView.focus()
-if (savedSource) preview()
+
+window.addEventListener(`popstate`, () => {
+  const file = new URL(window.location.href).searchParams.get(`example`)
+  if (file) {
+    exampleSelector.value = file
+    loadExample(file)
+  }
+})
+
+const initialExample = new URL(window.location.href).searchParams.get(`example`)
+if (initialExample && examples.some(e => e.file === initialExample)) {
+  exampleSelector.value = initialExample
+  loadExample(initialExample)
+} else if (savedSource) {
+  preview()
+}
