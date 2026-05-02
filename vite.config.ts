@@ -53,7 +53,7 @@ export default defineConfig({
     emptyOutDir: target === 'main',
     ...configs[target],
     minify: 'esbuild',
-    sourcemap: true,
+    sourcemap: false,
   },
   optimizeDeps: {
     exclude: ['_site'],

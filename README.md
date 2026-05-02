@@ -136,7 +136,7 @@ There's a lot going on here; so I wrote a [separate breakdown](docs/hanoi-breakd
 
 **Server-side (Node.js):**
 ```typescript
-import { renderToStringAsync } from 'picjs/server'
+import { renderToStringAsync } from '@strike48/picjs'
 const { svg, width, height } = await renderToStringAsync('box "Hello"')
 ```
 
