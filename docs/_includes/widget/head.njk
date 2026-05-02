@@ -6,7 +6,10 @@
 <meta name="google-site-verification" content="jefB3FvHz2yQqU_cOk94BswcnjXJsmhUL1dQytsN9l8" />
 {% include "widget/seo.njk" %}
 {%- css %}{% include "public/css/index.css" %}{% endcss %}
-{%- css %}a,.nav-link {text-decoration:none;color: #495057;}img,iframe{max-width:100%;height:auto;}
+{%- css %}a,.nav-link {text-decoration:none;color: #495057;}
+.col-md-7 a:not(.header-anchor) {text-decoration: underline;text-decoration-color: #adb5bd;text-underline-offset: 2px;}
+.col-md-7 a:not(.header-anchor):hover {text-decoration-color: #0077aa;}
+img,iframe{max-width:100%;height:auto;}
 .toc-nav details, .toc-nav .toc-leaf { margin: 0; padding: 0.15rem 0 0.15rem 1.1em; }
 .toc-nav summary { cursor: pointer; padding: 0.15rem 0; list-style: none; margin-left: -1.1em; padding-left: 1.1em; text-indent: -1.1em; }
 .toc-nav summary::-webkit-details-marker { display: none; }
