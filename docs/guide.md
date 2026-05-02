@@ -7,12 +7,12 @@ eleventyNavigation:
   key: picjs Guide
   order: 1
 ---
-> (For reference material, have a look at the [picjs Reference](/picjs-reference) and
-> the [Quick Reference Card](/quick-reference)).
+> (For reference material, have a look at the [picjs Reference](/picjs-reference/) and
+> the [Quick Reference Card](/quick-reference/)).
 
 Before we start, a few notes:
 
-* Play along with the examples in the guide using the [online editor](/editor) or install picjs locally using npm:
+* Play along with the examples in the guide using the [online editor](/editor/) or install picjs locally using npm:
 
   ```console
   $ npm install -g picjs
