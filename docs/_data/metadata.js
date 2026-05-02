@@ -12,6 +12,6 @@ export default {
 		{ name: "Reference", link: "/picjs-reference/" },
 		{ name: "Quick Ref", link: "/quick-reference/" },
 		{ name: "Hanoi", link: "/hanoi-breakdown/" },
-		{ name: "Editor", link: "/editor/" },
+		{ name: "Editor/Playground", link: "/editor/" },
 	]
 }

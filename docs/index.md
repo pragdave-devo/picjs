@@ -75,9 +75,9 @@ petals.times(n => {
 
 ### And Animation
 
-[![Screenshot of towers of hanoi](./gh-assets/hanoi1.png)](./hanoi-breakdown)
+[![Screenshot of towers of hanoi](./assets/hanoi1.png)](./hanoi-breakdown)
 
-(GitHub won't run it, so see it in [the playground](.)
+(GitHub won't run it, so see it in [the playground](/picjs/playground)
 
 
 ---
