@@ -34,9 +34,9 @@ jobs:
         with:
           files: |
             dist/picjs.js
-            dist/picjs.js.map
             dist/picjs.umd.js
-            dist/picjs.umd.js.map
+            dist/runtime.js
+            dist/picjs.runtime.umd.js
             dist/cli.js
 
       - name: Publish to npm
