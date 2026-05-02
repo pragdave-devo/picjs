@@ -177,6 +177,8 @@ The CLI preserves code blocks and caches rendered SVGs—unchanged blocks are sk
 
 * Comes with a browser-based environment to let you experiment and debug your code.
 
+* The `skills/` directory contains basic skills and a separate animation skills file.
+
 ## License
 
 See [LICENSE.md](./LICENSE.md).

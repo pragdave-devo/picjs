@@ -18,7 +18,8 @@ Before we start, a few notes:
   $ npm install -g picjs
   $ picjs --playground
   ```
-
+* If you want your AI buddy to play, too, there are two skills files under `skills`, one for the
+  baic stuff, and the other for animations. (Splitting skills 'cos I care about your context...)
 
 *  Integrating picjs
 
