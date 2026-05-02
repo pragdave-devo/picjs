@@ -137,7 +137,7 @@ hanoi(NumDisks, poles[0], poles[2], poles[1])
 ~~~
 
 The code behind the Hanoi animation uses some interesting features of the language,
-so there's a [page](./hanoi-breakdown) that describes it.
+so there's a [page](./hanoi-breakdown/) that describes it.
 
 
 ---
