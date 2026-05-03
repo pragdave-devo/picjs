@@ -23,7 +23,7 @@ top_land      = slope_up      + .3 * tooth_width
 slope_down    = top_land      + .2 * tooth_width
 bottom_land_2 = slope_down    + .2 * tooth_width
 
-box wid outer_radius*2.2 ht outer_radius*2.2 at (0,0) fill ~b1
+box wid outer_radius*2.2 ht outer_radius*2.2 at (0,0) fill ~b5
 Goto (0, inner_radius)
 
 draw_tooth  = (n, theta)=> {

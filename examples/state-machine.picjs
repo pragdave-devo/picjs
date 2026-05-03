@@ -12,7 +12,7 @@ Label.font_size = .2
 
 event = (where, trigger) => {
   Aside {
-    circle rad .15 at where (trigger) fill ~green
+    circle rad .15 at where (trigger) fill ~b4
   }
 }
 

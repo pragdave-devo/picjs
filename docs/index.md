@@ -75,7 +75,7 @@ petals.times(n => {
 
 ### And Animation
 
-~~~ picjs
+~~~ picjs animated
 NumDisks = 5
 Box.pole.fill = ~brown.lighten(5%)  // ~brown is a named color
 DiskColor = rgb(220,180,140)
@@ -135,6 +135,8 @@ hanoi = (n, pFrom, pTo, pVia) => {
 
 hanoi(NumDisks, poles[0], poles[2], poles[1])
 ~~~
+
+(press the ▶ button)
 
 The code behind the Hanoi animation uses some interesting features of the language,
 so there's a [page](./hanoi-breakdown/) that describes it.

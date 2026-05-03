@@ -41,4 +41,6 @@ Block = {
   line -> from Ptr.D.c to Block.D.nw + (dh,0)
 }
 
-box fill ~b6  dashed ht whole.ht+dw wid whole.wid+dw at whole behind whole
+// We use a nonpalette color here because it's a background for
+// the whole image
+box fill ~orange  dashed ht whole.ht+dw wid whole.wid+dw at whole behind whole
