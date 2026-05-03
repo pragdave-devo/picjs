@@ -843,6 +843,12 @@ export class Interpreter extends Visitor{
     const shapes = Interpreter.DefaultShapeAliases[node.shape] || [node.shape]
     for (const shape of shapes) {
       this.binding.setDefault(`Shapes`, shape, node.klass, attr, value)
+      const slotKey = `_${attr}_slot`
+      if (value instanceof TColor && value.paletteSlot) {
+        this.binding.setDefault(`Shapes`, shape, node.klass, slotKey, value.paletteSlot)
+      } else {
+        this.binding.setDefault(`Shapes`, shape, node.klass, slotKey, undefined)
+      }
     }
     return value
   }
@@ -951,6 +957,9 @@ export class Interpreter extends Visitor{
       else {
         const value = this.accept(obj[k])
         result[k] = value.toNative()
+        if (value instanceof TColor && value.paletteSlot) {
+          result[`_${k}_slot`] = value.paletteSlot
+        }
       }
     }
     return result

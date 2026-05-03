@@ -6,7 +6,7 @@ SArc    | stroke      | stroke_width     | linestyle | turn  | rotation | reveal
 
 SLabel   | align | fill           | font_family | font_size | font_style | font_variant | font_weight | font_stretch | line_height | rotation | reveal_time | hide_time
 ---------------------------------------------------------------------------------------------------------------------------
-.normal  |   c   | BodyTextColor  | BodyFont    | FS        | normal     | normal       | normal      | normal       | 0           | 0        | 0.3         | 0.3
+.normal  |   c   | NativeFg       | BodyFont    | FS        | normal     | normal       | normal      | normal       | 0           | 0        | 0.3         | 0.3
 .h1      |   w   | H1Color        | HeadingFont | =FS*4.5   |
 .h2      |   w   | H2Color        | HeadingFont | =FS*3     |
 .h3      |   w   | H3Color        | HeadingFont | =FS*2     |
@@ -110,6 +110,10 @@ const Themes: ThemeType = {
     H2Color: `#e8713a`,
     H3Color: `#d4a020`,
     H4Color: `#6ab040`,
+
+    // Native page colors (for labels on screen background)
+    NativeFg: `#ffffff`,
+    NativeBg: `#1a1a2e`,
   },
 
   Light: {
@@ -134,6 +138,10 @@ const Themes: ThemeType = {
     H2Color: `#b83a10`,
     H3Color: `#6b5000`,
     H4Color: `#2d6a00`,
+
+    // Native page colors (for labels on screen background)
+    NativeFg: `#1a1a2e`,
+    NativeBg: `#ffffff`,
   },
 }
 
@@ -149,7 +157,32 @@ export type DefaultsType = {
 }
 
 let currentThemeName = 'Dark'
-let Theme = { ...Themes.Dark }
+let Theme: Record<string, string | number> = { ...Themes.Dark }
+
+export function getThemeValue(name: string): string | number | undefined {
+  return Theme[name]
+}
+
+export function getDarkThemeValue(name: string): string | number | undefined {
+  return Themes.Dark[name]
+}
+
+const ThemeVarToBaseSlot: Record<string, string> = {
+  BoxFill0: 'b1', BoxFill1: 'b2', BoxFill2: 'b3', BoxFill3: 'b4', BoxFill4: 'b5',
+  NativeFg: 'native-fg', NativeBg: 'native-bg',
+  LineStroke: 'b1',
+}
+
+let currentPaletteForSlots = 'sunset'
+
+export function setCurrentPaletteForSlots(name: string) {
+  currentPaletteForSlots = name
+}
+
+function resolveSlot(baseSlot: string): string {
+  if (baseSlot === 'native-fg' || baseSlot === 'native-bg') return baseSlot
+  return `${currentPaletteForSlots}:${baseSlot}`
+}
 
 export const Defaults: DefaultsType = {
   Shapes: parseShapeDefaults(ShapeDefaults),
@@ -167,6 +200,7 @@ export function setTheme(name: string) {
  * Call this before starting a new program.
  */
 export function resetTheme(): void {
+  currentPaletteForSlots = 'sunset'
   Theme = { ...Themes[currentThemeName] }
   Defaults.Shapes = parseShapeDefaults(ShapeDefaults)
 }
@@ -183,7 +217,8 @@ export function getThemeNames(): string[] {
  * Update theme colors based on palette colors.
  * Called when Palette.current is set.
  */
-export function applyPaletteToTheme(colors: Record<string, string>): void {
+export function applyPaletteToTheme(colors: Record<string, string>, paletteName?: string): void {
+  if (paletteName) currentPaletteForSlots = paletteName
   Theme.BoxFill0 = colors.b1
   Theme.BoxFill1 = colors.b2
   Theme.BoxFill2 = colors.b3
@@ -194,7 +229,12 @@ export function applyPaletteToTheme(colors: Record<string, string>): void {
   Defaults.Shapes = parseShapeDefaults(ShapeDefaults)
 }
 
-function convertValue(value: string) {
+interface ConvertedValue {
+  value: string | number
+  slot?: string
+}
+
+function convertValue(value: string): ConvertedValue {
   const firstChar = value[0]
   if (firstChar === `=`) {  // assume always ThemeVariable (rest of expression)
     const match = value.match(/^=([A-Z][a-zA-Z]*)(.*)/)
@@ -208,22 +248,24 @@ function convertValue(value: string) {
       throw new Error(`can't find a number in ${baseValue}`)
     const valueNumber = Number.parseFloat(valueParts[1])
     const evaluator = Function(`return ${valueNumber}${match[2]}`)
-    return `${evaluator()}${valueParts[3] || ``}`
+    return { value: `${evaluator()}${valueParts[3] || ``}` }
   }
   else if (firstChar >= `A` && firstChar <= `Z`) {  // just ASCII for now
     const result = Theme[value]
 
-    if (result)
-      return result
+    if (result !== undefined) {
+      const baseSlot = ThemeVarToBaseSlot[value]
+      return { value: result, slot: baseSlot ? resolveSlot(baseSlot) : undefined }
+    }
 
     throw new Error(`unknown theme attr ${value}`)
   }
   else {
     const numeric = Number.parseFloat(value)
     if (isNaN(numeric))
-      return value
+      return { value }
     else
-      return numeric
+      return { value: numeric }
   }
 }
 
@@ -262,11 +304,12 @@ function parseForOneShape(spec: string, result: ShapeDefaultsType) {
 
     hdr?.forEach((attrName, i) => {
       const value = fields[i]
-      let result: string | number = value
       if (value?.length > 0) {
-        result = convertValue(value.trim())
-
-        classSpec[attrName] = result
+        const converted = convertValue(value.trim())
+        classSpec[attrName] = converted.value
+        if (converted.slot) {
+          classSpec[`_${attrName}_slot`] = converted.slot
+        }
       }
     })
   })

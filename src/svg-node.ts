@@ -22,7 +22,7 @@ const USE_SELF_CLOSING_TAGS = false
 
 // Elements that must always have a closing tag even with no children
 // (browsers treat self-closing <text/> differently than <text></text>)
-const NEEDS_CLOSING_TAG = new Set(["text", "tspan", "textPath", "g", "svg", "defs", "clipPath", "mask", "pattern", "a"])
+const NEEDS_CLOSING_TAG = new Set(["text", "tspan", "textPath", "g", "svg", "defs", "clipPath", "mask", "pattern", "a", "style"])
 
 export function serialize(node: SvgNode): string {
   const tag = validateTag(node.tag)
@@ -75,7 +75,7 @@ const SVG_TAGS = new Set([
   "linearGradient", "radialGradient", "stop",
   "filter", "feGaussianBlur", "feOffset", "feBlend", "feComposite",
   "marker", "title", "desc",
-  "image", "a",
+  "image", "a", "style",
 ])
 
 // --- Attribute validation ---

@@ -19,18 +19,38 @@ import { Palette } from "../palette.js"
 export class SLabel extends SBase {
   override shapeName = "SLabel"
 
+  private _hasExplicitFill = false
+
   setupParams(args: ShapeArgs) {
     super.setupParams(args)
     if (this.params.font)
       this.params.font = new TFont(this.params.font)
+    this._hasExplicitFill = !!args.fill
+  }
 
-    // Auto-text coloring: if parent has palette background and no explicit fill was set,
-    // use the matching foreground color
-    if (!args.fill && this.params._parentFill) {
-      const autoFg = Palette.getForegroundFor(this.params._parentFill)
-      if (autoFg) {
-        this.params.fill = autoFg
+  applyAutoColoring() {
+    if (this._hasExplicitFill || !this.params._parentFill) return
+
+    const parentSlot = this.params._parentFillSlot
+    if (parentSlot) {
+      // Slot is "palette:bN" or just "bN" — extract the base slot and palette prefix
+      const colonIdx = parentSlot.indexOf(':')
+      const prefix = colonIdx >= 0 ? parentSlot.slice(0, colonIdx + 1) : ''
+      const baseSlot = colonIdx >= 0 ? parentSlot.slice(colonIdx + 1) : parentSlot
+      if (baseSlot.startsWith('b')) {
+        const fBase = baseSlot.replace('b', 'f')
+        const fSlot = `${prefix}${fBase}`
+        const fColor = Palette.getColor(fBase)
+        if (fColor) {
+          this.params.fill = fColor
+          this.params._fill_slot = fSlot
+        }
+        return
       }
+    }
+    const autoFg = Palette.getForegroundFor(this.params._parentFill)
+    if (autoFg) {
+      this.params.fill = autoFg
     }
   }
 

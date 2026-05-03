@@ -47,7 +47,7 @@ export class TPalette extends TBase<null> {
         colors[`b${i}`] = Palette.getColor(`b${i}`)!
         colors[`f${i}`] = Palette.getColor(`f${i}`)!
       }
-      applyPaletteToTheme(colors)
+      applyPaletteToTheme(colors, paletteName)
       return this
     }
 

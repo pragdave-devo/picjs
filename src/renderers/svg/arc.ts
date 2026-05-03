@@ -1,4 +1,4 @@
-import { SvgBase, LineDirection, arrowDimensions, toSvgAttrNames } from "./_base.js"
+import { SvgBase, LineDirection, arrowDimensions, toSvgAttrNames, addUsedSlot } from "./_base.js"
 import * as Convert from "./attribute_converters.js"
 import * as Shape from "../../shapes.js"
 import { XY } from "../../position.js"
@@ -13,6 +13,7 @@ export class Arc extends SvgBase {
   cropped = false
   private pendingMarkers!: string[]
   private hideMarkers!: boolean
+  private strokeSlot?: string
 
   constructor(position: RenderParameters, attrs: Shape.Args) {
     super(position, attrs)
@@ -35,9 +36,14 @@ export class Arc extends SvgBase {
 
   private buildMarkers(strokeColor: string): SvgNode[] {
     if (this.hideMarkers) { this.pendingMarkers = []; return [] }
-    const nodes = this.pendingMarkers.map(d =>
-      svgNode('path', { d, fill: strokeColor, stroke: 'none' })
-    )
+    const nodes = this.pendingMarkers.map(d => {
+      if (this.strokeSlot) {
+        addUsedSlot('fill', this.strokeSlot)
+        const cssSlot = this.strokeSlot.replace(':', '-')
+        return svgNode('path', { d, stroke: 'none', class: `pj-fill-${cssSlot}` })
+      }
+      return svgNode('path', { d, fill: strokeColor, stroke: 'none' })
+    })
     this.pendingMarkers = []
     return nodes
   }
@@ -51,6 +57,7 @@ export class Arc extends SvgBase {
 
   convertToSVG(position: RenderParameters, attrs: Shape.Args) {
     this.pendingMarkers = []
+    this.strokeSlot = attrs._stroke_slot
     this.normalizeAttrs()
     this.attrs = Convert.run(position, attrs, [
       Convert.anchorToSvgNW,

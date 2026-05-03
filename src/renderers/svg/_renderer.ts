@@ -11,7 +11,7 @@ import { RenderParameters } from "../../types.js"
 import { SGroup } from "../../shapes/sgroup.js"
 import { SvgNode, svgNode, IdGenerator } from "../../svg-node.js"
 
-import { SvgBase } from "./_base.js"
+import { SvgBase, resetUsedSlots, getUsedSlots } from "./_base.js"
 
 
 export const ShapeToRenderer:Record<string, typeof SvgBase> = {
@@ -40,7 +40,12 @@ export class Renderer {
     this.idGenerator = gen
   }
 
+  getUsedSlots(): Set<string> {
+    return getUsedSlots()
+  }
+
   render(shapes: Shape.SBase[]) {
+    resetUsedSlots()
     const elements: SvgNode[] = []
 
     // First pass: identify which shapes are group children or parent-child pairs

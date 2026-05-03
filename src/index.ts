@@ -5,11 +5,16 @@ import { LoggerInterface } from "./types.js"
 
 import { parse as pegParse } from "./peg_parser/jp.js"
 import { nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds } from "./render-utils.js"
-import { resetTheme, applyPaletteToTheme } from "./defaults.js"
+import { resetTheme, applyPaletteToTheme, getThemeValue, getDarkThemeValue } from "./defaults.js"
 import { Palette } from "./palette.js"
+import { computeSlotColors, generateCSS } from "./palette-css.js"
 import { injectDeps } from "./render-to-string.js"
 
-injectDeps({ parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds, resetTheme, applyPaletteToTheme, Palette })
+Palette.setNativeColorResolver((name: string) => {
+  return getThemeValue(name === 'native-fg' ? 'NativeFg' : 'NativeBg') as string | null
+})
+
+injectDeps({ parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds, resetTheme, applyPaletteToTheme, getDarkThemeValue, Palette, computeSlotColors, generateCSS })
 
 // Re-export browser integration
 export { render, renderAll, autoInit } from "./browser.js"

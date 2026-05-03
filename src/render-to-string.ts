@@ -19,6 +19,8 @@ export interface RenderOptions {
   includeSource?: boolean
   /** Optional ID generation for animation runtime */
   ids?: { prefix: string }
+  /** CSS selector for light-mode activation (default: '[data-theme="light"]') */
+  themeSelector?: string
 }
 
 interface Deps {
@@ -32,7 +34,10 @@ interface Deps {
   unionBounds: any
   resetTheme: any
   applyPaletteToTheme: any
+  getDarkThemeValue: any
   Palette: any
+  computeSlotColors: any
+  generateCSS: any
 }
 
 let _deps: Deps | null = null
@@ -48,7 +53,11 @@ function loadDeps(): Promise<void> {
     import("./render-utils.js"),
     import("./defaults.js"),
     import("./palette.js"),
-  ]).then(([parser, dispatcher, peg, utils, defaults, palette]) => {
+    import("./palette-css.js"),
+  ]).then(([parser, dispatcher, peg, utils, defaults, palette, paletteCss]) => {
+    palette.Palette.setNativeColorResolver((name: string) => {
+      return defaults.getThemeValue(name === 'native-fg' ? 'NativeFg' : 'NativeBg') as string | null
+    })
     _deps = {
       parseToAST: parser.parseToAST,
       ParseStatus: parser.ParseStatus,
@@ -60,7 +69,10 @@ function loadDeps(): Promise<void> {
       unionBounds: utils.unionBounds,
       resetTheme: defaults.resetTheme,
       applyPaletteToTheme: defaults.applyPaletteToTheme,
+      getDarkThemeValue: defaults.getDarkThemeValue,
       Palette: palette.Palette,
+      computeSlotColors: paletteCss.computeSlotColors,
+      generateCSS: paletteCss.generateCSS,
     }
   })
   return _loading
@@ -92,10 +104,10 @@ function getDeps() {
  */
 export function renderToString(source: string, options: RenderOptions = {}): RenderResult {
   const { padding = 0.2, includeSource = true } = options
-  const { parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds, resetTheme, applyPaletteToTheme, Palette } = getDeps()
+  const { parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds, resetTheme, applyPaletteToTheme, getDarkThemeValue, Palette, computeSlotColors, generateCSS } = getDeps()
 
   resetTheme()
-  Palette.setCurrent(`default`)
+  Palette.setCurrent(`sunset`)
   applyPaletteToTheme(Palette.getCurrentColors())
 
   const parsed = parseToAST(pegParse, source, `Start`, false)
@@ -126,8 +138,19 @@ export function renderToString(source: string, options: RenderOptions = {}): Ren
 
     const boundaryTimes = dispatcher.animationBoundaryTimes()
     if (boundaryTimes.length > 1) {
-      for (const t of boundaryTimes) {
-        if (t === 0) continue
+      const MAX_PROBES = 20
+      let probeTimes: number[]
+      if (boundaryTimes.length <= MAX_PROBES) {
+        probeTimes = boundaryTimes.filter((t: number) => t > 0)
+      } else {
+        probeTimes = []
+        const step = (boundaryTimes.length - 1) / (MAX_PROBES - 1)
+        for (let i = 1; i < MAX_PROBES - 1; i++) {
+          probeTimes.push(boundaryTimes[Math.round(i * step)])
+        }
+        probeTimes.push(boundaryTimes[boundaryTimes.length - 1])
+      }
+      for (const t of probeTimes) {
         const probe = new Dispatcher(nullLogger, null, 1)
         if (options.ids) probe.setIdGenerator(new IdGenerator(options.ids.prefix + `_probe`))
         probe.start(parsed.ast)
@@ -138,6 +161,21 @@ export function renderToString(source: string, options: RenderOptions = {}): Ren
     }
 
     const viewBox = viewBoxFromBounds(bounds, padding)
+
+    // Emit <style> with dark/light CSS for used palette slots
+    const usedSlots = dispatcher.getUsedSlots()
+    if (usedSlots.size > 0) {
+      const slotColors = computeSlotColors(
+        usedSlots,
+        (pal: string, slot: string) => Palette.getColorForPalette(pal, slot),
+        getDarkThemeValue('NativeFg'),
+        getDarkThemeValue('NativeBg')
+      )
+      const css = generateCSS(usedSlots, slotColors, options.themeSelector)
+      if (css) {
+        svgChildren.unshift(svgNode('style', {}, [css]))
+      }
+    }
 
     const root = svgNode("svg", {
       viewBox,

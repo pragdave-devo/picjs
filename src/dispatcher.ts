@@ -112,6 +112,10 @@ export class Dispatcher {
     this.renderer.setIdGenerator(gen)
   }
 
+  getUsedSlots(): Set<string> {
+    return this.renderer.getUsedSlots()
+  }
+
   //////////////////////////////////////////////////  timeline
 
   getTimeline() {

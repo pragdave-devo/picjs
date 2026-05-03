@@ -174,7 +174,10 @@ export class SBase extends TBase<null> {
 
     for (let k of Object.keys(args)) {
       const val = args[k]
-      if (k.startsWith(`_`)) {
+      if (k.endsWith(`_slot`)) {
+        this.params[k] = val
+      }
+      else if (k.startsWith(`_`)) {
         this.hidden[k] = val
       }
       else if (k === `at`) {
@@ -182,14 +185,13 @@ export class SBase extends TBase<null> {
         this.anchorY = val.y
         this._hasExplicitAt = true
       }
-      // else if (k === `x`) {
-      //   this.anchorX = val
-      // }
-      // else if (k === `y`) {
-      //   this.anchorY = val
-      // }
       else {
         this.params[k] = val
+        // Explicit color attribute overrides default slot
+        const slotKey = `_${k}_slot`
+        if (this.params[slotKey] && !args[slotKey]) {
+          delete this.params[slotKey]
+        }
       }
     }
     this.setRotationVector()
@@ -270,6 +272,13 @@ export class SBase extends TBase<null> {
     child.params._parentHeight = this.height
     // Pass fill for auto-text coloring with palette colors
     child.params._parentFill = this.params.fill
+    if (this.params._fill_slot) {
+      child.params._parentFillSlot = this.params._fill_slot
+    }
+    // Trigger auto-coloring now that parent info is available
+    if (typeof child.applyAutoColoring === 'function') {
+      child.applyAutoColoring()
+    }
   }
 
   isChild() {

@@ -5,8 +5,9 @@ import { Dispatcher } from "./dispatcher.js"
 import { nullLogger, calculateBoundingBox, unionBounds } from "./render-utils.js"
 import { Location } from "./location.js"
 import { Binding } from "./binding.js"
-import { setTheme, getThemeName, resetTheme, applyPaletteToTheme } from "./defaults.js"
+import { setTheme, getThemeName, resetTheme, applyPaletteToTheme, getDarkThemeValue } from "./defaults.js"
 import { Palette } from "./palette.js"
+import { computeSlotColors, generateCSS } from "./palette-css.js"
 
 import { el, mount, setChildren, svg } from "redom"
 import { PlaybackController } from "./jp-web-playback.js"
@@ -58,7 +59,7 @@ const examplesBase = (window as any).__PICJS_EXAMPLES_BASE ?? `/examples/`
 // selection time.  Add, remove, or reorder entries here to change the dropdown.
 
 const examples: { file: string; description: string }[] = [
-  { file: "911.picjs",                        description: "A state machine" },
+  { file: "state-machine.picjs",              description: "A state machine" },
   { file: "architecture.picjs",               description: "Basic Architecture diagram" },
   { file: "economy.picjs",                    description: "Simple model of supply and demand" },
   { file: "gear.picjs",                       description: "Parametric gear" },
@@ -109,7 +110,22 @@ const STORAGE_KEY = `jp-source`
 const savedSource = localStorage.getItem(STORAGE_KEY) ?? ``
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null
-let renderTimer: ReturnType<typeof setTimeout> | null = null
+
+let renderDebounce: ReturnType<typeof setTimeout> | null = null
+let lastRenderMs = 0
+
+function schedulePreview() {
+  if (renderDebounce) clearTimeout(renderDebounce)
+  // Scale debounce to last render time: fast programs get snappy feedback,
+  // heavy programs (spirograph, palette grid) get longer pauses between renders
+  const delay = Math.max(300, lastRenderMs * 1.5)
+  renderDebounce = setTimeout(() => {
+    renderDebounce = null
+    const t0 = performance.now()
+    preview()
+    lastRenderMs = performance.now() - t0
+  }, delay)
+}
 
 const editorView = new EditorView({
   doc: savedSource,
@@ -129,11 +145,7 @@ const editorView = new EditorView({
       saveTimer = setTimeout(() => {
         localStorage.setItem(STORAGE_KEY, editorView.state.doc.toString())
       }, 300)
-      // Debounce render preview
-      if (renderTimer) clearTimeout(renderTimer)
-      renderTimer = setTimeout(() => {
-        preview()
-      }, 300)
+      schedulePreview()
     }),
   ],
 })
@@ -382,7 +394,7 @@ function preview() {
   shapeMap.clear()
   currentDispatcher = null
   resetTheme()
-  Palette.setCurrent(`default`)
+  Palette.setCurrent(`sunset`)
   applyPaletteToTheme(Palette.getCurrentColors())
 
   const src = editorView.state.doc.toString()
@@ -399,7 +411,6 @@ function preview() {
       lastOutput = output
       for (const shape of dispatcher.shapes()) shapeMap.set(shape.id, shape)
       renderResult(output)
-      extraStyles.textContent = stylesheets.join(`\n`)
 
       const duration = dispatcher.totalDuration()
       const startFrom = Number(dispatcher.getTimeline().startFrom) || 0
@@ -411,8 +422,23 @@ function preview() {
       // Render shapes at t=0
       dispatcher.applyTimelineUpTo(0)
 
+      // Generate palette CSS after render so all used slots are populated
+      const usedSlots = dispatcher.getUsedSlots()
+      let css = stylesheets.join(`\n`)
+      if (usedSlots.size > 0) {
+        const slotColors = computeSlotColors(
+          usedSlots,
+          (pal, slot) => Palette.getColorForPalette(pal, slot),
+          getDarkThemeValue('NativeFg') as string,
+          getDarkThemeValue('NativeBg') as string
+        )
+        const paletteCss = generateCSS(usedSlots, slotColors)
+        if (paletteCss) css = css ? `${css}\n${paletteCss}` : paletteCss
+      }
+      extraStyles.textContent = css
+
       // Compute viewBox: start with getBBox for accurate text bounds at t=0,
-      // then union with geometry bounds at each animation boundary.
+      // then union with geometry bounds at sampled animation times.
       svgHolder.setAttribute(`viewBox`, `0 0 10 7`)
       svgHolder.getBoundingClientRect()
       const bbox = svgHolder.getBBox()
@@ -420,11 +446,23 @@ function preview() {
       let bounds = { minX: bbox.x, minY: bbox.y, maxX: bbox.x + bbox.width, maxY: bbox.y + bbox.height, width: bbox.width, height: bbox.height }
       const times = dispatcher.animationBoundaryTimes()
       if (times.length > 1) {
+        // Sample at most 20 evenly spaced times (always include the last)
+        const MAX_PROBES = 20
+        let probeTimes: number[]
+        if (times.length <= MAX_PROBES) {
+          probeTimes = times.filter(t => t > 0)
+        } else {
+          probeTimes = []
+          const step = (times.length - 1) / (MAX_PROBES - 1)
+          for (let i = 1; i < MAX_PROBES - 1; i++) {
+            probeTimes.push(times[Math.round(i * step)])
+          }
+          probeTimes.push(times[times.length - 1])
+        }
         const probeSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement
         probeSvg.style.cssText = "position:absolute;left:-9999px;width:0;height:0"
         document.body.appendChild(probeSvg)
-        for (const t of times) {
-          if (t === 0) continue
+        for (const t of probeTimes) {
           const probe = new Dispatcher(nullLogger, probeSvg, -1)
           probe.start(parsed.ast)
           probe.applyTimelineUpTo(t)
@@ -563,10 +601,20 @@ window.addEventListener(`popstate`, () => {
   }
 })
 
-const initialExample = new URL(window.location.href).searchParams.get(`example`)
-if (initialExample && examples.some(e => e.file === initialExample)) {
-  exampleSelector.value = initialExample
-  loadExample(initialExample)
-} else if (savedSource) {
-  preview()
+const initialUrl = new URL(window.location.href)
+
+// ?reset — emergency escape hatch: clear saved source and reload clean
+if (initialUrl.searchParams.has(`reset`)) {
+  localStorage.removeItem(STORAGE_KEY)
+  initialUrl.searchParams.delete(`reset`)
+  window.location.replace(initialUrl.toString())
+} else {
+  const initialExample = initialUrl.searchParams.get(`example`)
+  if (initialExample && examples.some(e => e.file === initialExample)) {
+    exampleSelector.value = initialExample
+    loadExample(initialExample)
+  } else if (savedSource) {
+    // Defer so the page is interactive before a heavy render
+    requestAnimationFrame(() => preview())
+  }
 }

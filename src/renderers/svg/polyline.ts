@@ -1,4 +1,4 @@
-import { LineDirection, SvgBase, arrowDimensions, toSvgAttrNames } from "./_base.js"
+import { LineDirection, SvgBase, arrowDimensions, toSvgAttrNames, addUsedSlot } from "./_base.js"
 import * as Convert from "./attribute_converters.js"
 import { RenderParameters } from "../../types.js"
 import * as Shape from "../../shapes.js"
@@ -10,6 +10,7 @@ export class Polyline extends SvgBase {
 
   private pendingMarkers!: string[]
   private hideMarkers!: boolean
+  private strokeSlot?: string
 
   constructor(position: RenderParameters, attrs: Shape.Args) {
     super(position, attrs)
@@ -32,9 +33,14 @@ export class Polyline extends SvgBase {
 
   private buildMarkers(strokeColor: string): SvgNode[] {
     if (this.hideMarkers) { this.pendingMarkers = []; return [] }
-    const nodes = this.pendingMarkers.map(d =>
-      svgNode('path', { d, fill: strokeColor, stroke: 'none' })
-    )
+    const nodes = this.pendingMarkers.map(d => {
+      if (this.strokeSlot) {
+        addUsedSlot('fill', this.strokeSlot)
+        const cssSlot = this.strokeSlot.replace(':', '-')
+        return svgNode('path', { d, stroke: 'none', class: `pj-fill-${cssSlot}` })
+      }
+      return svgNode('path', { d, fill: strokeColor, stroke: 'none' })
+    })
     this.pendingMarkers = []
     return nodes
   }
@@ -48,6 +54,7 @@ export class Polyline extends SvgBase {
 
   convertToSVG(position: RenderParameters, attrs: Shape.Args) {
     this.pendingMarkers = []
+    this.strokeSlot = attrs._stroke_slot
     this.attrs = Convert.run(position, attrs, [
       Convert.linestyle,
     ])

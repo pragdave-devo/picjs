@@ -36,6 +36,8 @@ function colorToString(color: Color): string {
 
 export class TColor extends TBase<Color> {
 
+  paletteSlot?: string
+
   static fromExisting(color: Color): TColor {
     return new TColor(color)
   }
@@ -44,12 +46,21 @@ export class TColor extends TBase<Color> {
     // Alias: ~none → ~transparent
     if (spec === 'none') spec = 'transparent'
 
-    // Check palette colors first (b1-b8, f1-f8)
+    // Check palette colors first (b1-b8, f1-f8, native-fg, native-bg)
     if (Palette.isPaletteColor(spec)) {
       const hex = Palette.getColor(spec)
       if (hex) {
         const color = parse(hex)
-        if (color) return new TColor(color)
+        if (color) {
+          const tc = new TColor(color)
+          // Qualify b/f slots with palette name so different palettes get distinct CSS classes
+          if (spec === 'native-fg' || spec === 'native-bg') {
+            tc.paletteSlot = spec
+          } else {
+            tc.paletteSlot = `${Palette.getCurrentName()}:${spec}`
+          }
+          return tc
+        }
       }
     }
 

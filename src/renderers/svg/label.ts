@@ -168,6 +168,7 @@ export class Label extends SvgBase {
     delete newAttrs._parentWidth
     delete newAttrs._parentHeight
     delete newAttrs._parentFill
+    delete newAttrs._parentFillSlot
     return newAttrs
   }
 

@@ -180,17 +180,20 @@ const Palettes: Record<string, PaletteDefinition> = {
   },
 }
 
-// Regex to match palette color names: b1-b8, f1-f8
-const PALETTE_COLOR_RE = /^[bf][1-8]$/
+// Regex to match palette color names: b1-b8, f1-f8, native-fg, native-bg
+const PALETTE_COLOR_RE = /^([bf][1-8]|native-fg|native-bg)$/
 
 // Maps background hex → foreground hex for auto-text coloring
 let bgToFgMap: Map<string, string> = new Map()
 
 // Current palette name
-let currentPaletteName = `default`
+let currentPaletteName = `sunset`
 
 // Local overrides (binding-scoped overrides handled separately)
 let localOverrides: Record<string, string> = {}
+
+// Callback to resolve native-fg/native-bg from the theme system
+let nativeColorResolver: ((name: string) => string | null) | null = null
 
 function rebuildBgToFgMap() {
   bgToFgMap.clear()
@@ -223,6 +226,11 @@ export const Palette = {
    */
   getColor(name: string): string | null {
     if (!this.isPaletteColor(name)) return null
+
+    // native-fg/native-bg come from the theme system
+    if (name === 'native-fg' || name === 'native-bg') {
+      return nativeColorResolver ? nativeColorResolver(name) : null
+    }
 
     // Check local overrides first
     if (localOverrides[name]) return localOverrides[name]
@@ -300,5 +308,21 @@ export const Palette = {
   getCurrentColors(): PaletteColors {
     const base = Palettes[currentPaletteName]?.colors || Palettes.default.colors
     return { ...base, ...localOverrides } as PaletteColors
+  },
+
+  /**
+   * Get a specific color from a named palette (ignoring overrides and current state)
+   */
+  getColorForPalette(paletteName: string, slot: string): string | null {
+    const palette = Palettes[paletteName]
+    if (!palette) return null
+    return palette.colors[slot as keyof PaletteColors] ?? null
+  },
+
+  /**
+   * Register a resolver for native-fg/native-bg colors (called from defaults.ts)
+   */
+  setNativeColorResolver(resolver: (name: string) => string | null): void {
+    nativeColorResolver = resolver
   },
 }
