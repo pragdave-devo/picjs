@@ -198,7 +198,7 @@ function markdownItPlugin(md) {
   };
 }
 
-export default function picjsPlugin(eleventyConfig, { prism } = {}) {
+export default function picjsPlugin(eleventyConfig, { prism, pathPrefix = "/" } = {}) {
   if (prism) {
     Prism = prism;
     definePicjs(Prism);
@@ -219,8 +219,9 @@ export default function picjsPlugin(eleventyConfig, { prism } = {}) {
     }
 
     if (hasRuntime) {
+      const runtimePath = pathPrefix.endsWith("/") ? `${pathPrefix}assets/runtime.js` : `${pathPrefix}/assets/runtime.js`;
       content += `\n<script type="module">
-import { initAnimations } from "/assets/runtime.js";
+import { initAnimations } from "${runtimePath}";
 initAnimations();
 </script>`;
     }

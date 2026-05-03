@@ -11,6 +11,8 @@ import definePicjs from "../extras/syntax-highlighters/prism-picjs.js";
 import deflist from "markdown-it-deflist";
 
 export default async function(eleventyConfig) {
+	const pathPrefix = process.env.PATH_PREFIX || "/";
+
 	eleventyConfig.addPassthroughCopy({ "./public/": "/" });
 	eleventyConfig.addPassthroughCopy({ "../dist/runtime.js": "assets/runtime.js" });
 	eleventyConfig.addPassthroughCopy({ "../dist/playground.js": "assets/playground.js" });
@@ -20,7 +22,7 @@ export default async function(eleventyConfig) {
 	eleventyConfig.ignores.add("superpowers/**");
 	eleventyConfig.ignores.add("tools/**");
 
-	eleventyConfig.addPlugin(picjsPlugin, { prism: Prism });
+	eleventyConfig.addPlugin(picjsPlugin, { prism: Prism, pathPrefix });
 	eleventyConfig.addPlugin(pluginSyntaxHighlight, {
 		preAttributes: { tabindex: 0 },
 		init: function({ Prism }) {
@@ -106,7 +108,7 @@ export default async function(eleventyConfig) {
 		templateFormats: ["md", "njk", "html"],
 		markdownTemplateEngine: false,
 		htmlTemplateEngine: "njk",
-		pathPrefix: process.env.PATH_PREFIX || "/",
+		pathPrefix,
 		dir: {
 			input: ".",
 			includes: "_includes",
