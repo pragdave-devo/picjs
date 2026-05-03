@@ -8,7 +8,7 @@ eleventyNavigation:
 ---
 # What's Going On in the Hanoi Code?
 
-![Hanoi game in progress](./assets/hanoi1.png)
+![Hanoi game in progress](/assets/hanoi1.png)
 
 The code for the Hanoi animation is a little more complex than the other examples. That's because I
 used it as a testbed for language ideas, so it has a little bit of everything mixed in. Let's break
