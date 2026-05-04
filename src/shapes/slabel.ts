@@ -8,6 +8,7 @@ import { SBase, ShapeArgs } from "./_base.js"
 import { TFont, TString, RenderParameters } from "../types.js"
 import { ShapeToRenderer } from "../render.js"
 import { Palette } from "../palette.js"
+import { parseFontSize } from "../renderers/svg/attribute_converters.js"
 
 // const DefaultsForShape = { 
 //     fill: `pink`,
@@ -58,8 +59,9 @@ export class SLabel extends SBase {
   // // of getting the size without temporarily rendering it
   calculateDimensions() {
     if (typeof document === 'undefined') {
-      this.params.width  ??= estimateTextWidth(this.params.text || '', this.params.font_size || 0.14, this.params.font_family)
-      this.params.height ??= (this.params.font_size || 0.14) * 1.2
+      const fontSize = parseFontSize(this.params.font_size) ?? 0.14
+      this.params.width  ??= estimateTextWidth(this.params.text || '', fontSize, this.params.font_family)
+      this.params.height ??= fontSize * 1.2
       return
     }
 

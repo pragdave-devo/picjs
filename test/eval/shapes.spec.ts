@@ -594,6 +594,16 @@ describe(`Label font_size syntax`, () => {
     expect(label.params.font_size).toBe(`12pt`)
     expect(label.params.text).toBe(`hello`)
   })
+
+  it(`rich label with font_size computes valid dimensions`, () => {
+    const d = runProgram(`box ("hello" font_size 12pt)`)
+    const [box, label] = d.shapes()
+    expect(label.shapeName).toBe(`SLabel`)
+    expect(label.width).toBeGreaterThan(0)
+    expect(label.height).toBeGreaterThan(0)
+    expect(label.anchorX).not.toBeNaN()
+    expect(label.anchorY).not.toBeNaN()
+  })
 })
 
 describe(`directional line syntax`, () => {

@@ -53,26 +53,42 @@ const UnitToInches: Record<string, number> = {
   'em': BASE_FONT_SIZE,  // 1em = base font size
 }
 
-export function fontSize(_position: RenderParameters, attrs: Shape.Args) {
-  const fs = String(attrs.font_size || ``)
+// Parse a font size string (e.g., "12pt", "16px", "small") to internal units
+// Returns undefined if the input cannot be parsed
+export function parseFontSize(fs: string | number | undefined): number | undefined {
+  if (fs === undefined || fs === null || fs === '') return undefined
+  if (typeof fs === 'number') return fs
+
+  const str = String(fs)
 
   // Check for named sizes first
-  const multiplier = NamedFontSizes[fs]
+  const multiplier = NamedFontSizes[str]
   if (multiplier !== undefined) {
-    attrs.font_size = BASE_FONT_SIZE * multiplier
-    return
+    return BASE_FONT_SIZE * multiplier
   }
 
   // Check for numeric value with unit (e.g., "12pt", "16px")
-  // Unit is REQUIRED for conversion - bare numbers are already in internal units
-  const match = fs.match(/^(\d+(?:\.\d+)?)\s*(pt|px|in|cm|mm|em)$/)
+  const match = str.match(/^(\d+(?:\.\d+)?)\s*(pt|px|in|cm|mm|em)$/)
   if (match) {
     const value = parseFloat(match[1])
     const unit = match[2]
     const conversion = UnitToInches[unit]
     if (conversion !== undefined) {
-      attrs.font_size = value * conversion
+      return value * conversion
     }
+  }
+
+  // Try parsing as plain number (already in internal units)
+  const num = parseFloat(str)
+  if (!isNaN(num)) return num
+
+  return undefined
+}
+
+export function fontSize(_position: RenderParameters, attrs: Shape.Args) {
+  const parsed = parseFontSize(attrs.font_size)
+  if (parsed !== undefined) {
+    attrs.font_size = parsed
   }
 }
 
