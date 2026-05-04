@@ -211,6 +211,11 @@ export class Geometry {
       // Standard behavior: position shape's own cardinal at target
       Geometry.positionCardinalToPoint(shape, myAnchorName, target.x, target.y)
     }
+
+    // Apply vertical stack offset for stacked labels with custom styling
+    if (shape.params._stackOffset !== undefined) {
+      shape.setAnimatablePosition(shape.anchorX!, shape.anchorY! + shape.params._stackOffset)
+    }
   }
 
   // Position a label along a line/arc path with perpendicular offset.

@@ -535,4 +535,24 @@ describe(`label fill color`, () => {
     // Should be green, not auto-derived from blue
     expect(label.params.fill).toBe(`#008000`)
   })
+
+  it(`explicit fill on second label in multi-label box`, () => {
+    const d = runProgram(`Box "hello" ("world" fill ~blue)`)
+    const shapes = d.shapes()
+    // Should create separate labels when styling differs
+    expect(shapes).toHaveLength(3) // Box + 2 labels
+    const [, label1, label2] = shapes
+    expect(label1.text).toBe(`hello`)
+    expect(label2.text).toBe(`world`)
+    expect(label2.params.fill).toBe(`#0000ff`)
+  })
+
+  it(`styled labels are vertically stacked`, () => {
+    const d = runProgram(`Box "hello" ("world" fill ~blue)`)
+    const [, label1, label2] = d.shapes()
+    // Labels should have different Y positions (stacked vertically)
+    expect(label1.anchorY).not.toBe(label2.anchorY)
+    // First label should be above second (smaller Y in SVG coordinates)
+    expect(label1.anchorY!).toBeLessThan(label2.anchorY!)
+  })
 })
