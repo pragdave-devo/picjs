@@ -572,6 +572,30 @@ describe(`label fill color`, () => {
   })
 })
 
+describe(`Label font_size syntax`, () => {
+  it(`Label font_size 24pt "hello" sets font_size`, () => {
+    const d = runProgram(`Label font_size 24pt "hello"`)
+    const [label] = d.shapes()
+    expect(label.shapeName).toBe(`SLabel`)
+    expect(label.params.font_size).toBe(`24pt`)
+    expect(label.params.text).toBe(`hello`)
+  })
+
+  it(`Label "hello" font_size 24pt sets font_size after text`, () => {
+    const d = runProgram(`Label "hello" font_size 24pt`)
+    const [label] = d.shapes()
+    expect(label.params.font_size).toBe(`24pt`)
+    expect(label.params.text).toBe(`hello`)
+  })
+
+  it(`Label 12pt "hello" sets font_size without keyword`, () => {
+    const d = runProgram(`Label 12pt "hello"`)
+    const [label] = d.shapes()
+    expect(label.params.font_size).toBe(`12pt`)
+    expect(label.params.text).toBe(`hello`)
+  })
+})
+
 describe(`directional line syntax`, () => {
   it(`line right 2 draws a line 2 units to the right`, () => {
     const d = runProgram(`line right 2`)
