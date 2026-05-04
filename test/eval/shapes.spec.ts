@@ -507,3 +507,32 @@ describe(`step limit`, () => {
     }).toThrow(/exceeded/)
   })
 })
+
+describe(`label fill color`, () => {
+  it(`rich label with explicit fill uses that fill`, () => {
+    const d = runProgram(`Box ("hello" fill ~red)`)
+    const [, label] = d.shapes()
+    expect(label.params.fill).toBe(`#ff0000`)
+  })
+
+  it(`rich label with explicit fill has no fill slot`, () => {
+    const d = runProgram(`Box ("hello" fill ~red)`)
+    const [, label] = d.shapes()
+    expect(label.params._fill_slot).toBeUndefined()
+  })
+
+  it(`rich label without fill gets auto-colored from parent`, () => {
+    const d = runProgram(`Box "hello"`)
+    const [box, label] = d.shapes()
+    // Label should have some fill (auto-colored), not the parent's fill
+    expect(label.params.fill).toBeDefined()
+    expect(label.params.fill).not.toBe(box.params.fill)
+  })
+
+  it(`explicit fill overrides auto-coloring`, () => {
+    const d = runProgram(`Box fill ~blue ("hello" fill ~green)`)
+    const [, label] = d.shapes()
+    // Should be green, not auto-derived from blue
+    expect(label.params.fill).toBe(`#008000`)
+  })
+})

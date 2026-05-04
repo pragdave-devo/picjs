@@ -19,17 +19,17 @@ import { Palette } from "../palette.js"
 export class SLabel extends SBase {
   override shapeName = "SLabel"
 
-  private _hasExplicitFill = false
-
-  setupParams(args: ShapeArgs) {
+  override setupParams(args: ShapeArgs) {
     super.setupParams(args)
     if (this.params.font)
       this.params.font = new TFont(this.params.font)
-    this._hasExplicitFill = !!args.fill
   }
 
-  applyAutoColoring() {
-    if (this._hasExplicitFill || !this.params._parentFill) return
+  override applyAutoColoring() {
+    // If fill was explicitly provided, base.setupParams cleared _fill_slot,
+    // so we detect explicit fill by: fill exists but no slot
+    const hasExplicitFill = this.params.fill && !this.params._fill_slot
+    if (hasExplicitFill || !this.params._parentFill) return
 
     const parentSlot = this.params._parentFillSlot
     if (parentSlot) {
