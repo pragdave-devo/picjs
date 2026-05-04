@@ -555,6 +555,21 @@ describe(`label fill color`, () => {
     // First label should be above second (smaller Y in SVG coordinates)
     expect(label1.anchorY!).toBeLessThan(label2.anchorY!)
   })
+
+  it(`palette color fill (like ~b6) is respected`, () => {
+    const d = runProgram(`Box ("hello" fill ~b6)`)
+    const [, label] = d.shapes()
+    // Should have the palette slot, not the auto-derived foreground slot
+    expect(label.params._fill_slot).toMatch(/b6$/)
+  })
+
+  it(`palette color fill on second label in multi-label box`, () => {
+    const d = runProgram(`Box "hello" ("world" fill ~b6)`)
+    const shapes = d.shapes()
+    expect(shapes).toHaveLength(3) // Box + 2 labels
+    const [, , label2] = shapes
+    expect(label2.params._fill_slot).toMatch(/b6$/)
+  })
 })
 
 describe(`directional line syntax`, () => {

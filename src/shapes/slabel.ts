@@ -20,16 +20,15 @@ export class SLabel extends SBase {
   override shapeName = "SLabel"
 
   override setupParams(args: ShapeArgs) {
+    // Track explicit fill in hidden (survives field initialization)
+    this.hidden._hasExplicitFill = 'fill' in args
     super.setupParams(args)
     if (this.params.font)
       this.params.font = new TFont(this.params.font)
   }
 
   override applyAutoColoring() {
-    // If fill was explicitly provided, base.setupParams cleared _fill_slot,
-    // so we detect explicit fill by: fill exists but no slot
-    const hasExplicitFill = this.params.fill && !this.params._fill_slot
-    if (hasExplicitFill || !this.params._parentFill) return
+    if (this.hidden._hasExplicitFill || !this.params._parentFill) return
 
     const parentSlot = this.params._parentFillSlot
     if (parentSlot) {
