@@ -556,3 +556,45 @@ describe(`label fill color`, () => {
     expect(label1.anchorY!).toBeLessThan(label2.anchorY!)
   })
 })
+
+describe(`directional line syntax`, () => {
+  it(`line right 2 draws a line 2 units to the right`, () => {
+    const d = runProgram(`line right 2`)
+    const [line] = d.shapes()
+    expect(line.shapeName).toBe(`SLine`)
+    expect(line.end.x - line.start.x).toBeCloseTo(2)
+    expect(line.end.y - line.start.y).toBeCloseTo(0)
+  })
+
+  it(`line up 3 draws a line 3 units up (negative y)`, () => {
+    const d = runProgram(`line up 3`)
+    const [line] = d.shapes()
+    expect(line.end.x - line.start.x).toBeCloseTo(0)
+    expect(line.end.y - line.start.y).toBeCloseTo(-3)
+  })
+
+  it(`line right 2 up 1 draws a diagonal line`, () => {
+    const d = runProgram(`line right 2 up 1`)
+    const [line] = d.shapes()
+    expect(line.end.x - line.start.x).toBeCloseTo(2)
+    expect(line.end.y - line.start.y).toBeCloseTo(-1)
+  })
+
+  it(`north is synonym for up`, () => {
+    const d = runProgram(`line north 2`)
+    const [line] = d.shapes()
+    expect(line.end.y - line.start.y).toBeCloseTo(-2)
+  })
+
+  it(`east is synonym for right`, () => {
+    const d = runProgram(`line east 2`)
+    const [line] = d.shapes()
+    expect(line.end.x - line.start.x).toBeCloseTo(2)
+  })
+
+  it(`-> right 2 works with arrow abbreviation`, () => {
+    const d = runProgram(`-> right 2`)
+    const [line] = d.shapes()
+    expect(line.end.x - line.start.x).toBeCloseTo(2)
+  })
+})
