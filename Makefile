@@ -1,6 +1,6 @@
 PARSER = src/peg_parser/jp
 PEGJS = node_modules/.bin/peggy
-STARTS = Program,Expression
+STARTS = Start,Program,Expression
 TRACE = #--trace
 TARGET = dist/jp.js
 TESTS  = test/

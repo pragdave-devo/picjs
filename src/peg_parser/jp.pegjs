@@ -1425,10 +1425,31 @@ Shape "shape"
       })
     }
 
-  / Label _ string:Expression pre:( __ ( SEText / SECommon ))* withConstraint:( __ WithConstraint )? post:( __ ( SEText / SECommon ))*
+  / Label __ pre:( ( SEText / SECommon ) __ )+ string:( String / RichLabel ) post:( __ ( SEText / SECommon ))* withConstraint:( __ WithConstraint )?
     {
-      const args = mergeAttributes([...extractList(pre, 1), ...extractList(post, 1)])
-      args.text = string
+      const args = mergeAttributes([...extractList(pre, 0), ...extractList(post, 1)])
+      // string is either a String AST node or a RichLabel (SLabel shape node)
+      if (string.type === "Shape") {
+        Object.assign(args, string.args)
+      } else {
+        args.text = string
+      }
+      return ast({
+        type: "Shape",
+        shape: "SLabel",
+        args,
+        withConstraint: extractOptional(withConstraint, 1),
+      })
+    }
+
+  / Label _ string:( String / RichLabel ) post:( __ ( SEText / SECommon ))* withConstraint:( __ WithConstraint )?
+    {
+      const args = mergeAttributes(extractList(post, 1))
+      if (string.type === "Shape") {
+        Object.assign(args, string.args)
+      } else {
+        args.text = string
+      }
       return ast({
         type: "Shape",
         shape: "SLabel",
@@ -1828,6 +1849,8 @@ SEText
     { return { font } }
   / font __ ........
     { expected('a css font specification to follow "font"') }
+  / font_size __ fs:ActualFontSize
+    { return { "font_size": ast({ type: "String", value: fs }) } }
   / fs:ActualFontSize
     { return { "font_size": ast({ type: "String", value: fs }) } }
 
