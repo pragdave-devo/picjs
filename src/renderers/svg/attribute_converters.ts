@@ -41,11 +41,39 @@ const NamedFontSizes: Record<string, number> = {
   'larger':    1.2,
 }
 
+// Convert font sizes with units to internal coordinate system
+// Assumes 1 internal unit = 1 inch
+// 72pt = 1 inch, 96px = 1 inch, 1in = 1 inch, 1cm = 0.3937 inch
+const UnitToInches: Record<string, number> = {
+  'pt': 1/72,
+  'px': 1/96,
+  'in': 1,
+  'cm': 0.3937,
+  'mm': 0.03937,
+  'em': BASE_FONT_SIZE,  // 1em = base font size
+}
+
 export function fontSize(_position: RenderParameters, attrs: Shape.Args) {
   const fs = String(attrs.font_size || ``)
+
+  // Check for named sizes first
   const multiplier = NamedFontSizes[fs]
-  if (multiplier !== undefined)
+  if (multiplier !== undefined) {
     attrs.font_size = BASE_FONT_SIZE * multiplier
+    return
+  }
+
+  // Check for numeric value with unit (e.g., "12pt", "16px")
+  // Unit is REQUIRED for conversion - bare numbers are already in internal units
+  const match = fs.match(/^(\d+(?:\.\d+)?)\s*(pt|px|in|cm|mm|em)$/)
+  if (match) {
+    const value = parseFloat(match[1])
+    const unit = match[2]
+    const conversion = UnitToInches[unit]
+    if (conversion !== undefined) {
+      attrs.font_size = value * conversion
+    }
+  }
 }
 
 export function font(_position: RenderParameters, attrs: Shape.Args) {
