@@ -268,6 +268,10 @@ export class Dispatcher {
     shape.calculateDimensions()
   }
 
+  hasSvgHolder(): boolean {
+    return this.svgHolder !== null
+  }
+
   temporarilyAddSVGElement(element: SVGElement, callback: () => void) {
     if (!this.svgHolder) return
     this.svgHolder.appendChild(element)

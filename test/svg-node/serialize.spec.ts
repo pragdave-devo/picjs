@@ -96,6 +96,23 @@ describe("renderToString", () => {
     expect(result.width).toBeGreaterThan(1.5) // should be > 2 with padding
     expect(result.height).toBeGreaterThan(0.5) // should be > 1 with padding
   })
+
+  it("renders a labelled box without error", async () => {
+    const result = await renderToString('box "Hello"')
+    expect(result.error).toBeUndefined()
+    expect(result.svg).toContain("<text")
+    expect(result.svg).toContain("Hello")
+    expect(result.width).toBeGreaterThan(0)
+    expect(result.height).toBeGreaterThan(0)
+  })
+
+  it("renders multiple labelled shapes without error", async () => {
+    const result = await renderToString('box "A"\ncircle "B"\noval "C"')
+    expect(result.error).toBeUndefined()
+    expect(result.svg).toContain("A")
+    expect(result.svg).toContain("B")
+    expect(result.svg).toContain("C")
+  })
 })
 
 describe("animation-aware viewBox", () => {

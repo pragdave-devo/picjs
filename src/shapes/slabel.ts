@@ -58,7 +58,7 @@ export class SLabel extends SBase {
   // // this is so, so ugly, but I can't think of another way
   // // of getting the size without temporarily rendering it
   calculateDimensions() {
-    if (typeof document === 'undefined') {
+    if (typeof document === 'undefined' || !this.dispatcher?.hasSvgHolder()) {
       const fontSize = parseFontSize(this.params.font_size) ?? 0.14
       this.params.width  ??= estimateTextWidth(this.params.text || '', fontSize, this.params.font_family)
       this.params.height ??= fontSize * 1.2

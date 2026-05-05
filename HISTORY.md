@@ -1,5 +1,9 @@
 # PicJS History
 
+## 0.2.3
+
+* Fix renderToString crash on labelled shapes in browser environments
+
 ## 0.2.2
 
 * Fix rich label fill color being ignored
