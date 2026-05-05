@@ -139,6 +139,14 @@ export class SBase extends TBase<null> {
         if ((`handle_attr_` + resolved) in this) return new TBool(true)
         return new TBool(false)
       })
+
+    this.applyAutoColoring()
+  }
+
+  // Override in subclasses to apply automatic coloring (e.g., label text color from parent fill).
+  // Called at the end of the constructor, after setupParams but before subclass field initializers.
+  applyAutoColoring() {
+    // Base implementation does nothing
   }
 
   reEvaluateArgs() {

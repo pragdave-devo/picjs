@@ -8,6 +8,7 @@ import { SBase, ShapeArgs } from "./_base.js"
 import { TFont, TString, RenderParameters } from "../types.js"
 import { ShapeToRenderer } from "../render.js"
 import { Palette } from "../palette.js"
+import { parseFontSize } from "../renderers/svg/attribute_converters.js"
 
 // const DefaultsForShape = { 
 //     fill: `pink`,
@@ -19,17 +20,16 @@ import { Palette } from "../palette.js"
 export class SLabel extends SBase {
   override shapeName = "SLabel"
 
-  private _hasExplicitFill = false
-
-  setupParams(args: ShapeArgs) {
+  override setupParams(args: ShapeArgs) {
+    // Track explicit fill in hidden (survives field initialization)
+    this.hidden._hasExplicitFill = 'fill' in args
     super.setupParams(args)
     if (this.params.font)
       this.params.font = new TFont(this.params.font)
-    this._hasExplicitFill = !!args.fill
   }
 
-  applyAutoColoring() {
-    if (this._hasExplicitFill || !this.params._parentFill) return
+  override applyAutoColoring() {
+    if (this.hidden._hasExplicitFill || !this.params._parentFill) return
 
     const parentSlot = this.params._parentFillSlot
     if (parentSlot) {
@@ -59,8 +59,9 @@ export class SLabel extends SBase {
   // // of getting the size without temporarily rendering it
   calculateDimensions() {
     if (typeof document === 'undefined') {
-      this.params.width  ??= estimateTextWidth(this.params.text || '', this.params.font_size || 0.14, this.params.font_family)
-      this.params.height ??= (this.params.font_size || 0.14) * 1.2
+      const fontSize = parseFontSize(this.params.font_size) ?? 0.14
+      this.params.width  ??= estimateTextWidth(this.params.text || '', fontSize, this.params.font_family)
+      this.params.height ??= fontSize * 1.2
       return
     }
 

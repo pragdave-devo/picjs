@@ -41,11 +41,55 @@ const NamedFontSizes: Record<string, number> = {
   'larger':    1.2,
 }
 
+// Convert font sizes with units to internal coordinate system
+// Assumes 1 internal unit = 1 inch
+// 72pt = 1 inch, 96px = 1 inch, 1in = 1 inch, 1cm = 0.3937 inch
+const UnitToInches: Record<string, number> = {
+  'pt': 1/72,
+  'px': 1/96,
+  'in': 1,
+  'cm': 0.3937,
+  'mm': 0.03937,
+  'em': BASE_FONT_SIZE,  // 1em = base font size
+}
+
+// Parse a font size string (e.g., "12pt", "16px", "small") to internal units
+// Returns undefined if the input cannot be parsed
+export function parseFontSize(fs: string | number | undefined): number | undefined {
+  if (fs === undefined || fs === null || fs === '') return undefined
+  if (typeof fs === 'number') return fs
+
+  const str = String(fs)
+
+  // Check for named sizes first
+  const multiplier = NamedFontSizes[str]
+  if (multiplier !== undefined) {
+    return BASE_FONT_SIZE * multiplier
+  }
+
+  // Check for numeric value with unit (e.g., "12pt", "16px")
+  const match = str.match(/^(\d+(?:\.\d+)?)\s*(pt|px|in|cm|mm|em)$/)
+  if (match) {
+    const value = parseFloat(match[1])
+    const unit = match[2]
+    const conversion = UnitToInches[unit]
+    if (conversion !== undefined) {
+      return value * conversion
+    }
+  }
+
+  // Try parsing as plain number (already in internal units)
+  const num = parseFloat(str)
+  if (!isNaN(num)) return num
+
+  return undefined
+}
+
 export function fontSize(_position: RenderParameters, attrs: Shape.Args) {
-  const fs = String(attrs.font_size || ``)
-  const multiplier = NamedFontSizes[fs]
-  if (multiplier !== undefined)
-    attrs.font_size = BASE_FONT_SIZE * multiplier
+  const parsed = parseFontSize(attrs.font_size)
+  if (parsed !== undefined) {
+    attrs.font_size = parsed
+  }
 }
 
 export function font(_position: RenderParameters, attrs: Shape.Args) {

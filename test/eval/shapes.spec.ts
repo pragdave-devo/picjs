@@ -507,3 +507,143 @@ describe(`step limit`, () => {
     }).toThrow(/exceeded/)
   })
 })
+
+describe(`label fill color`, () => {
+  it(`rich label with explicit fill uses that fill`, () => {
+    const d = runProgram(`Box ("hello" fill ~red)`)
+    const [, label] = d.shapes()
+    expect(label.params.fill).toBe(`#ff0000`)
+  })
+
+  it(`rich label with explicit fill has no fill slot`, () => {
+    const d = runProgram(`Box ("hello" fill ~red)`)
+    const [, label] = d.shapes()
+    expect(label.params._fill_slot).toBeUndefined()
+  })
+
+  it(`rich label without fill gets auto-colored from parent`, () => {
+    const d = runProgram(`Box "hello"`)
+    const [box, label] = d.shapes()
+    // Label should have some fill (auto-colored), not the parent's fill
+    expect(label.params.fill).toBeDefined()
+    expect(label.params.fill).not.toBe(box.params.fill)
+  })
+
+  it(`explicit fill overrides auto-coloring`, () => {
+    const d = runProgram(`Box fill ~blue ("hello" fill ~green)`)
+    const [, label] = d.shapes()
+    // Should be green, not auto-derived from blue
+    expect(label.params.fill).toBe(`#008000`)
+  })
+
+  it(`explicit fill on second label in multi-label box`, () => {
+    const d = runProgram(`Box "hello" ("world" fill ~blue)`)
+    const shapes = d.shapes()
+    // Should create separate labels when styling differs
+    expect(shapes).toHaveLength(3) // Box + 2 labels
+    const [, label1, label2] = shapes
+    expect(label1.text).toBe(`hello`)
+    expect(label2.text).toBe(`world`)
+    expect(label2.params.fill).toBe(`#0000ff`)
+  })
+
+  it(`styled labels are vertically stacked`, () => {
+    const d = runProgram(`Box "hello" ("world" fill ~blue)`)
+    const [, label1, label2] = d.shapes()
+    // Labels should have different Y positions (stacked vertically)
+    expect(label1.anchorY).not.toBe(label2.anchorY)
+    // First label should be above second (smaller Y in SVG coordinates)
+    expect(label1.anchorY!).toBeLessThan(label2.anchorY!)
+  })
+
+  it(`palette color fill (like ~b6) is respected`, () => {
+    const d = runProgram(`Box ("hello" fill ~b6)`)
+    const [, label] = d.shapes()
+    // Should have the palette slot, not the auto-derived foreground slot
+    expect(label.params._fill_slot).toMatch(/b6$/)
+  })
+
+  it(`palette color fill on second label in multi-label box`, () => {
+    const d = runProgram(`Box "hello" ("world" fill ~b6)`)
+    const shapes = d.shapes()
+    expect(shapes).toHaveLength(3) // Box + 2 labels
+    const [, , label2] = shapes
+    expect(label2.params._fill_slot).toMatch(/b6$/)
+  })
+})
+
+describe(`Label font_size syntax`, () => {
+  it(`Label font_size 24pt "hello" sets font_size`, () => {
+    const d = runProgram(`Label font_size 24pt "hello"`)
+    const [label] = d.shapes()
+    expect(label.shapeName).toBe(`SLabel`)
+    expect(label.params.font_size).toBe(`24pt`)
+    expect(label.params.text).toBe(`hello`)
+  })
+
+  it(`Label "hello" font_size 24pt sets font_size after text`, () => {
+    const d = runProgram(`Label "hello" font_size 24pt`)
+    const [label] = d.shapes()
+    expect(label.params.font_size).toBe(`24pt`)
+    expect(label.params.text).toBe(`hello`)
+  })
+
+  it(`Label 12pt "hello" sets font_size without keyword`, () => {
+    const d = runProgram(`Label 12pt "hello"`)
+    const [label] = d.shapes()
+    expect(label.params.font_size).toBe(`12pt`)
+    expect(label.params.text).toBe(`hello`)
+  })
+
+  it(`rich label with font_size computes valid dimensions`, () => {
+    const d = runProgram(`box ("hello" font_size 12pt)`)
+    const [box, label] = d.shapes()
+    expect(label.shapeName).toBe(`SLabel`)
+    expect(label.width).toBeGreaterThan(0)
+    expect(label.height).toBeGreaterThan(0)
+    expect(label.anchorX).not.toBeNaN()
+    expect(label.anchorY).not.toBeNaN()
+  })
+})
+
+describe(`directional line syntax`, () => {
+  it(`line right 2 draws a line 2 units to the right`, () => {
+    const d = runProgram(`line right 2`)
+    const [line] = d.shapes()
+    expect(line.shapeName).toBe(`SLine`)
+    expect(line.end.x - line.start.x).toBeCloseTo(2)
+    expect(line.end.y - line.start.y).toBeCloseTo(0)
+  })
+
+  it(`line up 3 draws a line 3 units up (negative y)`, () => {
+    const d = runProgram(`line up 3`)
+    const [line] = d.shapes()
+    expect(line.end.x - line.start.x).toBeCloseTo(0)
+    expect(line.end.y - line.start.y).toBeCloseTo(-3)
+  })
+
+  it(`line right 2 up 1 draws a diagonal line`, () => {
+    const d = runProgram(`line right 2 up 1`)
+    const [line] = d.shapes()
+    expect(line.end.x - line.start.x).toBeCloseTo(2)
+    expect(line.end.y - line.start.y).toBeCloseTo(-1)
+  })
+
+  it(`north is synonym for up`, () => {
+    const d = runProgram(`line north 2`)
+    const [line] = d.shapes()
+    expect(line.end.y - line.start.y).toBeCloseTo(-2)
+  })
+
+  it(`east is synonym for right`, () => {
+    const d = runProgram(`line east 2`)
+    const [line] = d.shapes()
+    expect(line.end.x - line.start.x).toBeCloseTo(2)
+  })
+
+  it(`-> right 2 works with arrow abbreviation`, () => {
+    const d = runProgram(`-> right 2`)
+    const [line] = d.shapes()
+    expect(line.end.x - line.start.x).toBeCloseTo(2)
+  })
+})

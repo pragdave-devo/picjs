@@ -705,8 +705,54 @@ export class Interpreter extends Visitor{
     return shape
   }
 
-  // Create a single label from multiple labels, joining text with newlines
+  // Check if a label AST has any styling attributes beyond just text
+  private labelHasStyling(labelArgs: Record<string, any>): boolean {
+    const stylingKeys = Object.keys(labelArgs).filter(k => k !== 'text' && !k.startsWith('_'))
+    return stylingKeys.length > 0
+  }
+
+  // Create labels from multiple label ASTs, stacking them vertically
   private createStackedLabels(parent: Shapes.SBase, labels: AST.Shape[]) {
+    // Check if any label has custom styling - if so, create separate labels
+    const hasCustomStyling = labels.some(label => this.labelHasStyling(label.args))
+
+    if (hasCustomStyling) {
+      this.createSeparateLabels(parent, labels)
+    } else {
+      this.createCombinedLabel(parent, labels)
+    }
+  }
+
+  // Create separate label children when styling differs between labels
+  private createSeparateLabels(parent: Shapes.SBase, labels: AST.Shape[]) {
+    const totalLabels = labels.length
+    const fontSize = 0.14  // default font size
+    const lineHeight = fontSize * 1.2
+    const totalHeight = totalLabels * lineHeight
+    const startY = -(totalHeight / 2) + (lineHeight / 2)
+
+    for (let i = 0; i < labels.length; i++) {
+      const label = labels[i]
+      const evaluated = this.visit_object(label.args)
+      const yOffset = startY + i * lineHeight
+
+      const child = parent.setupChildWithConstraint(label)
+      const slabel = this.dispatcher.addShape(
+        child.shape,
+        child.args,
+        evaluated,
+        child.withConstraint
+      )
+      // Apply vertical offset for stacking
+      slabel.params._stackOffset = yOffset
+      parent.addChild(slabel)
+      this.addShapeToGeometry(slabel)
+      this.addCreateShapeToTimeline(slabel)
+    }
+  }
+
+  // Create a single combined label when all labels have the same (default) styling
+  private createCombinedLabel(parent: Shapes.SBase, labels: AST.Shape[]) {
     // Evaluate each label's text
     const texts: string[] = []
     let firstEvaluatedArgs: Record<string, any> | null = null

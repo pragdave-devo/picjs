@@ -1392,6 +1392,29 @@ Shape "shape"
       })
     }
 
+  // ---- Line with directional distance: line right 2, line right 2 up 1
+  / line:LineOrAbbrev __ waypoint:DirectionalWaypoint args:( _ ( SELineEndings / SELineDraw / SELineLabel / SECommon / SELineShape ))*  {
+      const attrs = { ...line, ...mergeLineAttributes(extractList(args, 1)) }
+      attrs._directional = waypoint
+
+      return ast({
+          type: "Shape",
+          shape: "SLine",
+          args: attrs,
+      })
+    }
+
+  / Line __ endings:SELineEndings __ waypoint:DirectionalWaypoint args:( _ ( SELineDraw / SELineLabel / SECommon / SELineShape ))*  {
+      const attrs = { line_path: string("straight"), ...endings, ...mergeLineAttributes(extractList(args, 1)) }
+      attrs._directional = waypoint
+
+      return ast({
+          type: "Shape",
+          shape: "SLine",
+          args: attrs,
+      })
+    }
+
   / line:LineOrAbbrev !"." args:( __ ( SELineEndings / SELineDraw / SELineLabel / SECommon / SELineShape / SELineLength ))*  {   // from current position in current direction
       const attrs = { ...line, ...mergeLineAttributes(extractList(args, 1)) }
 
@@ -1402,10 +1425,31 @@ Shape "shape"
       })
     }
 
-  / Label _ string:Expression pre:( __ ( SEText / SECommon ))* withConstraint:( __ WithConstraint )? post:( __ ( SEText / SECommon ))*
+  / Label __ pre:( ( SEText / SECommon ) __ )+ string:( String / RichLabel ) post:( __ ( SEText / SECommon ))* withConstraint:( __ WithConstraint )?
     {
-      const args = mergeAttributes([...extractList(pre, 1), ...extractList(post, 1)])
-      args.text = string
+      const args = mergeAttributes([...extractList(pre, 0), ...extractList(post, 1)])
+      // string is either a String AST node or a RichLabel (SLabel shape node)
+      if (string.type === "Shape") {
+        Object.assign(args, string.args)
+      } else {
+        args.text = string
+      }
+      return ast({
+        type: "Shape",
+        shape: "SLabel",
+        args,
+        withConstraint: extractOptional(withConstraint, 1),
+      })
+    }
+
+  / Label _ string:( String / RichLabel ) post:( __ ( SEText / SECommon ))* withConstraint:( __ WithConstraint )?
+    {
+      const args = mergeAttributes(extractList(post, 1))
+      if (string.type === "Shape") {
+        Object.assign(args, string.args)
+      } else {
+        args.text = string
+      }
       return ast({
         type: "Shape",
         shape: "SLabel",
@@ -1805,6 +1849,8 @@ SEText
     { return { font } }
   / font __ ........
     { expected('a css font specification to follow "font"') }
+  / font_size __ fs:ActualFontSize
+    { return { "font_size": ast({ type: "String", value: fs }) } }
   / fs:ActualFontSize
     { return { "font_size": ast({ type: "String", value: fs }) } }
 
@@ -1854,18 +1900,18 @@ CardinalVector
   / "south"     !IdentifierPart { return { x:  0, y:  1 } }
   / "west"      !IdentifierPart { return { x: -1, y:  0 } }
   / "east"      !IdentifierPart { return { x:  1, y:  0 } }
-  / "nw" !IdentifierPart { return { x:  -1, y:  -1 } }
-  / "ne" !IdentifierPart { return { x:   1, y:  -1 } }
-  / "n"  !IdentifierPart { return { x:   0, y:  -1 } }
-  / "sw" !IdentifierPart { return { x:  -1, y:   1 } }
-  / "se" !IdentifierPart { return { x:   1, y:   1 } }
-  / "s"  !IdentifierPart { return { x:   0, y:   1 } }
-  / "w"  !IdentifierPart { return { x:  -1, y:   0 } }
+  / "nw" !IdentifierPart { return { x: -1, y: -1 } }
+  / "ne" !IdentifierPart { return { x:  1, y: -1 } }
+  / "sw" !IdentifierPart { return { x: -1, y:  1 } }
+  / "se" !IdentifierPart { return { x:  1, y:  1 } }
   / "up"    !IdentifierPart { return { x:  0, y: -1 } }
   / "down"  !IdentifierPart { return { x:  0, y:  1 } }
   / "left"  !IdentifierPart { return { x: -1, y:  0 } }
   / "right" !IdentifierPart { return { x:  1, y:  0 } }
-  / "e"  !IdentifierPart { return { x:   1, y:   0 } }
+  / "n"  !IdentifierPart { return { x:  0, y: -1 } }
+  / "s"  !IdentifierPart { return { x:  0, y:  1 } }
+  / "w"  !IdentifierPart { return { x: -1, y:  0 } }
+  / "e"  !IdentifierPart { return { x:  1, y:  0 } }
 
 
 

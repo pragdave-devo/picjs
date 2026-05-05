@@ -46,8 +46,27 @@ export class SLine extends LineLike {
   }
 
 
+  get _directional()      { return this.hidden._directional     }
+
   getEndAndNewDirection(startAsXY: XY, direction: UnitVector) {
-    const endAsXY = { 
+    // Handle directional syntax: line right 2, line right 2 up 1
+    if (this._directional) {
+      const waypoint = this._directional
+      let dx = 0, dy = 0
+      for (const comp of waypoint.components) {
+        const dir = comp.direction
+        const dist = this.dispatcher.valueOf(comp.distance, this.bindingAtCreation).toNative()
+        dx += dir.x * dist
+        dy += dir.y * dist
+      }
+      const endAsXY = { x: startAsXY.x + dx, y: startAsXY.y + dy }
+      // New direction is the overall direction of travel
+      const len = Math.hypot(dx, dy)
+      const newDirection = len > 0 ? { x: dx / len, y: dy / len } : direction
+      return [endAsXY, newDirection]
+    }
+
+    const endAsXY = {
       x: startAsXY.x + this.default_length * direction.x,
       y: startAsXY.y + this.default_length * direction.y,
     }
