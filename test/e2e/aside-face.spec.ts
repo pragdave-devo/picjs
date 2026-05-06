@@ -15,6 +15,31 @@ Aside {
 -> "No"
 enrich = Box "Enrich with context"`
 
+const DIAGRAM_WITH_DEFAULTS = `Palette.current = "sunset"
+Box.width = 2.5
+Box.height = 0.7
+Line.length = .5
+Box.decision.fill = ~b3
+Box.decision.wid = 2.5
+Box.decision.ht = 0.7
+Box.action.fill = ~b4
+Box.escalate.fill = ~b5
+
+Face s
+
+alert = Box "Alert arrives in queue"
+-> ack = Box "Acknowledge within 5 min"
+-> fp_check = Box "Known FP pattern?" .decision
+
+Aside {
+  Face w
+  line ->  "Yes" above
+  box "Close as FP" "document pattern" .action
+}
+
+-> "No"
+enrich = Box "Enrich with context"`
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/test/e2e/fixture.html')
   await page.waitForFunction(() => (window as any).__ready === true)
@@ -219,5 +244,121 @@ test.describe('Aside with Face direction', () => {
     const fpCx = result!.fpCheckBB.x + result!.fpCheckBB.w / 2
     const enrichCx = result!.enrichBB.x + result!.enrichBB.w / 2
     expect(Math.abs(fpCx - enrichCx)).toBeLessThan(result!.fpCheckBB.w)
+  })
+
+  test('Aside line connects to box inside aside (not to following shape)', async ({ page }) => {
+    const result = await page.evaluate((src) => {
+      const svg = (window as any).renderDiagram(src)
+      if (!svg) return null
+
+      const allGroups = Array.from(svg.querySelectorAll('g[data-jp-id]')) as SVGGElement[]
+      let fpCheck: any = null
+      let closeAsFP: any = null
+      let enrichBox: any = null
+
+      for (const g of allGroups) {
+        const textContent = g.textContent || ''
+        const rect = g.querySelector('rect')
+        if (!rect) continue
+        const bb = rect.getBBox()
+        const info = {
+          cx: bb.x + bb.width / 2,
+          cy: bb.y + bb.height / 2,
+          left: bb.x,
+          right: bb.x + bb.width,
+          top: bb.y,
+          bottom: bb.y + bb.height,
+        }
+        if (textContent.includes('Known FP')) fpCheck = info
+        if (textContent.includes('Close as FP')) closeAsFP = info
+        if (textContent.includes('Enrich')) enrichBox = info
+      }
+
+      if (!fpCheck || !closeAsFP || !enrichBox) return null
+
+      // Find all path/line elements and check which one connects fp_check to closeAsFP
+      const paths = svg.querySelectorAll('path, line, polyline')
+      let yesLineTarget: string | null = null
+
+      for (const p of paths) {
+        const bb = (p as SVGElement).getBBox()
+        const lineRight = bb.x + bb.width
+        const lineLeft = bb.x
+        const lineCy = bb.y + bb.height / 2
+
+        // A westward line from fp_check should start near fp_check's left edge
+        const startsNearFp = Math.abs(lineRight - fpCheck.left) < 0.5
+        if (startsNearFp) {
+          // Does it end near closeAsFP or near enrichBox?
+          const endsNearAside = Math.abs(lineLeft - closeAsFP.right) < 0.5
+          const endsNearEnrich = Math.abs(lineLeft - enrichBox.left) < 1.0
+          if (endsNearAside) yesLineTarget = 'closeAsFP'
+          else if (endsNearEnrich) yesLineTarget = 'enrichBox'
+          else yesLineTarget = 'unknown'
+        }
+      }
+
+      return {
+        fpCheck, closeAsFP, enrichBox,
+        yesLineTarget,
+      }
+    }, DIAGRAM_WITH_DEFAULTS)
+
+    expect(result).not.toBeNull()
+    expect(result!.fpCheck).not.toBeNull()
+    expect(result!.closeAsFP).not.toBeNull()
+
+    // The "Yes" line must connect to the aside box, not to the enrich box
+    expect(result!.yesLineTarget).toBe('closeAsFP')
+  })
+
+  test('diagram with shape defaults: aside and main flow both correct', async ({ page }) => {
+    const result = await page.evaluate((src) => {
+      const svg = (window as any).renderDiagram(src)
+      if (!svg) return null
+
+      const allGroups = Array.from(svg.querySelectorAll('g[data-jp-id]')) as SVGGElement[]
+      let fpCheck: any = null
+      let closeAsFP: any = null
+      let enrichBox: any = null
+
+      for (const g of allGroups) {
+        const textContent = g.textContent || ''
+        const rect = g.querySelector('rect')
+        if (!rect) continue
+        const bb = rect.getBBox()
+        const info = {
+          cx: bb.x + bb.width / 2,
+          cy: bb.y + bb.height / 2,
+          left: bb.x,
+          right: bb.x + bb.width,
+          top: bb.y,
+          bottom: bb.y + bb.height,
+        }
+        if (textContent.includes('Known FP')) fpCheck = info
+        if (textContent.includes('Close as FP')) closeAsFP = info
+        if (textContent.includes('Enrich')) enrichBox = info
+      }
+
+      return { fpCheck, closeAsFP, enrichBox }
+    }, DIAGRAM_WITH_DEFAULTS)
+
+    expect(result).not.toBeNull()
+    expect(result!.fpCheck).not.toBeNull()
+    expect(result!.closeAsFP).not.toBeNull()
+    expect(result!.enrichBox).not.toBeNull()
+
+    const fp = result!.fpCheck
+    const aside = result!.closeAsFP
+    const enrich = result!.enrichBox
+
+    // Close as FP should be west of fp_check
+    expect(aside.cx).toBeLessThan(fp.left)
+    // Close as FP should be at same vertical level
+    expect(Math.abs(aside.cy - fp.cy)).toBeLessThan(fp.bottom - fp.top)
+    // Enrich should be below fp_check
+    expect(enrich.top).toBeGreaterThan(fp.bottom)
+    // Enrich should be horizontally aligned with fp_check
+    expect(Math.abs(enrich.cx - fp.cx)).toBeLessThan(fp.right - fp.left)
   })
 })

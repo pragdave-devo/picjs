@@ -108,19 +108,20 @@ export class ShapeGraph {
       }
 
       if (!shape._end) {
-        // Walk forwards to find the nearest non-connector, non-child, non-aside shape.
+        // Walk forwards to find the nearest non-connector, non-child shape.
+        // Skip aside shapes when the connector is outside an aside.
         // Only auto-connect if the candidate was auto-positioned (no explicit `at`),
         // meaning it flows in sequence. Shapes with explicit `at` are independently
         // placed and shouldn't attract bare lines.
         for (let j = i + 1; j < this.allShapes.length; j++) {
           const candidate = this.allShapes[j]
-          if (!(candidate instanceof Shapes.LineLike) && !candidate.isChild() && !candidate.insideAside) {
-            if (!candidate.hasExplicitPosition()) {
-              shape.successorShape = candidate
-              this.dependencyGraph.add(shape, candidate)
-            }
-            break
+          if (candidate instanceof Shapes.LineLike || candidate.isChild()) continue
+          if (!shape.insideAside && candidate.insideAside) continue
+          if (!candidate.hasExplicitPosition()) {
+            shape.successorShape = candidate
+            this.dependencyGraph.add(shape, candidate)
           }
+          break
         }
       }
     }
