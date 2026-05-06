@@ -7,6 +7,9 @@ import { parseToAST, ParseStatus } from "./parser.js"
 import { Dispatcher } from "./dispatcher.js"
 import { parse as pegParse } from "./peg_parser/jp.js"
 import { nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds } from "./render-utils.js"
+import { Palette } from "./palette.js"
+import { getDarkThemeValue } from "./defaults.js"
+import { computeSlotColors, generateCSS } from "./palette-css.js"
 
 export interface RenderOptions {
   /** Padding around the content (default: 0.2) */
@@ -69,6 +72,23 @@ export function render(element: Element, options: RenderOptions = {}): SVGElemen
       document.body.removeChild(probeSvg)
     }
     svgElement.setAttribute("viewBox", viewBoxFromBounds(bounds, padding))
+
+    // Emit <style> with dark/light CSS for used palette slots
+    const usedSlots = dispatcher.getUsedSlots()
+    if (usedSlots.size > 0) {
+      const slotColors = computeSlotColors(
+        usedSlots,
+        (pal: string, slot: string) => Palette.getColorForPalette(pal, slot),
+        getDarkThemeValue('NativeFg'),
+        getDarkThemeValue('NativeBg')
+      )
+      const css = generateCSS(usedSlots, slotColors)
+      if (css) {
+        const styleEl = document.createElementNS("http://www.w3.org/2000/svg", "style")
+        styleEl.textContent = css
+        svgElement.insertBefore(styleEl, svgElement.firstChild)
+      }
+    }
 
     // Preserve source as comment
     if (preserveSource) {

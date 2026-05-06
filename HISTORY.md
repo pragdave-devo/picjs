@@ -1,5 +1,9 @@
 # PicJS History
 
+## 0.2.4
+
+* Add palette CSS style block to browser renderAll/render output
+
 ## 0.2.3
 
 * Fix renderToString crash on labelled shapes in browser environments
