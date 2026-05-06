@@ -8,6 +8,7 @@ import { Binding } from "./binding.js"
 import { setTheme, getThemeName, resetTheme, applyPaletteToTheme, getDarkThemeValue } from "./defaults.js"
 import { Palette } from "./palette.js"
 import { computeSlotColors, generateCSS } from "./palette-css.js"
+import { BUILD_STAMP } from "./build-stamp.js"
 
 import { el, mount, setChildren, svg } from "redom"
 import { PlaybackController } from "./jp-web-playback.js"
@@ -470,8 +471,23 @@ function preview() {
         }
         document.body.removeChild(probeSvg)
       }
+      const vbX = bounds.minX - pad
+      const vbY = bounds.minY - pad
       svgHolder.setAttribute(`viewBox`,
-        `${bounds.minX - pad} ${bounds.minY - pad} ${bounds.maxX - bounds.minX + pad * 2} ${bounds.maxY - bounds.minY + pad * 2}`)
+        `${vbX} ${vbY} ${bounds.maxX - bounds.minX + pad * 2} ${bounds.maxY - bounds.minY + pad * 2}`)
+
+      // Build stamp
+      const oldStamp = svgHolder.querySelector('.picjs-stamp')
+      if (oldStamp) oldStamp.remove()
+      const stampEl = document.createElementNS("http://www.w3.org/2000/svg", "text")
+      stampEl.setAttribute("class", "picjs-stamp")
+      stampEl.setAttribute("x", String(vbX + 0.05))
+      stampEl.setAttribute("y", String(vbY + 0.12))
+      stampEl.setAttribute("font-size", "0.08")
+      stampEl.setAttribute("fill", "#888")
+      stampEl.setAttribute("font-family", "monospace")
+      stampEl.textContent = BUILD_STAMP
+      svgHolder.appendChild(stampEl)
 
       if (duration > 0) {
         // Has animations — show controls bar, set up for playback
