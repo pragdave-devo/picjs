@@ -95,14 +95,15 @@ export class ShapeGraph {
       if (!(shape instanceof Shapes.LineLike)) continue
 
       if (!shape._start) {
-        // Walk backwards to find the nearest non-child shape (including other connectors)
+        // Walk backwards to find the nearest non-child shape (including other connectors).
+        // Skip aside shapes when the connector is outside an aside.
         for (let j = i - 1; j >= 0; j--) {
           const candidate = this.allShapes[j]
-          if (!candidate.isChild()) {
-            shape.predecessorShape = candidate
-            this.dependencyGraph.add(shape, candidate)
-            break
-          }
+          if (candidate.isChild()) continue
+          if (!shape.insideAside && candidate.insideAside) continue
+          shape.predecessorShape = candidate
+          this.dependencyGraph.add(shape, candidate)
+          break
         }
       }
 
