@@ -5,6 +5,7 @@ export default {
     "<rootDir>/test"
   ],
   "testMatch": [ "**.spec.ts" ],
+  "testPathIgnorePatterns": [ "/test/e2e/" ],
   "transform": {
     "^.+\\.ts$": ["ts-jest", { useESM: true }]
   },
