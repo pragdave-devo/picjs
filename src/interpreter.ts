@@ -842,7 +842,7 @@ export class Interpreter extends Visitor{
     const n = labels.length
 
     if (n === 1 && !labels[0].side) {
-      return [{ ...labels[0], side: `center` }]
+      return [{ ...labels[0], side: `above` }]
     }
 
     if (n === 2 && !labels[0].side && !labels[1].side) {

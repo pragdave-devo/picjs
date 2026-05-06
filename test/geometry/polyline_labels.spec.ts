@@ -127,13 +127,14 @@ describe(`Polyline label positioning — above/below`, () => {
 
 
 describe(`Polyline label positioning — label is near the path`, () => {
-  it(`centered label lies on the path`, () => {
+  it(`single label defaults to above (offset from path)`, () => {
     const { poly, labels } = polylineAndLabels(
       `line from (0, 0) then (10, 0) then (10, 10) "on path"`
     )
     const label = labels[0]
     const dist = distanceToPath(label.anchorX, label.anchorY, poly.allPoints)
-    expect(dist).toBeLessThan(0.01)
+    expect(dist).toBeLessThan(0.5)
+    expect(dist).toBeGreaterThan(0.01)
   })
 
   it(`above/below labels are within a small offset of the path`, () => {
@@ -164,9 +165,9 @@ describe(`Polyline label positioning — L-shape with directional construction`,
     expect(labels).toHaveLength(1)
     const label = labels[0]
 
-    // The label should be on or very near the polyline path
+    // Single label defaults to "above" — offset from path but not far
     const dist = distanceToPath(label.anchorX, label.anchorY, poly.allPoints)
-    expect(dist).toBeLessThan(0.01)
+    expect(dist).toBeLessThan(0.5)
   })
 
   it(`label below on directional polyline stays close to path`, () => {
@@ -278,7 +279,7 @@ describe(`Polyline label — directional "until even with" construction`, () => 
     const { poly, labels } = polylineAndLabels(src)
     const label = labels[0]
     const dist = distanceToPath(label.anchorX, label.anchorY, poly.allPoints)
-    expect(dist).toBeLessThan(0.01)
+    expect(dist).toBeLessThan(0.5)
   })
 
   it(`centered label on "until even with" is not NaN with offset start`, () => {
@@ -341,7 +342,7 @@ describe(`Polyline label — Group member references`, () => {
     const { poly, labels } = polylineAndLabels(src)
     const label = labels[0]
     const dist = distanceToPath(label.anchorX, label.anchorY, poly.allPoints)
-    expect(dist).toBeLessThan(0.01)
+    expect(dist).toBeLessThan(0.5)
   })
 
   it(`label stays valid after second positionPolyline call (render pass)`, () => {

@@ -243,11 +243,10 @@ export class Geometry {
     let targetY = y
 
     if (side !== `center`) {
-      // Offset = half the line thickness + gap + half the label height
       const strokeWidth = Number(line.params[`stroke_width`]) || 0.04
-      const labelHeight = Number(label.height) || Number(label.params[`font_size`]) || 0.14
-      const gap = strokeWidth * 0.5
-      const offsetDistance = strokeWidth / 2 + gap + labelHeight / 2
+      const fontSize = Number(label.params[`font_size`]) || 0.14
+      const gap = fontSize * 0.25
+      const offsetDistance = strokeWidth / 2 + gap + fontSize * 0.7
 
       // The perpendicular at (displayAngle - π/2) points northward (negative Y)
       // because sin(displayAngle - π/2) = -cos(displayAngle) ≤ 0
