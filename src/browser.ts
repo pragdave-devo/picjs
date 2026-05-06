@@ -10,6 +10,7 @@ import { nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds } from
 import { Palette } from "./palette.js"
 import { getDarkThemeValue } from "./defaults.js"
 import { computeSlotColors, generateCSS } from "./palette-css.js"
+import { BUILD_STAMP } from "./build-stamp.js"
 
 export interface RenderOptions {
   /** Padding around the content (default: 0.2) */
@@ -89,6 +90,17 @@ export function render(element: Element, options: RenderOptions = {}): SVGElemen
         svgElement.insertBefore(styleEl, svgElement.firstChild)
       }
     }
+
+    // Build stamp
+    const vb = svgElement.getAttribute("viewBox")!.split(" ").map(Number)
+    const stampEl = document.createElementNS("http://www.w3.org/2000/svg", "text")
+    stampEl.setAttribute("x", String(vb[0] + 0.05))
+    stampEl.setAttribute("y", String(vb[1] + 0.12))
+    stampEl.setAttribute("font-size", "0.08")
+    stampEl.setAttribute("fill", "#888")
+    stampEl.setAttribute("font-family", "monospace")
+    stampEl.textContent = BUILD_STAMP
+    svgElement.appendChild(stampEl)
 
     // Preserve source as comment
     if (preserveSource) {
