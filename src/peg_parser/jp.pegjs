@@ -1851,6 +1851,14 @@ SEText
     { expected('a css font specification to follow "font"') }
   / font_size __ fs:ActualFontSize
     { return { "font_size": ast({ type: "String", value: fs }) } }
+  / font_weight __ val:("bold" / "lighter" / "darker" / [0-9] "00" / "normal") !IdentifierPart
+    { return { "font_weight": string(val) } }
+  / font_style __ val:("italic" / "oblique" / "normal") !IdentifierPart
+    { return { "font_style": string(val) } }
+  / font_variant __ val:("small-caps" / "normal") !IdentifierPart
+    { return { "font_variant": string(val) } }
+  / font_stretch __ val:("ultra-condensed" / "extra-condensed" / "condensed" / "semi-condensed" / "semi-expanded" / "expanded" / "extra-expanded" / "ultra-expanded" / "normal") !IdentifierPart
+    { return { "font_stretch": string(val) } }
   / fs:ActualFontSize
     { return { "font_size": ast({ type: "String", value: fs }) } }
 
