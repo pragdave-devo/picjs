@@ -86,8 +86,16 @@ export function generateCSS(
     // CSS class uses hyphen instead of colon: "default:b1" → "default-b1"
     const cssSlot = slotKey.replace(':', '-')
     const cls = `pj-${attr}-${cssSlot}`
-    darkRules.push(`.${cls}{${attr}:${colors.dark}}`)
-    lightRules.push(`.${cls}{${attr}:${colors.light}}`)
+
+    // native-fg/native-bg use currentColor/transparent to inherit from the page
+    if (slotKey === 'native-fg') {
+      darkRules.push(`.${cls}{${attr}:currentColor}`)
+    } else if (slotKey === 'native-bg') {
+      darkRules.push(`.${cls}{${attr}:transparent}`)
+    } else {
+      darkRules.push(`.${cls}{${attr}:${colors.dark}}`)
+      lightRules.push(`.${cls}{${attr}:${colors.light}}`)
+    }
   }
 
   if (darkRules.length === 0) return ''
