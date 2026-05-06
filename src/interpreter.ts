@@ -311,7 +311,7 @@ export class Interpreter extends Visitor{
     const selfCollector = new TBase(null)
     selfCollector.toNative = () => selfCollector
     selfCollector.toString = () => `<self>`
-    this.binding.set_variable(`self`, selfCollector)
+    this.binding.set_local_variable(`self`, selfCollector)
 
     // 5. Execute body
     const autolayoutBefore = this.dispatcher.getAutolayoutCount()
