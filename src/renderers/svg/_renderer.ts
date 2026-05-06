@@ -226,8 +226,11 @@ export class Renderer {
       }
     }
 
+    // Reorder children so shapes with `behind` render before their targets
+    const orderedChildren = this.applyBehindToChildren(group.groupChildren)
+
     // Render children inside the group
-    for (const child of group.groupChildren) {
+    for (const child of orderedChildren) {
       if (skipShapes.has(child)) continue
       const childNode = this.renderChild(child)
       if (childNode) {
@@ -236,6 +239,28 @@ export class Renderer {
     }
 
     return groupRenderer.node
+  }
+
+  private applyBehindToChildren(children: Shape.SBase[]): Shape.SBase[] {
+    const result = [...children]
+    for (let i = 0; i < result.length; i++) {
+      const shape = result[i]
+      if (!shape.behind) continue
+
+      let target: Shape.SBase = shape.behind
+      if (target instanceof SGroup && target.groupChildren.length > 0) {
+        target = target.groupChildren.find(c => result.includes(c)) ?? target.groupChildren[0]
+      }
+
+      const targetIdx = result.indexOf(target)
+      if (targetIdx < 0 || targetIdx > i) continue
+
+      result.splice(i, 1)
+      const newTargetIdx = result.indexOf(target)
+      result.splice(newTargetIdx, 0, shape)
+      i--
+    }
+    return result
   }
 
   private renderChild(shape: Shape.SBase): SvgNode | null {
