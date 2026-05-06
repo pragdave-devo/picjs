@@ -33,15 +33,18 @@ export function render(element: Element, options: RenderOptions = {}): SVGElemen
   const source = element.textContent || ''
   if (!source.trim()) return null
 
-  // Create SVG element
+  // Create SVG element — must be in-DOM for getBBox to work during layout
   const svgNS = "http://www.w3.org/2000/svg"
   const svgElement = document.createElementNS(svgNS, "svg")
   svgElement.setAttribute("xmlns", svgNS)
+  svgElement.style.cssText = "position:absolute;left:-9999px;width:0;height:0"
+  document.body.appendChild(svgElement)
 
   // Parse the source
   const parsed = parseToAST(pegParse, source, `Start`, false)
 
   if (parsed.status !== ParseStatus.Ok) {
+    document.body.removeChild(svgElement)
     console.error('picjs parse error:', parsed.error?.message)
     const errorDiv = document.createElement('div')
     errorDiv.className = 'picjs-error'
@@ -108,11 +111,13 @@ export function render(element: Element, options: RenderOptions = {}): SVGElemen
       svgElement.insertBefore(comment, svgElement.firstChild)
     }
 
-    // Replace the element with the SVG
+    // Move SVG from hidden position to replace the source element
+    svgElement.removeAttribute("style")
     element.replaceWith(svgElement)
     return svgElement
 
   } catch (e) {
+    document.body.removeChild(svgElement)
     const message = e instanceof Error ? e.message : String(e)
     console.error('picjs render error:', message)
     const errorDiv = document.createElement('div')
