@@ -7,19 +7,15 @@ SArc    | stroke      | stroke_width     | linestyle | turn  | rotation | reveal
 SLabel   | align | fill           | font_family | font_size | font_style | font_variant | font_weight | font_stretch | line_height | rotation | reveal_time | hide_time
 ---------------------------------------------------------------------------------------------------------------------------
 .normal  |   c   | NativeFg       | BodyFont    | FS        | normal     | normal       | normal      | normal       | 0           | 0        | 0.3         | 0.3
-.h1      |   w   | H1Color        | HeadingFont | =FS*4.5   |
-.h2      |   w   | H2Color        | HeadingFont | =FS*3     |
-.h3      |   w   | H3Color        | HeadingFont | =FS*2     |
-.h4      |   w   | H4Color        | HeadingFont | =FS*1.5   |
+.h1      |   w   |                |             | =FS*4.5   |
+.h2      |   w   |                |             | =FS*3     |
+.h3      |   w   |                |             | =FS*2     |
+.h4      |   w   |                |             | =FS*1.5   |
 .p       |   w
 
 SBox     | width      | height      | fill           | stroke      | stroke_width     | linestyle  | rx      | ry      | rotation | reveal_time | hide_time
 ---------------------------------------------------------------------------------------------------------------------------------
 .normal  | ShapeWidth | ShapeHeight | BoxFill0       | ShapeStroke | ShapeStrokeWidth | LineStyle  | ShapeRX | ShapeRY | 0        | 0.3         | 0.3
-.v1      |            |             | BoxFill1
-.v2      |            |             | BoxFill2
-.v3      |            |             | BoxFill3
-.v4      |            |             | BoxFill4
 
 SLine   | stroke      | stroke_width     | linestyle | length | rotation | reveal_time | hide_time
 -----------------------------------------------------------------------
@@ -28,10 +24,6 @@ SLine   | stroke      | stroke_width     | linestyle | length | rotation | revea
 SPolyline | stroke      | stroke_width     | linestyle | fill     | rotation | reveal_time | hide_time
 --------------------------------------------------------------------------
 .normal   | LineStroke  | LineStrokeWidth  | solid     | none     | 0        | 0.3         | 0.3
-.v1       |            |                  |           | BoxFill1
-.v2       |            |                  |           | BoxFill2
-.v3       |            |                  |           | BoxFill3
-.v4       |            |                  |           | BoxFill4
 
 SPoint  | rotation | reveal_time | hide_time
 ---------------------------------------------------------------
@@ -44,26 +36,14 @@ SGroup  | rotation | reveal_time | hide_time
 SCircle  | r            | fill           | stroke      | stroke_width     | linestyle  | rotation | reveal_time | hide_time
 -------------------------------------------------------------------------------------------------
 .normal  | CircleRadius | BoxFill0       | ShapeStroke | ShapeStrokeWidth | LineStyle  | 0        | 0.3         | 0.3
-.v1      |              | BoxFill1
-.v2      |              | BoxFill2
-.v3      |              | BoxFill3
-.v4      |              | BoxFill4
 
 SEllipse | rx           | ry             | fill           | stroke      | stroke_width     | linestyle  | rotation | reveal_time | hide_time
 -------------------------------------------------------------------------------------------------
 .normal  | =ShapeWidth*0.5 | =ShapeHeight*0.5 | BoxFill0       | ShapeStroke | ShapeStrokeWidth | LineStyle  | 0        | 0.3         | 0.3
-.v1      |              |                | BoxFill1
-.v2      |              |                | BoxFill2
-.v3      |              |                | BoxFill3
-.v4      |              |                | BoxFill4
 
 SOval    | width      | height      | fill           | stroke      | stroke_width     | linestyle  | rx      | ry      | rotation | reveal_time | hide_time
 ---------------------------------------------------------------------------------------------------------------------------------
 .normal  | ShapeWidth | ShapeHeight | BoxFill0       | ShapeStroke | ShapeStrokeWidth | LineStyle  | ShapeRX | ShapeRY | 0        | 0.3         | 0.3
-.v1      |            |             | BoxFill1
-.v2      |            |             | BoxFill2
-.v3      |            |             | BoxFill3
-.v4      |            |             | BoxFill4
 `
 
 

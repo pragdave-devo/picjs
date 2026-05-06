@@ -59,7 +59,7 @@ Every attribute, what type of value it takes, and what it does.
 | `with` | constraint | Position constraint (see [Constraint](#constraint)) |
 | `x` | number | X position |
 | `y` | number | Y position |
-| `.<class>` | — | CSS class applied to the SVG element |
+| `.<class>` | — | Style class (labels: `.h1`–`.h4`, `.p`) |
 
 ### Labels (special attribute syntax)
 
@@ -140,7 +140,7 @@ Theme-variable names (like `BoxFill0`) resolve to specific colors at runtime.
 | `fit` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `same` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `behind` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `.<class>` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `.<class>` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✗ |
 
 **Notes:**
 
@@ -151,25 +151,13 @@ Theme-variable names (like `BoxFill0`) resolve to specific colors at runtime.
 
 ### Label style classes
 
-Labels have built-in style classes that set alignment, color, and font size:
+Labels have built-in style classes that set alignment and font size:
 
-| Class | Align | Font Size | Color (Dark theme) |
-|-------|:-----:|:---------:|:------------------:|
-| `.normal` | center | 0.14 | #ffffff |
-| `.h1` | west | 0.63 | #ffc233 |
-| `.h2` | west | 0.42 | #e8713a |
-| `.h3` | west | 0.28 | #d4a020 |
-| `.h4` | west | 0.21 | #6ab040 |
-| `.p` | west | (inherited) | (inherited) |
-
-### Box/Circle/Polyline color variants
-
-Shapes have color variant classes that change the fill:
-
-| Class | Fill (Dark theme) | Fill (Light theme) |
-|-------|:-----------------:|:------------------:|
-| `.normal` | #1a7a9a (cerulean) | #7cc8e0 (soft blue) |
-| `.v1` | #7b2d8e (purple) | #c49ed8 (soft purple) |
-| `.v2` | #2d6e2d (green) | #8ac08a (soft green) |
-| `.v3` | #a84800 (orange) | #e8a070 (soft orange) |
-| `.v4` | #0a6e68 (teal) | #7ac8c0 (soft teal) |
+| Class | Align | Font Size |
+|-------|:-----:|:---------:|
+| `.normal` | center | 0.14 |
+| `.h1` | west | 0.63 |
+| `.h2` | west | 0.42 |
+| `.h3` | west | 0.28 |
+| `.h4` | west | 0.21 |
+| `.p` | west | (inherited) |
