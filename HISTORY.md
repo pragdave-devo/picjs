@@ -1,5 +1,18 @@
 # PicJS History
 
+## 0.2.5
+
+* Improve light-mode palette colors (pastel remap instead of muddy luma inversion)
+* Allow palettes to define explicit `lightColors` overrides (sunset has hand-tuned set)
+* Emit explicit dark text for labels in light mode instead of relying on `currentColor`
+* Remove `.v1`–`.v4` shape variant classes; simplify `.h1`–`.h4` label classes to only set alignment and size
+* Allow `font_weight`, `font_style`, `font_variant`, `font_stretch` as standalone Label attributes
+* Fix `behind` constraint not working inside groups
+* Fix `self.internal` broken in nested groups (inner group clobbered outer `self` binding)
+* Line labels default to "above" with proper gap from the line path
+* Use `currentColor` for label fills so they inherit page foreground correctly
+* Fix renderAll by attaching SVG to DOM before rendering
+
 ## 0.2.4
 
 * Add palette CSS style block to browser renderAll/render output
