@@ -84,7 +84,8 @@ export function render(element: Element, options: RenderOptions = {}): SVGElemen
         usedSlots,
         (pal: string, slot: string) => Palette.getColorForPalette(pal, slot),
         getDarkThemeValue('NativeFg'),
-        getDarkThemeValue('NativeBg')
+        getDarkThemeValue('NativeBg'),
+        (pal: string, slot: string) => Palette.getLightColorForPalette(pal, slot),
       )
       const css = generateCSS(usedSlots, slotColors)
       if (css) {

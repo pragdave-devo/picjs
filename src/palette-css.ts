@@ -4,12 +4,32 @@ import type { Oklch } from 'culori'
 const toOklch = converter('oklch')
 const clampRgb = clampGamut('rgb')
 
-function invertLuma(hex: string): string {
+function toLightBackground(hex: string): string {
   const color = parse(hex)
   if (!color) return hex
   const ok = toOklch(color) as Oklch
-  const inverted = clampRgb({ ...ok, l: 1 - ok.l })!
-  return formatHex(inverted)
+
+  // Remap to pastel range: high lightness, reduced chroma, same hue.
+  // Dark colors (L<0.5) get pushed to L≈0.80; already-light colors stay near their level.
+  const targetL = ok.l < 0.5 ? 0.80 : Math.min(0.90, ok.l + 0.15)
+  const targetC = Math.min((ok.c ?? 0) * 0.8, 0.15)
+
+  const pastel = clampRgb({ ...ok, l: targetL, c: targetC })!
+  return formatHex(pastel)
+}
+
+function toLightForeground(hex: string): string {
+  const color = parse(hex)
+  if (!color) return hex
+  const ok = toOklch(color) as Oklch
+
+  // Foreground text in light mode: dark, slightly tinted to match the hue.
+  // Light text (L>0.6) gets pushed to L≈0.30; already-dark text stays put.
+  const targetL = ok.l > 0.6 ? 0.30 : Math.max(0.20, ok.l - 0.1)
+  const targetC = Math.min((ok.c ?? 0) * 0.5, 0.06)
+
+  const dark = clampRgb({ ...ok, l: targetL, c: targetC })!
+  return formatHex(dark)
 }
 
 export interface SlotColors {
@@ -26,7 +46,8 @@ export function computeSlotColors(
   usedSlots: Set<string>,
   getPaletteColor: (paletteName: string, slot: string) => string | null,
   nativeFgDark: string,
-  nativeBgDark: string
+  nativeBgDark: string,
+  getLightColor?: (paletteName: string, slot: string) => string | null,
 ): Map<string, SlotColors> {
   const result = new Map<string, SlotColors>()
 
@@ -53,7 +74,11 @@ export function computeSlotColors(
       const baseSlot = key.slice(colonIdx + 1)
       const hex = getPaletteColor(paletteName, baseSlot)
       if (hex) {
-        result.set(key, { dark: hex, light: invertLuma(hex) })
+        const explicit = getLightColor?.(paletteName, baseSlot)
+        const lightHex = explicit ?? (baseSlot.startsWith('f')
+          ? toLightForeground(hex)
+          : toLightBackground(hex))
+        result.set(key, { dark: hex, light: lightHex })
       }
     }
   }
@@ -87,9 +112,11 @@ export function generateCSS(
     const cssSlot = slotKey.replace(':', '-')
     const cls = `pj-${attr}-${cssSlot}`
 
-    // native-fg/native-bg use currentColor/transparent to inherit from the page
+    // native-fg/native-bg use currentColor/transparent to inherit from the page,
+    // with explicit light-mode overrides for reliable contrast
     if (slotKey === 'native-fg') {
       darkRules.push(`.${cls}{${attr}:currentColor}`)
+      lightRules.push(`.${cls}{${attr}:#1a1a2e}`)
     } else if (slotKey === 'native-bg') {
       darkRules.push(`.${cls}{${attr}:transparent}`)
     } else {

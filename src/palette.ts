@@ -17,6 +17,7 @@ export interface PaletteColors {
 interface PaletteDefinition {
   name: string
   colors: PaletteColors
+  lightColors?: Partial<PaletteColors>
 }
 
 // Predefined palettes with WCAG AA compliant color pairs (4.5:1 contrast minimum)
@@ -176,7 +177,17 @@ const Palettes: Record<string, PaletteDefinition> = {
       b6: `#efbc82`, f6: `#41476b`,  // Gold / deep purple
       b7: `#fbdfa2`, f7: `#41476b`,  // Pale gold / deep purple
       b8: `#fff8f0`, f8: `#675478`,  // Cream / purple
-    }
+    },
+    lightColors: {
+      b1: `#8b90b8`, f1: `#1a1a2e`,  // Soft periwinkle / dark
+      b2: `#a68db8`, f2: `#1a1a2e`,  // Soft lavender / dark
+      b3: `#d4969a`, f3: `#2e1a1a`,  // Soft rose / dark
+      b4: `#e8a89a`, f4: `#2e1a1a`,  // Soft coral / dark
+      b5: `#f0c4a0`, f5: `#3d2a1a`,  // Soft peach / dark
+      b6: `#f5d8a8`, f6: `#3d351a`,  // Soft gold / dark
+      b7: `#fae8c0`, f7: `#3d351a`,  // Pale gold / dark
+      b8: `#fef4e8`, f8: `#41476b`,  // Warm white / purple
+    },
   },
 }
 
@@ -317,6 +328,16 @@ export const Palette = {
     const palette = Palettes[paletteName]
     if (!palette) return null
     return palette.colors[slot as keyof PaletteColors] ?? null
+  },
+
+  /**
+   * Get the light-mode color for a palette slot, if explicitly defined.
+   * Returns null if the palette doesn't define custom light colors for this slot.
+   */
+  getLightColorForPalette(paletteName: string, slot: string): string | null {
+    const palette = Palettes[paletteName]
+    if (!palette?.lightColors) return null
+    return palette.lightColors[slot as keyof PaletteColors] ?? null
   },
 
   /**

@@ -170,7 +170,8 @@ export function renderToString(source: string, options: RenderOptions = {}): Ren
         usedSlots,
         (pal: string, slot: string) => Palette.getColorForPalette(pal, slot),
         getDarkThemeValue('NativeFg'),
-        getDarkThemeValue('NativeBg')
+        getDarkThemeValue('NativeBg'),
+        (pal: string, slot: string) => Palette.getLightColorForPalette(pal, slot),
       )
       const css = generateCSS(usedSlots, slotColors, options.themeSelector)
       if (css) {
