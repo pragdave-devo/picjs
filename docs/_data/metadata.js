@@ -11,6 +11,7 @@ export default {
 		{ name: "Guide", link: "/guide/" },
 		{ name: "Reference", link: "/picjs-reference/" },
 		{ name: "Quick Ref", link: "/quick-reference/" },
+		{ name: "READMEs", link: "/readme-files/" },
 		{ name: "Hanoi", link: "/hanoi-breakdown/" },
 		{ name: "Editor/Playground", link: "/editor/" },
 	]
