@@ -17,7 +17,8 @@ import * as path from "path"
 import * as crypto from "crypto"
 
 async function getRenderToString() {
-  const { renderToString } = await import("./render-to-string.js")
+  const { renderToString, ensureReady } = await import("./render-to-string.js")
+  await ensureReady()
   return renderToString
 }
 
@@ -49,7 +50,9 @@ const RENDERED_RE = /\s*<!-- picjs:([a-f0-9]+):(plain|example|2up)\n([\s\S]*?)--
 
 function findPicjsBlocks(content: string): CodeBlock[] {
   const blocks: CodeBlock[] = []
+  const foundRanges: Array<{start: number, end: number}> = []
 
+  // First, find fenced code blocks
   const fenceRegex = /^(```|~~~)picjs(?:\s+(example|2up))?\s*\n([\s\S]*?)\n\1/gm
 
   let match
@@ -73,10 +76,46 @@ function findPicjsBlocks(content: string): CodeBlock[] {
     if (existingMatch && afterBlock.indexOf(existingMatch[0]) === 0) {
       block.existingChecksum = existingMatch[1]
       block.renderedEnd = block.end + existingMatch[0].length
+      foundRanges.push({start: block.start, end: block.renderedEnd})
+    } else {
+      foundRanges.push({start: block.start, end: block.end})
     }
 
     blocks.push(block)
   }
+
+  // Second, find standalone rendered blocks (plain mode with no code block)
+  const standaloneRegex = /<!-- picjs:([a-f0-9]+):(plain|example|2up)\n([\s\S]*?)-->\n([\s\S]*?)<!-- \/picjs -->/g
+
+  while ((match = standaloneRegex.exec(content)) !== null) {
+    const blockStart = match.index
+    const blockEnd = match.index + match[0].length
+
+    // Skip if this range overlaps with an already-found block
+    const overlaps = foundRanges.some(r =>
+      (blockStart >= r.start && blockStart < r.end) ||
+      (blockEnd > r.start && blockEnd <= r.end)
+    )
+    if (overlaps) continue
+
+    const existingChecksum = match[1]
+    const mode = match[2] as BlockMode
+    const source = match[3].replace(/\n$/, '')
+    const checksum = computeChecksum(source)
+
+    blocks.push({
+      start: blockStart,
+      end: blockStart, // No code block to preserve
+      source,
+      mode,
+      checksum,
+      existingChecksum,
+      renderedEnd: blockEnd
+    })
+  }
+
+  // Sort by position (standalone blocks may be out of order)
+  blocks.sort((a, b) => a.start - b.start)
 
   return blocks
 }
@@ -122,18 +161,18 @@ async function processMarkdown(content: string, verbose: boolean): Promise<strin
     return content
   }
 
-  if (verbose) console.log(`Found ${blocks.length} picjs block(s)`)
+  let rendered = 0
+  let unchanged = 0
+  let errors = 0
 
   let result = content
   for (let i = blocks.length - 1; i >= 0; i--) {
     const block = blocks[i]
 
     if (block.existingChecksum === block.checksum) {
-      if (verbose) console.log(`Block ${i + 1}: unchanged (checksum ${block.checksum})`)
+      unchanged++
       continue
     }
-
-    if (verbose) console.log(`Block ${i + 1}: rendering (${block.mode})...`)
 
     const renderResult = await renderToString(block.source, {
       padding: 0.2,
@@ -142,15 +181,20 @@ async function processMarkdown(content: string, verbose: boolean): Promise<strin
 
     if (renderResult.error) {
       console.error(`Error in block ${i + 1}:`, renderResult.error)
+      errors++
       continue
     }
 
-    const rendered = buildRenderedBlock(block.source, renderResult.svg, block.mode, block.checksum)
+    const renderedBlock = buildRenderedBlock(block.source, renderResult.svg, block.mode, block.checksum)
+    const replaceStart = block.mode === "plain" ? block.start : block.end
     const replaceEnd = block.renderedEnd ?? block.end
 
-    result = result.slice(0, block.end) + rendered + result.slice(replaceEnd)
+    result = result.slice(0, replaceStart) + renderedBlock + result.slice(replaceEnd)
+    rendered++
+  }
 
-    if (verbose) console.log(`Block ${i + 1}: done`)
+  if (verbose) {
+    console.log(`Found: ${blocks.length} blocks, Rendered: ${rendered}, Unchanged: ${unchanged}${errors ? `, Errors: ${errors}` : ''}`)
   }
 
   return result
@@ -167,7 +211,7 @@ async function processFile(inputPath: string, { verbose = false, output }: Proce
 
   const outputPath = output || inputPath
 
-  if (processed !== content) {
+  if (processed !== content || output) {
     fs.writeFileSync(outputPath, processed)
     console.log(`Processed: ${outputPath}`)
   } else {
@@ -197,7 +241,8 @@ async function watchFile(inputPath: string, options: ProcessOptions): Promise<vo
 const program = new Command()
   .name('picjs')
   .description('Process markdown files with picjs code blocks')
-  .version('0.2.0')
+  .version('0.2.6')
+  .showHelpAfterError(true)
 
 program
   .command('process')

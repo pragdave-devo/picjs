@@ -9,6 +9,12 @@ The `picjs` CLI can process markdown files, rendering `picjs` code blocks into
 SVG diagrams. This is useful for READMEs, documentation, and any markdown file
 where you want diagrams.
 
+If your diagrams contain no animation, these files are purely static and ewill work (for
+example) as GitHub READMEs.
+
+If you _do_ use animation, then the preprocessor will load a library to support this.
+
+
 ## Basic Usage
 
 ```bash
@@ -24,8 +30,6 @@ box "Hello" -> box "World"
 ~~~
 
 and renders the SVG directly after each block.
-
-## Block Modes
 
 Three display modes are available:
 
@@ -56,6 +60,8 @@ The checksum (`a1b2c3d4`) is computed from the source. On subsequent runs:
 This design lets you commit rendered SVGs to git while keeping the diagrams
 editable—just modify the code block and re-run `picjs process`.
 
+---
+
 ## Watch Mode
 
 For iterative editing:
@@ -64,17 +70,7 @@ For iterative editing:
 picjs watch README.md
 ```
 
-This re-renders automatically whenever the file changes.
-
-## Output Options
-
-By default, the file is modified in place. To write to a different file:
-
-```bash
-picjs process README.md -o rendered.md
-```
-
----
+This re-renders automatically whenever the file changes.## Block Modes
 
 ## GitHub README Automation
 
