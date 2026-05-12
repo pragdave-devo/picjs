@@ -1,0 +1,46 @@
+{
+  "name": "docusaurus-plugin-picjs",
+  "version": "0.1.0",
+  "description": "Docusaurus plugin for rendering PIC.js diagrams",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./remark": {
+      "import": "./dist/remark-picjs.js",
+      "types": "./dist/remark-picjs.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "peerDependencies": {
+    "@docusaurus/core": "^3.0.0",
+    "@strike48/picjs": "^0.2.0"
+  },
+  "dependencies": {
+    "unist-util-visit": "^5.0.0"
+  },
+  "devDependencies": {
+    "@docusaurus/types": "^3.9.0",
+    "@types/mdast": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "docusaurus",
+    "docusaurus-plugin",
+    "picjs",
+    "diagram",
+    "svg"
+  ],
+  "license": "MIT"
+}
