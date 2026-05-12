@@ -18,10 +18,12 @@
   ],
   "exports": {
     ".": {
-      "import": "./dist/picjs.js"
+      "import": "./dist/picjs.js",
+      "default": "./dist/picjs.js"
     },
     "./runtime": {
-      "import": "./dist/runtime.js"
+      "import": "./dist/runtime.js",
+      "default": "./dist/runtime.js"
     }
   },
   "keywords": [
