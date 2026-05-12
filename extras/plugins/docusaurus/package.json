@@ -13,6 +13,10 @@
     "./remark": {
       "import": "./dist/remark-picjs.js",
       "types": "./dist/remark-picjs.d.ts"
+    },
+    "./prism": {
+      "import": "./dist/prism-picjs.js",
+      "types": "./dist/prism-picjs.d.ts"
     }
   },
   "files": [
