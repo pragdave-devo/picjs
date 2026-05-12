@@ -1,6 +1,15 @@
 import type { Transformer } from "unified";
 import type { Root, Code } from "mdast";
-import { renderToString, parse } from "@strike48/picjs";
+
+// Dynamic import to avoid loading picjs at config parse time
+let picjs: { renderToString: typeof import("@strike48/picjs").renderToString; parse: typeof import("@strike48/picjs").parse } | null = null;
+
+async function getPicjs() {
+  if (!picjs) {
+    picjs = await import("@strike48/picjs");
+  }
+  return picjs;
+}
 
 interface MetaOptions {
   isCode: boolean;
@@ -51,7 +60,7 @@ interface RenderResult {
   needsRuntime: boolean;
 }
 
-function renderPicjsBlock(source: string, meta: MetaOptions): RenderResult {
+async function renderPicjsBlock(source: string, meta: MetaOptions): Promise<RenderResult> {
   const { isCode, isAnimated, isStacked, isExample, width, svgWidth, scale } =
     meta;
 
@@ -62,6 +71,8 @@ function renderPicjsBlock(source: string, meta: MetaOptions): RenderResult {
       needsRuntime: false,
     };
   }
+
+  const { renderToString, parse } = await getPicjs();
 
   const prefix = isAnimated ? `pj${animatedCounter++}` : undefined;
   const renderOpts = prefix ? { ids: { prefix } } : {};
@@ -148,35 +159,107 @@ export default function remarkPicjs(): Transformer<Root> {
 
     let needsRuntime = false;
 
-    visit(root, "code", (node: Code, index, parent) => {
-      if (node.lang !== "picjs" || !parent || index === undefined) {
-        return;
-      }
+    // Collect all picjs nodes first since we need async rendering
+    const picjsNodes: { node: Code; index: number; parent: { children: unknown[] } }[] = [];
 
+    visit(root, "code", (node: Code, index, parent) => {
+      if (node.lang === "picjs" && parent && index !== undefined) {
+        picjsNodes.push({ node, index, parent: parent as { children: unknown[] } });
+      }
+    });
+
+    // Process all nodes asynchronously
+    for (const { node, index, parent } of picjsNodes) {
       const source = node.value.trimEnd();
-      if (!source) return;
+      if (!source) continue;
 
       const meta = parseMeta(node.meta);
 
       try {
-        const result = renderPicjsBlock(source, meta);
+        const result = await renderPicjsBlock(source, meta);
         if (result.needsRuntime) {
           needsRuntime = true;
         }
 
-        (parent.children as unknown[])[index] = {
-          type: "html",
-          value: result.html,
-        };
+        // Use mdxJsxFlowElement with dangerouslySetInnerHTML
+        parent.children[index] = {
+          type: "mdxJsxFlowElement",
+          name: "div",
+          attributes: [
+            {
+              type: "mdxJsxAttribute",
+              name: "dangerouslySetInnerHTML",
+              value: {
+                type: "mdxJsxAttributeValueExpression",
+                value: `{ __html: ${JSON.stringify(result.html)} }`,
+                data: {
+                  estree: {
+                    type: "Program",
+                    body: [{
+                      type: "ExpressionStatement",
+                      expression: {
+                        type: "ObjectExpression",
+                        properties: [{
+                          type: "Property",
+                          key: { type: "Identifier", name: "__html" },
+                          value: { type: "Literal", value: result.html },
+                          kind: "init",
+                          method: false,
+                          shorthand: false,
+                          computed: false,
+                        }],
+                      },
+                    }],
+                    sourceType: "module",
+                  },
+                },
+              },
+            },
+          ],
+          children: [],
+        } as unknown;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.warn(`[picjs] Failed to render: ${message}`);
-        (parent.children as unknown[])[index] = {
-          type: "html",
-          value: `<div class="picjs-error">PIC.js error: ${escapeHtml(message)}</div>`,
-        };
+        const errorHtml = `<div class="picjs-error">PIC.js error: ${escapeHtml(message)}</div>`;
+        parent.children[index] = {
+          type: "mdxJsxFlowElement",
+          name: "div",
+          attributes: [
+            {
+              type: "mdxJsxAttribute",
+              name: "dangerouslySetInnerHTML",
+              value: {
+                type: "mdxJsxAttributeValueExpression",
+                value: `{ __html: ${JSON.stringify(errorHtml)} }`,
+                data: {
+                  estree: {
+                    type: "Program",
+                    body: [{
+                      type: "ExpressionStatement",
+                      expression: {
+                        type: "ObjectExpression",
+                        properties: [{
+                          type: "Property",
+                          key: { type: "Identifier", name: "__html" },
+                          value: { type: "Literal", value: errorHtml },
+                          kind: "init",
+                          method: false,
+                          shorthand: false,
+                          computed: false,
+                        }],
+                      },
+                    }],
+                    sourceType: "module",
+                  },
+                },
+              },
+            },
+          ],
+          children: [],
+        } as unknown;
       }
-    });
+    }
 
     if (needsRuntime) {
       (file.data as Record<string, unknown>).picjsNeedsRuntime = true;

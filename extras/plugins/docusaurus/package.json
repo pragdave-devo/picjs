@@ -7,16 +7,19 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "default": "./dist/index.js"
     },
     "./remark": {
+      "types": "./dist/remark-picjs.d.ts",
       "import": "./dist/remark-picjs.js",
-      "types": "./dist/remark-picjs.d.ts"
+      "default": "./dist/remark-picjs.js"
     },
     "./prism": {
+      "types": "./dist/prism-picjs.d.ts",
       "import": "./dist/prism-picjs.js",
-      "types": "./dist/prism-picjs.d.ts"
+      "default": "./dist/prism-picjs.js"
     }
   },
   "files": [
@@ -29,7 +32,7 @@
   },
   "peerDependencies": {
     "@docusaurus/core": "^3.0.0",
-    "@strike48/picjs": "^0.2.0"
+    "@strike48/picjs": "file:../../.."
   },
   "dependencies": {
     "unist-util-visit": "^5.0.0"
