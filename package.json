@@ -1,6 +1,6 @@
 {
   "name": "@strike48/picjs",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "A language for creating animated, constraint-based SVG diagrams",
   "main": "dist/picjs.js",
   "type": "module",
