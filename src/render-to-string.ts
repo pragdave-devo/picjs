@@ -4,7 +4,6 @@
  */
 
 import { svgNode, serialize, IdGenerator } from "./svg-node.js"
-import { BUILD_STAMP } from "./build-stamp.js"
 
 export interface RenderResult {
   svg: string
@@ -178,16 +177,6 @@ export function renderToString(source: string, options: RenderOptions = {}): Ren
         svgChildren.unshift(svgNode('style', {}, [css]))
       }
     }
-
-    // Build stamp
-    const vbParts = viewBox.split(" ").map(Number)
-    svgChildren.push(svgNode("text", {
-      x: vbParts[0] + 0.05,
-      y: vbParts[1] + 0.12,
-      "font-size": 0.08,
-      fill: "#888",
-      "font-family": "monospace",
-    }, [BUILD_STAMP]))
 
     const root = svgNode("svg", {
       viewBox,
