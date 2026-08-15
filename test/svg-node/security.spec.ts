@@ -59,6 +59,20 @@ describe("SvgNode security", () => {
       expect(() => serialize(svgNode("rect", { href: "javascript:alert(1)" } as any))).toThrow(/Blocked/)
     })
 
+    it("rejects href on a link tag itself", () => {
+      // "a" is the one tag allowed to carry href, but the scheme must still be safe
+      expect(() => serialize(svgNode("a", { href: "javascript:alert(1)" } as any))).toThrow(/Unsafe URL scheme/)
+    })
+
+    it("rejects xlink:href on any tag, including a", () => {
+      expect(() => serialize(svgNode("a", { "xlink:href": "https://example.com" } as any))).toThrow(/Invalid SVG attribute name/)
+    })
+
+    it("allows a safe href on an <a> tag", () => {
+      const svg = serialize(svgNode("a", { href: "https://example.com" }, ["click me"]))
+      expect(svg).toBe('<a href="https://example.com">click me</a>')
+    })
+
     it("allows standard SVG attributes", () => {
       expect(() => serialize(svgNode("rect", { fill: "red", stroke: "blue" }))).not.toThrow()
     })

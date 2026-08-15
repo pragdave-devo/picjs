@@ -26,7 +26,7 @@ const NEEDS_CLOSING_TAG = new Set(["text", "tspan", "textPath", "g", "svg", "def
 
 export function serialize(node: SvgNode): string {
   const tag = validateTag(node.tag)
-  const attrStr = serializeAttrs(node.attrs)
+  const attrStr = serializeAttrs(node.attrs, tag)
   const prefix = attrStr ? `<${tag} ${attrStr}` : `<${tag}`
 
   if (USE_SELF_CLOSING_TAGS && node.children.length === 0 && !NEEDS_CLOSING_TAG.has(tag)) {
@@ -40,14 +40,33 @@ export function serialize(node: SvgNode): string {
   return `${prefix}>${inner}</${tag}>`
 }
 
-function serializeAttrs(attrs: Record<string, string | number>): string {
+function serializeAttrs(attrs: Record<string, string | number>, tag?: string): string {
   const parts: string[] = []
   for (const [key, value] of Object.entries(attrs)) {
     if (value === undefined || value === null) continue
+    // href is blocked everywhere except a sanitized <a> tag - see BLOCKED_ATTRS
+    if (tag === "a" && key.toLowerCase() === "href") {
+      const safeUrl = sanitizeUrl(String(value))
+      if (!safeUrl) throw new Error(`Unsafe URL scheme for "href": "${value}"`)
+      parts.push(`href="${escapeAttr(safeUrl)}"`)
+      continue
+    }
     const name = validateAttrName(key)
     parts.push(`${name}="${escapeAttr(String(value))}"`)
   }
   return parts.join(" ")
+}
+
+// Only relative/fragment URLs and a small allowlist of safe schemes may become
+// an <a href>. Blocks javascript:/data:/vbscript: and similar script-executing schemes.
+const SAFE_URL_SCHEME = /^(https?:|mailto:)/i
+const SAFE_RELATIVE_URL = /^[#/.]/
+
+export function sanitizeUrl(url: string): string | null {
+  const trimmed = url.trim()
+  if (!trimmed) return null
+  if (SAFE_RELATIVE_URL.test(trimmed) || SAFE_URL_SCHEME.test(trimmed)) return trimmed
+  return null
 }
 
 export function escapeAttr(value: string): string {

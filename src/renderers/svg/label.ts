@@ -12,7 +12,7 @@ interface SimpleMarkdownParser {
 
 // Handle CJS/ESM interop - simple-markdown exports are under .default in ESM
 const MD: SimpleMarkdownParser = (MDModule as any).default || MDModule
-import { SvgNode, svgNode } from "../../svg-node.js"
+import { SvgNode, svgNode, sanitizeUrl } from "../../svg-node.js"
 import { RenderParameters } from "../../types.js"
 
 
@@ -142,9 +142,9 @@ export class Label extends SvgBase {
 
   private runsToTSpans(runs: StyledRun[]): (SvgNode | string)[] {
     return runs.map(run => {
-      if (run.type === "text") return run.text
-      if (run.type === "em") return svgNode("tspan", { "font-style": "italic" }, [run.text])
-      return run.text
+      const styled = styledRunNode(run)
+      const safeUrl = run.url ? sanitizeUrl(run.url) : null
+      return safeUrl ? svgNode("a", { href: safeUrl }, [styled]) : styled
     })
   }
 
@@ -178,20 +178,30 @@ export class Label extends SvgBase {
 
 // ─── Styled runs: markdown → flat text runs → wrap-aware rendering ─────────
 
-type StyledRun = { text: string, type: string }
+type StyledRun = { text: string, type: string, url?: string }
 
-// Flatten a simple-markdown AST into a flat list of {text, type} runs.
+// Renders a run's own styling (bold/italic), independent of any link wrapping.
+function styledRunNode(run: StyledRun): SvgNode | string {
+  if (run.type === "strong") return svgNode("tspan", { "font-weight": "bold" }, [run.text])
+  if (run.type === "em") return svgNode("tspan", { "font-style": "italic" }, [run.text])
+  return run.text
+}
+
+// Flatten a simple-markdown AST into a flat list of {text, type, url} runs.
 // Nested nodes (e.g. em containing text) are flattened so each run
-// carries the innermost styling.
+// carries the innermost styling. `url` is tracked as its own inherited
+// channel (from a "link" node's `target`), independent of `type`, so a
+// link wrapping bold/italic text keeps both.
 
-function flattenMDToRuns(nodes: SimpleMarkdown.SingleASTNode[], inheritType = `text`): StyledRun[] {
+function flattenMDToRuns(nodes: SimpleMarkdown.SingleASTNode[], inheritType = `text`, inheritUrl?: string): StyledRun[] {
   const runs: StyledRun[] = []
   for (const node of nodes) {
     const type = node.type === `text` ? inheritType : node.type
+    const url = node.type === `link` ? node.target : inheritUrl
     if (Array.isArray(node.content)) {
-      runs.push(...flattenMDToRuns(node.content, type))
+      runs.push(...flattenMDToRuns(node.content, type, url))
     } else {
-      runs.push({ text: node.content, type })
+      runs.push(url ? { text: node.content, type, url } : { text: node.content, type })
     }
   }
   return runs
@@ -211,7 +221,7 @@ function wrapRuns(runs: StyledRun[], maxWidth: number): StyledRun[][] {
     while (remaining.length > 0) {
       const space = maxWidth - col
       if (remaining.length <= space) {
-        lines[lines.length - 1].push({ text: remaining, type: run.type })
+        lines[lines.length - 1].push({ ...run, text: remaining })
         col += remaining.length
         break
       }
@@ -219,11 +229,11 @@ function wrapRuns(runs: StyledRun[], maxWidth: number): StyledRun[][] {
       // Need to break — find a good break point within the available space
       const breakAt = findBreakPointInRun(remaining, space)
       if (breakAt > 0) {
-        lines[lines.length - 1].push({ text: remaining.substring(0, breakAt).trimEnd(), type: run.type })
+        lines[lines.length - 1].push({ ...run, text: remaining.substring(0, breakAt).trimEnd() })
         remaining = remaining.substring(breakAt).trimStart()
       } else if (col === 0) {
         // Forced break — no whitespace found and we're at line start
-        lines[lines.length - 1].push({ text: remaining.substring(0, maxWidth), type: run.type })
+        lines[lines.length - 1].push({ ...run, text: remaining.substring(0, maxWidth) })
         remaining = remaining.substring(maxWidth)
       }
       // Start new line
