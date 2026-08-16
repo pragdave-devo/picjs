@@ -140,12 +140,28 @@ export class Label extends SvgBase {
     this.node.children = children
   }
 
+  // Adjacent runs pointing at the same link (e.g. simple-markdown splits
+  // "Foo & Bar" into separate "Foo " / "& Bar" nodes at the "&") are grouped
+  // into a single <a>, so the serialized text has no element boundary where
+  // a renderer's default whitespace handling could collapse a run-boundary space.
   private runsToTSpans(runs: StyledRun[]): (SvgNode | string)[] {
-    return runs.map(run => {
-      const styled = styledRunNode(run)
-      const safeUrl = run.url ? sanitizeUrl(run.url) : null
-      return safeUrl ? svgNode("a", { href: safeUrl }, [styled]) : styled
-    })
+    const result: (SvgNode | string)[] = []
+    let i = 0
+    while (i < runs.length) {
+      const url = runs[i].url ? sanitizeUrl(runs[i].url!) : null
+      if (!url) {
+        result.push(styledRunNode(runs[i]))
+        i++
+        continue
+      }
+      const group: StyledRun[] = []
+      while (i < runs.length && runs[i].url && sanitizeUrl(runs[i].url!) === url) {
+        group.push(runs[i])
+        i++
+      }
+      result.push(svgNode("a", { href: url }, group.map(styledRunNode)))
+    }
+    return result
   }
 
 

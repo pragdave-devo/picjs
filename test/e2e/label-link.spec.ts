@@ -69,6 +69,19 @@ test.describe('markdown label links - renderAll', () => {
     expect(result!.linkCount).toBe(0)
     expect(result!.text).toContain('Click me')
   })
+
+  test('link text containing "&" stays in one <a> with no dropped space', async ({ page }) => {
+    const result = await page.evaluate((src) => {
+      const svg = (window as any).renderDiagram(src)
+      if (!svg) return null
+      const links = Array.from(svg.querySelectorAll('a'))
+      return { linkCount: links.length, text: links[0]?.textContent ?? null }
+    }, `box "[Foo & Bar](#anchor)"`)
+
+    expect(result).not.toBeNull()
+    expect(result!.linkCount).toBe(1)
+    expect(result!.text).toBe('Foo & Bar')
+  })
 })
 
 test.describe('markdown label links - renderToString', () => {
@@ -97,5 +110,12 @@ test.describe('markdown label links - renderToString', () => {
     expect(result.error).toBeUndefined()
     expect(result.svg).not.toContain('<a ')
     expect(result.svg).toContain('Click me')
+  })
+
+  test('link text containing "&" stays in one <a> with no dropped space', async ({ page }) => {
+    const result = await renderToSvgString(page, `box "[Foo & Bar](#anchor)"`)
+    expect(result.error).toBeUndefined()
+    expect(result.svg.match(/<a /g)?.length).toBe(1)
+    expect(result.svg).toContain('Foo &amp; Bar</a>')
   })
 })
