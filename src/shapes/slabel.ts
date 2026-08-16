@@ -61,9 +61,11 @@ export class SLabel extends SBase {
   calculateDimensions() {
     if (typeof document === 'undefined' || !this.dispatcher?.hasSvgHolder()) {
       const fontSize = parseFontSize(this.params.font_size) ?? 0.14
-      const { longestLine, lineCount } = wrappedLineStats(this.params.text || '', this.params.maxwidth)
+      const { longestLine, height } = estimateWrappedExtent(
+        this.params.text || '', fontSize, this.params.line_height, !!this.params._parentWidth, this.params.maxwidth
+      )
       this.params.width  ??= estimateTextWidth(longestLine, fontSize, this.params.font_family)
-      this.params.height ??= fontSize * 1.2 * lineCount
+      this.params.height ??= height
       return
     }
 
@@ -105,9 +107,11 @@ export class SLabel extends SBase {
       if (typeof text.getBBox !== 'function') {
         // Fallback: estimate dimensions based on text content
         const fontSize = this.params.font?.size || 0.2
-        const { longestLine, lineCount } = wrappedLineStats(this.params.text || '', this.params.maxwidth)
+        const { longestLine, height } = estimateWrappedExtent(
+          this.params.text || '', fontSize, this.params.line_height, !!this.params._parentWidth, this.params.maxwidth
+        )
         this.params.width  ??= estimateTextWidth(longestLine, fontSize, this.params.font_family)
-        this.params.height ??= fontSize * 1.2 * lineCount
+        this.params.height ??= height
         return
       }
       this.dispatcher.temporarilyAddSVGElement(text, () => {
@@ -166,13 +170,34 @@ function estimateTextWidth(charCount: number, fontSize: number, fontFamily?: str
   return charCount * fontSize * ratio
 }
 
-// Wraps text the same way the SVG renderer does (wrapText, character-count
-// based) so the estimated bounding box reflects the wrapped extent rather
-// than the full unwrapped line — without this, a long maxwidth-constrained
-// label reports a width many times wider than what actually renders.
-function wrappedLineStats(text: string, maxwidth?: number): { longestLine: number, lineCount: number } {
-  const wrapped = maxwidth ? wrapText(text, maxwidth) : text
-  const lines = wrapped.split('\n')
-  const longestLine = lines.reduce((max, line) => Math.max(max, line.length), 0)
-  return { longestLine, lineCount: lines.length }
+// Estimates a label's wrapped/multi-paragraph extent using the same
+// paragraph-then-line spacing rules renderParagraphs()/renderWrappedLines()
+// (src/renderers/svg/label.ts) actually apply — same lineSpacing precedence
+// (line_height, else fontSize*1.2), same doubled gap between paragraphs when
+// the label has no parent shape (_parentWidth) — so the SSR-estimated width
+// and height match what renders instead of the full unwrapped single line.
+function estimateWrappedExtent(
+  text: string, fontSize: number, lineHeight: number | undefined, hasParent: boolean, maxwidth?: number
+): { longestLine: number, height: number } {
+  const lineSpacing = lineHeight && lineHeight > 0 ? lineHeight : fontSize * 1.2
+  const paragraphSpacing = hasParent ? lineSpacing : lineSpacing * 2
+
+  // Mirrors reflowParagraphs(): split on blank-line boundaries, collapse
+  // interior newlines to spaces within each paragraph.
+  const paragraphs = (text.includes('\n') ? text.split(/\n\s*\n/) : [text])
+    .map(p => p.replace(/\n/g, ' ').trim())
+
+  let longestLine = 0
+  let dySum = 0
+
+  paragraphs.forEach((paragraph, pi) => {
+    const wrapped = maxwidth ? wrapText(paragraph, maxwidth) : paragraph
+    wrapped.split('\n').forEach((line, li) => {
+      longestLine = Math.max(longestLine, line.length)
+      if (pi === 0 && li === 0) return  // very first line carries no dy
+      dySum += (li === 0 && pi > 0) ? paragraphSpacing : lineSpacing
+    })
+  })
+
+  return { longestLine, height: fontSize * 1.2 + dySum }
 }

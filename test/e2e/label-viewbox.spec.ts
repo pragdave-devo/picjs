@@ -50,3 +50,40 @@ test.describe('label viewBox with align + with/at positioning - renderToString',
     expect(minX).toBeGreaterThan(-1.5)
   })
 })
+
+// Related: the SSR height estimate (no real DOM/getBBox available) must
+// account for custom line_height and the extra gap between paragraphs, the
+// same way renderParagraphs()/renderWrappedLines() do — otherwise a wrapped
+// or multi-paragraph label's viewBox height doesn't match what actually
+// renders (mirrors the width bug above, on the vertical axis).
+
+async function viewBoxHeight(page: any, src: string, useSsr: boolean) {
+  return page.evaluate(async ({ src, useSsr }: { src: string, useSsr: boolean }) => {
+    let vb: string
+    if (useSsr) {
+      const { renderToStringAsync } = await import('/src/render-to-string.ts')
+      const result = await renderToStringAsync(src, { includeSource: false })
+      vb = result.svg.match(/<svg[^>]*viewBox="([^"]*)"/)![1]
+    } else {
+      const svg = (window as any).renderDiagram(src)
+      vb = svg.getAttribute('viewBox')
+    }
+    return Number(vb.split(' ')[3])
+  }, { src, useSsr })
+}
+
+test.describe('label height with custom line_height and multi-paragraph text', () => {
+  test('wrapped label with custom line_height: renderToString height matches renderAll', async ({ page }) => {
+    const src = `Label "This is a fairly long piece of description text that will wrap across several lines" maxwidth 22 line_height 0.4`
+    const browserHeight = await viewBoxHeight(page, src, false)
+    const ssrHeight = await viewBoxHeight(page, src, true)
+    expect(ssrHeight).toBeCloseTo(browserHeight, 0)
+  })
+
+  test('multi-paragraph label: renderToString height matches renderAll', async ({ page }) => {
+    const src = `Label "Paragraph one line.\\n\\nParagraph two line."`
+    const browserHeight = await viewBoxHeight(page, src, false)
+    const ssrHeight = await viewBoxHeight(page, src, true)
+    expect(ssrHeight).toBeCloseTo(browserHeight, 0)
+  })
+})
