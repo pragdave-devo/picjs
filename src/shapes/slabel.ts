@@ -9,6 +9,7 @@ import { TFont, TString, RenderParameters } from "../types.js"
 import { ShapeToRenderer } from "../render.js"
 import { Palette } from "../palette.js"
 import { parseFontSize } from "../renderers/svg/attribute_converters.js"
+import { wrapText } from "../renderers/svg/label.js"
 
 // const DefaultsForShape = { 
 //     fill: `pink`,
@@ -60,8 +61,9 @@ export class SLabel extends SBase {
   calculateDimensions() {
     if (typeof document === 'undefined' || !this.dispatcher?.hasSvgHolder()) {
       const fontSize = parseFontSize(this.params.font_size) ?? 0.14
-      this.params.width  ??= estimateTextWidth(this.params.text || '', fontSize, this.params.font_family)
-      this.params.height ??= fontSize * 1.2
+      const { longestLine, lineCount } = wrappedLineStats(this.params.text || '', this.params.maxwidth)
+      this.params.width  ??= estimateTextWidth(longestLine, fontSize, this.params.font_family)
+      this.params.height ??= fontSize * 1.2 * lineCount
       return
     }
 
@@ -102,10 +104,10 @@ export class SLabel extends SBase {
       // Check if getBBox is available
       if (typeof text.getBBox !== 'function') {
         // Fallback: estimate dimensions based on text content
-        const str = this.params.text || ''
         const fontSize = this.params.font?.size || 0.2
-        this.params.width  ??= str.length * fontSize * 0.6  // rough estimate
-        this.params.height ??= fontSize * 1.2
+        const { longestLine, lineCount } = wrappedLineStats(this.params.text || '', this.params.maxwidth)
+        this.params.width  ??= estimateTextWidth(longestLine, fontSize, this.params.font_family)
+        this.params.height ??= fontSize * 1.2 * lineCount
         return
       }
       this.dispatcher.temporarilyAddSVGElement(text, () => {
@@ -159,7 +161,18 @@ function fontAspectRatio(fontFamily?: string): number {
   return 0.52
 }
 
-function estimateTextWidth(text: string, fontSize: number, fontFamily?: string): number {
+function estimateTextWidth(charCount: number, fontSize: number, fontFamily?: string): number {
   const ratio = fontAspectRatio(fontFamily)
-  return text.length * fontSize * ratio
+  return charCount * fontSize * ratio
+}
+
+// Wraps text the same way the SVG renderer does (wrapText, character-count
+// based) so the estimated bounding box reflects the wrapped extent rather
+// than the full unwrapped line — without this, a long maxwidth-constrained
+// label reports a width many times wider than what actually renders.
+function wrappedLineStats(text: string, maxwidth?: number): { longestLine: number, lineCount: number } {
+  const wrapped = maxwidth ? wrapText(text, maxwidth) : text
+  const lines = wrapped.split('\n')
+  const longestLine = lines.reduce((max, line) => Math.max(max, line.length), 0)
+  return { longestLine, lineCount: lines.length }
 }
