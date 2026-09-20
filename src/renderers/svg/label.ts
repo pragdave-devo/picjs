@@ -3,23 +3,12 @@ import { RTE } from "../../runtime_error.js"
 import * as Convert from "./attribute_converters.js"
 import * as Shape from "../../shapes.js"
 
-import * as MDModule from "simple-markdown"
 
-// Type interface for simple-markdown functions we use (keeps interop cast isolated)
-interface SimpleMarkdownParser {
-  defaultInlineParse(text: string): SimpleMarkdown.SingleASTNode[]
-}
-
-// Handle CJS/ESM interop - simple-markdown exports are under .default in ESM
-const MD: SimpleMarkdownParser = (MDModule as any).default || MDModule
 import { SvgNode, svgNode, sanitizeUrl } from "../../svg-node.js"
 import { RenderParameters } from "../../types.js"
+import { StyledRun, TextLayout, layoutText } from "../../text-layout.js"
 
 
-
-
-
-// const markdownBlock = SimpleMarkdown.defaultBlockParse()
 
 export class Label extends SvgBase {
 
@@ -57,87 +46,50 @@ export class Label extends SvgBase {
   }
 
   setText(text: string) {
-    text = reflowParagraphs(text)
-
     const currentX = this.attrs.x
-    if (text !== this.previousText || currentX !== this.previousX) {
-      const paragraphs = text.split('\n\n')
+    if (text === this.previousText && currentX === this.previousX)
+      return
 
-      if (paragraphs.length === 1 && !text.includes('\n')) {
-        const parsed = MD.defaultInlineParse(text)
-        const runs = flattenMDToRuns(parsed)
-        const wrapped = this.maxwidth ? wrapRuns(runs, this.maxwidth) : [runs]
-        if (wrapped.length <= 1 && this.align === `c`) {
-          delete this.node.attrs["text-anchor"]
-          this.node.children = this.runsToTSpans(wrapped[0] || runs)
-        } else if (wrapped.length <= 1) {
-          // Single line but non-center alignment — need anchor positioning
-          this.renderWrappedLines([wrapped[0] || runs], false)
-        } else {
-          this.renderWrappedLines(wrapped, false)
-        }
-      } else {
-        this.renderParagraphs(paragraphs)
-      }
-      this.previousText = text
-      this.previousX = currentX
+    // Same layout the size estimate used, so the text fits the space reserved.
+    const layout = layoutText(text, {
+      fontSize: parseFloat(this.attrs[`font-size`]) || 0.14,
+      lineHeight: this.lineHeight,
+      hasParent: !!this.parentWidth,
+      maxwidth: this.maxwidth,
+    })
+
+    // A single centred line needs no tspan wrapper or anchor handling.
+    if (layout.lines.length <= 1 && this.align === `c`) {
+      delete this.node.attrs["text-anchor"]
+      this.node.children = this.runsToTSpans(layout.lines[0]?.runs ?? [])
+    } else {
+      this.renderLines(layout)
     }
+
+    this.previousText = text
+    this.previousX = currentX
   }
 
-  private renderParagraphs(paragraphs: string[]) {
+  // Emit one tspan per laid-out line, using the offsets the shared layout
+  // computed. Alignment decides the anchor; the layout decides the breaks.
+  private renderLines(layout: TextLayout) {
     const fontSize = parseFloat(this.attrs[`font-size`]) || 0.14
-    const lineSpacing = this.lineHeight && this.lineHeight > 0 ? this.lineHeight : fontSize * 1.2
-    // Tighter paragraph spacing when inside a shape (parentWidth is set)
-    const paragraphSpacing = this.parentWidth ? lineSpacing : lineSpacing * 2
     const margin = fontSize * 0.5
     const containerWidth = this.parentWidth || this.position.width
+
     const anchorX = this.align === `w` ? this.position.x - containerWidth / 2 + margin
                   : this.align === `e` ? this.position.x + containerWidth / 2 - margin
                   : this.position.x
-    const textAnchor = this.align === `w` ? `start`
-                     : this.align === `e` ? `end`
-                     : `middle`
-    this.node.attrs["text-anchor"] = textAnchor
 
-    const children: SvgNode[] = []
-    for (let pi = 0; pi < paragraphs.length; pi++) {
-      const parsed = MD.defaultInlineParse(paragraphs[pi])
-      const runs = flattenMDToRuns(parsed)
-      const wrappedLines = this.maxwidth ? wrapRuns(runs, this.maxwidth) : [runs]
+    this.node.attrs["text-anchor"] = this.align === `w` ? `start`
+                                   : this.align === `e` ? `end`
+                                   :                      `middle`
 
-      for (let li = 0; li < wrappedLines.length; li++) {
-        const attrs: Record<string, any> = { x: anchorX }
-        if (children.length > 0) {
-          attrs.dy = (li === 0 && pi > 0) ? paragraphSpacing : lineSpacing
-        }
-        const tspanChildren = this.runsToTSpans(wrappedLines[li])
-        children.push(svgNode('tspan', attrs, tspanChildren))
-      }
-    }
-    this.node.children = children
-  }
-
-  private renderWrappedLines(lines: StyledRun[][], multiParagraph: boolean) {
-    const fontSize = parseFloat(this.attrs[`font-size`]) || 0.14
-    const lineSpacing = this.lineHeight && this.lineHeight > 0 ? this.lineHeight : fontSize * 1.2
-    const margin = fontSize * 0.5
-    const containerWidth = this.parentWidth || this.position.width
-    const anchorX = this.align === `w` ? this.position.x - containerWidth / 2 + margin
-                  : this.align === `e` ? this.position.x + containerWidth / 2 - margin
-                  : this.position.x
-    const textAnchor = this.align === `w` ? `start`
-                     : this.align === `e` ? `end`
-                     : `middle`
-    this.node.attrs["text-anchor"] = textAnchor
-
-    const children: SvgNode[] = []
-    for (let i = 0; i < lines.length; i++) {
+    this.node.children = layout.lines.map((line, i) => {
       const attrs: Record<string, any> = { x: anchorX }
-      if (i > 0) attrs.dy = lineSpacing
-      const tspanChildren = this.runsToTSpans(lines[i])
-      children.push(svgNode('tspan', attrs, tspanChildren))
-    }
-    this.node.children = children
+      if (i > 0) attrs.dy = line.dy
+      return svgNode('tspan', attrs, this.runsToTSpans(line.runs))
+    })
   }
 
   // Adjacent runs pointing at the same link (e.g. simple-markdown splits
@@ -194,138 +146,10 @@ export class Label extends SvgBase {
 
 // ─── Styled runs: markdown → flat text runs → wrap-aware rendering ─────────
 
-type StyledRun = { text: string, type: string, url?: string }
 
 // Renders a run's own styling (bold/italic), independent of any link wrapping.
 function styledRunNode(run: StyledRun): SvgNode | string {
   if (run.type === "strong") return svgNode("tspan", { "font-weight": "bold" }, [run.text])
   if (run.type === "em") return svgNode("tspan", { "font-style": "italic" }, [run.text])
   return run.text
-}
-
-// Flatten a simple-markdown AST into a flat list of {text, type, url} runs.
-// Nested nodes (e.g. em containing text) are flattened so each run
-// carries the innermost styling. `url` is tracked as its own inherited
-// channel (from a "link" node's `target`), independent of `type`, so a
-// link wrapping bold/italic text keeps both.
-
-function flattenMDToRuns(nodes: SimpleMarkdown.SingleASTNode[], inheritType = `text`, inheritUrl?: string): StyledRun[] {
-  const runs: StyledRun[] = []
-  for (const node of nodes) {
-    const type = node.type === `text` ? inheritType : node.type
-    const url = node.type === `link` ? node.target : inheritUrl
-    if (Array.isArray(node.content)) {
-      runs.push(...flattenMDToRuns(node.content, type, url))
-    } else {
-      runs.push(url ? { text: node.content, type, url } : { text: node.content, type })
-    }
-  }
-  return runs
-}
-
-// Wrap styled runs to a maximum visible-character width.
-// Returns an array of lines, each line being an array of runs.
-// Only visible text counts toward the width — styling is preserved across breaks.
-
-function wrapRuns(runs: StyledRun[], maxWidth: number): StyledRun[][] {
-  const lines: StyledRun[][] = [[]]
-  let col = 0
-
-  for (const run of runs) {
-    let remaining = run.text
-
-    while (remaining.length > 0) {
-      const space = maxWidth - col
-      if (remaining.length <= space) {
-        lines[lines.length - 1].push({ ...run, text: remaining })
-        col += remaining.length
-        break
-      }
-
-      // Need to break — find a good break point within the available space
-      const breakAt = findBreakPointInRun(remaining, space)
-      if (breakAt > 0) {
-        lines[lines.length - 1].push({ ...run, text: remaining.substring(0, breakAt).trimEnd() })
-        remaining = remaining.substring(breakAt).trimStart()
-      } else if (col === 0) {
-        // Forced break — no whitespace found and we're at line start
-        lines[lines.length - 1].push({ ...run, text: remaining.substring(0, maxWidth) })
-        remaining = remaining.substring(maxWidth)
-      }
-      // Start new line
-      lines.push([])
-      col = 0
-    }
-  }
-
-  return lines
-}
-
-function findBreakPointInRun(text: string, maxWidth: number): number {
-  let best = -1
-  for (let i = 0; i <= maxWidth && i < text.length; i++) {
-    if (/\s/.test(text[i])) best = i
-    if (text[i] === '-' && i + 1 < text.length && /[a-zA-Z]/.test(text[i + 1]))
-      best = i + 1
-  }
-  return best > 0 ? best : -1
-}
-
-
-// Reflow paragraphs in multi-line text:
-// 1. Split text into paragraphs delimited by blank lines
-// 2. Within each paragraph, replace newlines with spaces
-// 3. Rejoin paragraphs with double newlines (rendered as extra gap)
-// Single-line text passes through unchanged.
-
-function reflowParagraphs(text: string): string {
-  if (!text.includes('\n')) return text
-
-  const paragraphs = text.split(/\n\s*\n/)
-  const reflowed = paragraphs.map(p => p.replace(/\n/g, ` `).trim())
-  return reflowed.join('\n\n')
-}
-
-
-// Wrap text to a maximum line width in characters.
-// 1. Split into segments on existing newlines
-// 2. Wrap each segment on whitespace or after hyphens
-// 3. Rejoin with newlines
-
-export function wrapText(text: string, maxWidth: number): string {
-  return text.split('\n').map(seg => wrapSegment(seg, maxWidth)).join('\n')
-}
-
-function wrapSegment(segment: string, maxWidth: number): string {
-  if (maxWidth <= 0) return segment  // Guard against infinite loop
-  if (segment.length <= maxWidth) return segment
-
-  const lines: string[] = []
-  let remaining = segment
-
-  while (remaining.length > maxWidth) {
-    let breakAt = findBreakPoint(remaining, maxWidth)
-    if (breakAt <= 0) {
-      // No natural break point — force break at maxWidth
-      breakAt = maxWidth
-    }
-    lines.push(remaining.substring(0, breakAt).trimEnd())
-    remaining = remaining.substring(breakAt).trimStart()
-  }
-  if (remaining) lines.push(remaining)
-  return lines.join('\n')
-}
-
-function findBreakPoint(text: string, maxWidth: number): number {
-  // Find the rightmost break point (whitespace or after hyphen) within maxWidth
-  let best = -1
-
-  for (let i = 0; i <= maxWidth && i < text.length; i++) {
-    if (/\s/.test(text[i])) best = i
-    if (text[i] === '-' && i + 1 < text.length && /[a-zA-Z]/.test(text[i + 1]))
-      best = i + 1   // break after the hyphen
-  }
-
-  if (best > 0) return best
-  return maxWidth  // forced break
 }

@@ -9,7 +9,7 @@ import { TFont, TString, RenderParameters } from "../types.js"
 import { ShapeToRenderer } from "../render.js"
 import { Palette } from "../palette.js"
 import { parseFontSize } from "../renderers/svg/attribute_converters.js"
-import { wrapText } from "../renderers/svg/label.js"
+import { layoutText } from "../text-layout.js"
 
 // const DefaultsForShape = { 
 //     fill: `pink`,
@@ -71,16 +71,24 @@ export class SLabel extends SBase {
     }
   }
 
-  // // this is so, so ugly, but I can't think of another way
-  // // of getting the size without temporarily rendering it
+  // Break the text exactly as the renderer will, so the space reserved here is
+  // the space the label occupies. See src/text-layout.ts.
+  private layoutOfText() {
+    const { size, lineHeight } = this.effectiveFont()
+    return layoutText(this.params.text || '', {
+      fontSize:   size,
+      lineHeight,
+      hasParent:  !!this.params._parentWidth,
+      maxwidth:   this.params.maxwidth,
+    })
+  }
+
   calculateDimensions() {
     if (typeof document === 'undefined' || !this.dispatcher?.hasSvgHolder()) {
-      const { size, family, lineHeight } = this.effectiveFont()
-      const { longestLine, height } = estimateWrappedExtent(
-        this.params.text || '', size, lineHeight, !!this.params._parentWidth, this.params.maxwidth
-      )
-      this.params.width  ??= estimateTextWidth(longestLine, size, family)
-      this.params.height ??= height
+      const layout = this.layoutOfText()
+      const { size, family } = this.effectiveFont()
+      this.params.width  ??= estimateTextWidth(layout.longestLine, size, family)
+      this.params.height ??= layout.height
       return
     }
 
@@ -121,12 +129,10 @@ export class SLabel extends SBase {
       // Check if getBBox is available
       if (typeof text.getBBox !== 'function') {
         // Fallback: estimate dimensions based on text content
-        const { size, family, lineHeight } = this.effectiveFont()
-        const { longestLine, height } = estimateWrappedExtent(
-          this.params.text || '', size, lineHeight, !!this.params._parentWidth, this.params.maxwidth
-        )
-        this.params.width  ??= estimateTextWidth(longestLine, size, family)
-        this.params.height ??= height
+        const layout = this.layoutOfText()
+        const { size, family } = this.effectiveFont()
+        this.params.width  ??= estimateTextWidth(layout.longestLine, size, family)
+        this.params.height ??= layout.height
         return
       }
       this.dispatcher.temporarilyAddSVGElement(text, () => {
@@ -185,34 +191,3 @@ function estimateTextWidth(charCount: number, fontSize: number, fontFamily?: str
   return charCount * fontSize * ratio
 }
 
-// Estimates a label's wrapped/multi-paragraph extent using the same
-// paragraph-then-line spacing rules renderParagraphs()/renderWrappedLines()
-// (src/renderers/svg/label.ts) actually apply — same lineSpacing precedence
-// (line_height, else fontSize*1.2), same doubled gap between paragraphs when
-// the label has no parent shape (_parentWidth) — so the SSR-estimated width
-// and height match what renders instead of the full unwrapped single line.
-function estimateWrappedExtent(
-  text: string, fontSize: number, lineHeight: number | undefined, hasParent: boolean, maxwidth?: number
-): { longestLine: number, height: number } {
-  const lineSpacing = lineHeight && lineHeight > 0 ? lineHeight : fontSize * 1.2
-  const paragraphSpacing = hasParent ? lineSpacing : lineSpacing * 2
-
-  // Mirrors reflowParagraphs(): split on blank-line boundaries, collapse
-  // interior newlines to spaces within each paragraph.
-  const paragraphs = (text.includes('\n') ? text.split(/\n\s*\n/) : [text])
-    .map(p => p.replace(/\n/g, ' ').trim())
-
-  let longestLine = 0
-  let dySum = 0
-
-  paragraphs.forEach((paragraph, pi) => {
-    const wrapped = maxwidth ? wrapText(paragraph, maxwidth) : paragraph
-    wrapped.split('\n').forEach((line, li) => {
-      longestLine = Math.max(longestLine, line.length)
-      if (pi === 0 && li === 0) return  // very first line carries no dy
-      dySum += (li === 0 && pi > 0) ? paragraphSpacing : lineSpacing
-    })
-  })
-
-  return { longestLine, height: fontSize * 1.2 + dySum }
-}

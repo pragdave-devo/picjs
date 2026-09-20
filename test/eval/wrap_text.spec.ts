@@ -1,4 +1,4 @@
-import { wrapText } from "../../src/renderers/svg/label.js"
+import { wrapText } from "../../src/text-layout.js"
 
 describe(`wrapText`, () => {
 
