@@ -2,7 +2,7 @@
 Palette.current = "sunset"
 
 
-Box.rx = Box.ry = 0.1
+Box.radius = 0.1
 Box.fill  = ~b5 //oklch(.95, 0,    0)
 blackish  = oklch(0.6, 0,    0)
 blueish   = ~b1 //oklch(.6,  .4,   200)
@@ -101,7 +101,7 @@ line <-
    from col.households.e + vo
    then east until row.factor.n 
    then south until row.factor.n
-   stroke blueish "\nWages, profit,\n interest" at 30% below
+   stroke blueish "Wages, profit,\ninterest" at 30% below
 
 l = line ->
    from col.government.s + ho
