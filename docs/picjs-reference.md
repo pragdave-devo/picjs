@@ -29,444 +29,370 @@ Box "hello"  // inline comment
 
 ## Shapes
 
-Every shape accepts [common options](#common-options) and an optional [constraint](#constraint).
+Every shape takes the [common options](#common-options), any number of
+[labels](#labels), and an optional [constraint](#constraint). The tables below
+list what each shape adds to those.
+
+Shape names may be written in lower case: `box`, `circle`, `ellipse`, `oval`,
+`arc`, `line`.
 
 ### Box
 
 ```
-Box [options...] [with ...]
+Box [options] [with …]
 ```
 
-Draws a rectangle. Accepts [size](#size) and [corner radii](#corner-radii) options.
+A rectangle.
 
-```
+| Option | Value | Default |
+|--------|-------|---------|
+| `width` `wid` | number | 1 |
+| `height` `ht` | number | 0.75 |
+| `<w> x <h>` | two numbers | — |
+| `rx` `ry` | number | 0.06 |
+| `radius` `rad` | number | sets `rx` and `ry` together |
+
+```picjs example
 Box "Hello"
-Box "Rounded" rx 0.1 ry 0.1
 Box 2 x 1 "Wide"
-Box wid 3 ht 2 "Sized"
+Box wid 3 ht 2 radius 0.2 fill ~b3
 ```
 
 ### Circle
 
 ```
-Circle [options...] [with ...]
+Circle [options] [with …]
 ```
 
-A circle. Accepts a single [radius](#radius) option.
+| Option | Value | Default |
+|--------|-------|---------|
+| `radius` `rad` `r` | number | 0.5 |
 
-```
-Circle "Node" radius 0.8
-circle fill ~red
+```picjs example
+Circle "Node"
+circle radius 0.8 fill ~b3
 ```
 
 ### Ellipse
 
 ```
-Ellipse [options...] [with ...]
+Ellipse [options] [with …]
 ```
 
-An ellipse with independent horizontal and vertical radii.
-Accepts [corner radii](#corner-radii) options (`rx`, `ry`).
+| Option | Value | Default |
+|--------|-------|---------|
+| `rx` | number | 0.5 |
+| `ry` | number | 0.375 |
+| `radius` `rad` | number | sets `rx` and `ry` together |
 
-```
+```picjs example
 Ellipse "Wide" rx 1.2 ry 0.4
-ellipse rx 0.7 ry 0.3 fill ~blue
 ```
 
 ### Oval
 
 ```
-Oval [options...] [with ...]
+Oval [options] [with …]
 ```
 
-A rectangle with fully rounded ends (pill shape). The corner radii
-default to half the smaller dimension. Accepts [size](#size) and
-[corner radii](#corner-radii) options.
+A rectangle with fully rounded ends.
 
-```
+| Option | Value | Default |
+|--------|-------|---------|
+| `width` `wid` | number | 1 |
+| `height` `ht` | number | 0.75 |
+| `<w> x <h>` | two numbers | — |
+| `rx` `ry` | number | half the shorter side |
+
+```picjs example
 Oval "Button"
-oval wid 2 ht 0.5 fill ~green
+oval 2 x 0.6 fill ~b2
 ```
-
-Abbreviated forms: `box`, `circle`, `ellipse`, `oval`, `arc`, `line`
-(lowercase) are accepted for all shape keywords.
 
 ### Line
 
-Lines connect two points. They can be specified with `from`/`to` positions,
-or with just one endpoint (the other defaults to the current layout position).
-
 ```
-Line from <position> to <position> [options...]
-Line from <position> [options...]
-Line to <position> [options...]
-Line [options...]
+Line [endings] [from <position>] [to <position>] [options]
 ```
 
-Lines can also be written using arrow abbreviations instead of `Line`:
+Either endpoint may be left out: the line then starts at the current position,
+or runs one unit in the current direction.
 
-| Abbreviation | Meaning |
-|:---:|---------|
-| `->` | straight line with end arrow |
-| `<-` | straight line with start arrow |
-| `<->` | straight line with both arrows |
-| `--` | straight line, no arrows |
-| `~>` | smooth (curved) line with end arrow |
-| `<~>` | smooth line with both arrows |
-| `~~` | smooth line, no arrows |
-| `o->` | dot start, arrow end |
-| `\|->` | bar start, arrow end |
+| Option | Value | Default |
+|--------|-------|---------|
+| endings | see below | plain line |
+| `straight` `stepped` `smooth` | — | `straight` |
+| `length` `len` | number | 1 |
+| `nodraw` | — | draw the line |
 
-The general pattern is `[start][path][end]` where:
-- start: `<` `o` `|` or nothing
-- path: `-` (straight) or `~` (smooth)
-- end: `>` `o` `|` or nothing
+Endings are written `[start][path][end]`, where the path is `-` for a straight
+line or `~` for a curved one:
 
-Accepts [line endings](#line-endings), [line shape](#line-shape),
-[line length](#line-length), and [line label](#line-labels) options.
+| | `<` | `o` | `\|` | nothing |
+|---|---|---|---|---|
+| **start** | arrow | dot | bar | plain |
 
-```
+| | `>` | `o` | `\|` | nothing |
+|---|---|---|---|---|
+| **end** | arrow | dot | bar | plain |
+
+So `->` is a straight line with an arrow at the end, `<~>` a curve with arrows
+at both, and `--` and `~~` are plain straight and curved lines. An arrow on its
+own is a whole line: `box "A" -> box "B"` joins the two boxes.
+
+```picjs example
+box "A"
 -> "sends"
-Line from a.s to b.n
-<~> from (0,0) to (3,3) "curved"
-line -> from db to server "query" below
+box "B"
 ```
 
 ### Polyline
 
-A polyline is a multi-segment line. Created by adding `then` waypoints to a line.
-
 ```
-Line from <pos> then <pos> [then <pos>...] [close] [options...]
-Line from <pos> to <pos> then <pos> [then ...] [close] [options...]
+Line from <position> then <position> [then …] [close] [options]
 ```
 
-Waypoints can be absolute positions or directional:
+A line through several points. Takes everything `Line` takes, plus:
 
+| Option | Value | Default |
+|--------|-------|---------|
+| `rx` `ry` `radius` | number | square corners |
+| `close` | — | leave open |
+
+Each waypoint is a position, a direction and distance, or a direction and a
+shape to stop level with.
+
+```picjs example
+a = box "A"
+line -> from a.s
+     then south 1
+     then east until even with (3, 0)
+     radius 0.2
 ```
-line -> from a.s then south 2 then east 3 then to b.w
-line -> from a.e then east 2 then south until level with b then to b.w
-```
-
-Directional waypoints use cardinal directions (`north`, `south`, `east`, `west`, `n`, `s`, `e`, `w`, and combinations) followed by a distance.
-
-The `then ... until [even/level with] <target>` form extends in a direction until aligned with a target position.
-
-Add `close` to close the polyline into a polygon.
-
-Polylines accept [corner radii](#corner-radii) for rounded corners at waypoints.
 
 ### Arc
 
 ```
-Arc from <position> to <position> [options...]
-Arc [options...]
+Arc [endings] from <position> to <position> [options]
 ```
 
-Draws a circular arc between two points. Accepts [turn direction](#turn-direction) and [line endings](#line-endings).
+| Option | Value | Default |
+|--------|-------|---------|
+| `cw` `ccw` | — | `cw` |
 
-```
-Arc from (0,0) to (2,2) cw
-Arc from a.n to b.s "label" turn ccw
+`turn cw` and `turn ccw` may be written in full.
+
+```picjs example
+Arc from (0,0) to (2,2)
+Arc from (0,0) to (2,2) ccw stroke ~b3
 ```
 
 ### Label
 
 ```
-Label <expr> [options...] [with ...]
+Label <text> [options] [with …]
 ```
 
-A standalone text label. The expression is the text content.
-Accepts [text options](#text-options).
+Standalone text. The text may be a string, or a parenthesised expression.
+Labels attached to a shape are covered under [Labels](#labels).
 
-```
+| Option | Value | Default |
+|--------|-------|---------|
+| `align` | cardinal | `.c` |
+| `maxwidth` | number | no wrapping |
+| `line_height` | number | 1.2 × the font size |
+
+Plus the [text options](#text-options).
+
+Labels also have built-in classes that set size and alignment:
+
+| Class | `.h1` | `.h2` | `.h3` | `.h4` | `.p` |
+|-------|-------|-------|-------|-------|------|
+| Size  | 0.63 | 0.42 | 0.28 | 0.21 | inherited |
+
+```picjs example
 Label "Title" .h1
-Label "Subtitle" fill ~blue
+Label ("Total: #{1 + 2}") fill ~b3
 ```
 
-## Layout
-
-Shapes are placed automatically based on the current layout direction and cursor position.
-
-### Face
-
-Changes the layout direction. Subsequent shapes will be placed in the new direction.
+### Skip
 
 ```
-Face <cardinal>      // Face n, Face se, Face east, ...
-Face <angle>         // Face 45
+Skip to <position>
+Skip x <n> y <n>
 ```
 
-### Gap
-
-Inserts spacing between shapes in the layout direction.
-
-```
-Gap                  // default gap
-Gap <distance>       // specific distance
-Gap <cardinal>       // gap in a specific direction
-Gap <cardinal> <distance>
-Gap same             // same gap as last time
-```
-
-### Goto
-
-Jumps the layout cursor to a new position.
-
-```
-Goto                 // reset to default
-Goto <position>      // absolute position: (x, y) or shape reference
-Goto <cardinal>      // direction from current position
-Goto <cardinal> <distance>
-Goto <distance>      // distance in current direction
-```
+Moves the current position without drawing anything.
 
 ## Groups
 
 ### Group
 
-Groups collect shapes and apply a shared coordinate space. The group can be
-positioned, rotated, and styled as a unit.
-
 ```
-{ body } [options...] [with ...]
-Group { body } [options...] [with ...]
+Group [options] { … } [with …]
 ```
 
-Inside a group, use `self.<name>` to name shapes for external reference.
+Collects shapes so they can be positioned, styled and animated as one. Styling
+options may be written before the body or after it; a constraint goes after.
 
-```
-g = {
+| Option | Value | Default |
+|--------|-------|---------|
+| `padding` `pad` | number or `(x, y)` | 0 |
+| `rx` `ry` `radius` | number | square corners |
+
+A group draws a background behind its children when given a `fill` or a
+`stroke`. Padding holds the children away from its edges and grows the group,
+so shapes around it keep their distance.
+
+Name a shape inside a group with `self.` to reach it from outside.
+
+```picjs example
+g = Group fill ~b3 radius 0.1 pad 0.3 {
   Face s
-  self.top = Box "A"
-  -> "connects"
-  self.bottom = Box "B"
-} with .nw at (0, 0)
-
-Line from g.top.e to other.w
+  self.top = box "one"
+  Gap
+  box "two"
+}
+Label "beside" with .w at g.e + (0.3, 0)
 ```
-
-Groups accept common options (fill, stroke, rotation, etc.) and constraints.
-Options can appear before or after the `with` clause.
 
 ### Aside
 
-Like a group, but shapes inside do not affect the layout cursor or become
-implicit line endpoints.
-
 ```
-Aside { body }
+Aside { … }
 ```
 
-## Shape Options
+Draws its contents without moving the current position, so the shapes that
+follow carry on as though the aside were not there.
 
-### Common Options
+## Layout
 
-These options are available on most shapes:
+Shapes are placed one after another in the current direction, starting from the
+current position.
 
-| Option | Description |
-|--------|-------------|
-| `"text"` | Add a label (see [Labels](#labels)) |
-| `rotation <angle>` | Rotate in degrees |
-| `rotation <angle> about <position>` | Rotate around a point |
-| `at <position>` | Place at a specific position |
-| `(<x>, <y>)` | Place at coordinates |
-| `x <expr>` | Set x position |
-| `y <expr>` | Set y position |
-| `fill <color>` | Fill color |
-| `stroke <color>` | Stroke color |
-| `thickness <n>` | Stroke width |
-| `solid` / `dotted` / `dashed` | Line style |
-| `opacity <n>` | Opacity (0–1) |
-| `fit` | Auto-size to fit content |
-| `same` | Copy attributes from previous shape of same type |
-| `behind <shape>` | Render behind another shape |
-| `.<class>` | Apply a CSS class |
-
-Abbreviations: `rot` for `rotation`, `ht` for `height`, `wid` for `width`,
-`thick` for `thickness`, `len` for `length`, `rad`/`r` for `radius`,
-`step` for `stepped`, `curve`/`curved` for `smooth`.
-
-### Labels
-
-Most shapes accept one or more string labels. A bare string after a shape
-keyword becomes a label:
+### Face
 
 ```
+Face <cardinal>
+Face <angle>
+```
+
+Sets the direction for what follows. `Face s`, `Face ne`, `Face east`, `Face 45`.
+
+### Gap
+
+```
+Gap [<cardinal>] [<distance>]
+Gap same
+```
+
+Leaves space. `Gap same` repeats the previous gap.
+
+### Goto
+
+```
+Goto <position>
+Goto <cardinal> [<distance>]
+Goto <distance>
+```
+
+Moves the current position without drawing.
+
+## Common options
+
+Accepted by every shape.
+
+| Option | Value | Notes |
+|--------|-------|-------|
+| `at <position>` | position | also written as a bare `(x, y)` |
+| `x` `y` | number | set one coordinate |
+| `fill` | colour | `~b1` for shapes, none for lines |
+| `stroke` | colour | none for shapes, `~b1` for lines |
+| `thickness` `stroke_width` | number | 0.015 for shapes, 0.04 for lines |
+| `solid` `dotted` `dashed` | — | solid by default |
+| `opacity` | 0 to 1 | 1 |
+| `rotation` `rot` | angle, optionally `about <position>` | 0 |
+| `behind <shape>` | shape | draw underneath another shape |
+| `same` | — | reuse the previous shape's options |
+| `fit` | — | size the shape to its label |
+| `.<class>` | — | see [Classes](#classes) |
+
+## Labels
+
+A string after a shape becomes a label on it. Several strings stack.
+
+```picjs example
 Box "Hello"
-Box "Line 1" "Line 2"
+Gap
+Box "Line one" "Line two"
 ```
 
-### Rich Labels
+Within a label, a newline starts a new line and a blank line starts a new
+paragraph. `**bold**`, `*italic*` and `[links](https://example.com)` work.
 
-A rich label is a parenthesized expression with optional styling:
+Parentheses give a label its own options, and let it hold any expression
+rather than only a literal string:
 
-```
-Box ("dynamic: #{count}" fill ~red .highlight 14pt)
--> ("label" fill ~green) ("other" fill ~blue)
-```
-
-Rich label options: `fill`, `stroke`, `.<class>`, font size.
-
-### Line Labels
-
-Labels on lines can be positioned along the path and placed above or below:
-
-```
--> "centered"                          // default: 50%, centered
--> "start" at 0% "end" at 100%        // at specific percentages
--> "top" above "bottom" below         // above/below the line
--> "25%" at 25% outside               // at 25%, outside curve
+```picjs example
+n = 3
+Box ("count: #{n}" fill ~b7 14pt)
 ```
 
-Position keywords: `above`, `below`, `inside`, `outside`.
+### Line labels
 
-### Positioning
-
-```
-at <position>        // at a named position or expression
-(<x>, <y>)           // at explicit coordinates
-x <expr>             // set x only
-y <expr>             // set y only
-```
-
-### Size
-
-Box and Oval size options:
+Labels on a line or arc may be placed along it and to either side.
 
 ```
-<width> x <height>   // e.g., 2 x 1
-width <expr>         // or wid <expr>
-height <expr>        // or ht <expr>
+"text" [above | below | inside | outside] [at <percent>]
 ```
 
-### Radius
-
-Circle radius (sets both dimensions equally):
-
-```
-radius <expr>        // or rad <expr> or r <expr>
+```picjs example
+box "A"
+-> "sends" above at 30%
+box "B"
 ```
 
-### Corner Radii
-
-Box, Ellipse, Oval, and Polyline corner rounding:
+## Constraint
 
 ```
-rx <expr>            // horizontal corner radius
-ry <expr>            // vertical corner radius
-radius <expr>        // set both rx and ry (on polylines)
+with [.<cardinal>] at <place>
+with self.<name>[.<cardinal>] at <place>
 ```
 
-### Fill and Stroke
+Pins a point on the shape to a place. Without a cardinal, the centre is used.
+A constraint holds: if the target moves, the shape follows.
 
-```
-fill <color>
-stroke <color>
-thickness <expr>     // or thick <expr>
-solid
-dotted
-dashed
+```picjs example
+a = Box "A"
+Box "B" with .w at a.e + (0.5, 0)
 ```
 
-### Rotation
+## Text options
 
-```
-rotation <angle>                    // or rot <angle>
-rotation <angle> about <position>   // rotate around a point
-```
+Accepted by labels, and inside a parenthesised label on any shape.
 
-### Line Endings
+| Option | Value |
+|--------|-------|
+| `align` | cardinal — `.w`, `.c`, `.e` … |
+| `maxwidth` | number — wrap at this width |
+| `line_height` | number |
+| `font` | a CSS font specification |
+| `font_size` | size, or written bare: `14pt`, `large` |
+| `font_family` `font_weight` `font_style` `font_variant` `font_stretch` | as CSS |
 
-Lines and arcs accept endpoint markers:
-
-```
-[start][path][end]
-```
-
-Start markers: `<` (arrow), `o` (dot), `|` (bar)
-End markers: `>` (arrow), `o` (dot), `|` (bar)
-Path style: `-` (straight), `~` (smooth)
-
-Special: `--` is a straight line with no markers, `~~` is a smooth line with no markers.
-
-### Line Shape
-
-Override the path interpolation:
-
-```
-straight             // straight line segments (default)
-stepped              // or step — axis-aligned right-angle segments
-smooth               // or curve/curved — bezier curve
+```picjs example
+Label "Heading" font italic bold 24pt Georgia
+Label "Wrapped text here" maxwidth 10 align .w
 ```
 
-### Line Length
+## Classes
 
-```
-length <expr>        // or len <expr>
-```
+A class is written `.name` and may be stacked. Classes carry defaults set with
+[shape defaults](#shape-defaults).
 
-### Turn Direction
-
-Arc turn direction:
-
-```
-cw                   // clockwise
-ccw                  // counter-clockwise
-turn cw              // same, with keyword
-turn ccw
-turn <angle>         // explicit angle
-```
-
-### Text Options
-
-Label and text formatting:
-
-```
-align .<cardinal>    // text alignment: .n, .nw, .ne, .w, .e, .c, etc.
-maxwidth <n>         // maximum text width before wrapping
-line_height <n>      // line spacing
-font <font-spec>     // CSS font specification (see Font Specification)
-<font-size>          // e.g., 14pt, 2em, large
-```
-
-### Other Options
-
-```
-nodraw               // create line but don't draw it (draw_progress = 0)
-```
-
-### Constraint
-
-Position a shape by pinning one of its cardinal points to a location:
-
-```
-with .<cardinal> at <place>
-with at <place>                       // defaults to center
-with self.<name>.<cardinal> at <place> // pin a named sub-element
-```
-
-```
-Box "A" with .nw at (0, 0)
-Box "B" with .e at other.w
-```
-
-### CSS Class
-
-```
-.<class-name>
-```
-
-Applies a CSS class to the shape's SVG element. Multiple classes can be stacked.
-
-```
-Box "styled" .highlight .large
-```
-
-Class-qualified shape defaults use the same dot syntax:
-
-```
-Box.highlight.fill = ~yellow
+```picjs example
+Box.hot.fill = ~b4
+Box "urgent" .hot
 ```
 
 ## Shape Defaults
