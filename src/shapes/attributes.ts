@@ -53,11 +53,10 @@ export const ShapeAttributes: Record<string, readonly string[]> = {
   SPolyline: [ ...Common, ...LineLike, ...Corners, `closed`, `waypoints` ],
   SArc:      [ ...Common, ...LineLike, `turn` ],
   SPoint:    [ ...Position, ...Timing ],
-  // A group positions and reveals its children and can be rotated or faded as
-  // a unit, but paints nothing of its own — Group.convertToSVG keeps only the
-  // transform and opacity. Until groups gain a background, `fill` and friends
-  // would be accepted and discarded, so they are rejected instead.
-  SGroup:    [ ...Position, ...Timing, `rotation`, `opacity` ],
+  // A group paints a background behind its children when given a fill or a
+  // stroke, and `padding` holds them away from its edges. It has no size of its
+  // own — that comes from its contents — so width and height are not settable.
+  SGroup:    [ ...Position, ...Timing, ...Painting, ...Corners, `rotation`, `padding` ],
 }
 
 // `Shape.attr = …` sets a default for every shape, so it may use any attribute

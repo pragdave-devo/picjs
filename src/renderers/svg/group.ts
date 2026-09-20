@@ -16,7 +16,9 @@ export class Group extends SvgBase {
   convertToSVG(_position: RenderParameters, attrs: Shape.Args): Shape.Args {
     const result: Shape.Args = {}
 
-    // Apply transform from the group
+    // Only these belong on the <g> itself. Paint attributes must not go here:
+    // they would be inherited by every child that has not set its own. They
+    // are drawn on the background rect instead — see backgroundAttrs.
     if (attrs._svgTransform) {
       result.transform = attrs._svgTransform
     }
@@ -27,6 +29,20 @@ export class Group extends SvgBase {
     }
 
     return result
+  }
+
+  // What the background rect is painted with, taken from the group's own
+  // attributes. Rotation is left out: the <g> already carries it, so the
+  // background turns with everything else.
+  static backgroundAttrs(params: Shape.Args, width: number, height: number): Shape.Args {
+    const attrs: Shape.Args = { width, height }
+
+    for (const key of [ `fill`, `stroke`, `stroke_width`, `linestyle`, `rx`, `ry`,
+                        `_fill_slot`, `_stroke_slot` ]) {
+      if (params[key] !== undefined) attrs[key] = params[key]
+    }
+
+    return attrs
   }
 
   rerender(_position: RenderParameters, attrs: Shape.Args) {

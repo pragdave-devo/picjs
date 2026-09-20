@@ -17,12 +17,16 @@ async function errorFrom(src: string) {
 }
 
 describe(`rejecting attributes a shape does not have`, () => {
-  it(`rejects fill on a group, which paints nothing of its own`, async () => {
-    expect(await errorFrom(`Group { Box } fill ~red`)).toMatch(/"Group" has no attribute "fill"/)
+  // A group is sized by its contents, so `fit` has nothing to do. (It does take
+  // fill and stroke — see group-background.spec.ts.)
+  it(`rejects fit on a group, which is already sized by its contents`, async () => {
+    expect(await errorFrom(`Group { Box } fit`)).toMatch(/"Group" has no attribute "fit"/)
   })
 
-  it(`rejects stroke on a group`, async () => {
-    expect(await errorFrom(`Group { Box } stroke ~red`)).toMatch(/has no attribute "stroke"/)
+  it(`rejects a size on a group`, async () => {
+    // Rejected by the grammar rather than the schema, so only the failure is
+    // asserted: a group must not silently accept a width.
+    expect((await render(`Group { Box } width 2`)).error).toBeDefined()
   })
 
   it(`rejects a text attribute set as a Box default`, async () => {
@@ -30,8 +34,8 @@ describe(`rejecting attributes a shape does not have`, () => {
   })
 
   it(`names the attributes the shape does accept`, async () => {
-    const message = await errorFrom(`Group { Box } fill ~red`)
-    expect(message).toMatch(/It accepts: .*rotation/)
+    const message = await errorFrom(`Group { Box } fit`)
+    expect(message).toMatch(/It accepts: .*padding/)
   })
 
   it(`still allows what a group does honour`, async () => {

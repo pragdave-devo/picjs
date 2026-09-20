@@ -212,6 +212,21 @@ export class Renderer {
       groupRenderer.node.attrs.id = this.idGenerator.next()
     }
 
+    // The background goes in first, so it sits behind everything including any
+    // child reordered by `behind`. Its geometry is the group's own bounds: the
+    // anchor is at the centre of the children and padding has already grown
+    // width and height, so a centred rect of that size covers both.
+    if (group.hasBackground()) {
+      const width = Number(group.width) || 0
+      const height = Number(group.height) || 0
+      const position: RenderParameters = {
+        cardinal: `c`, x: 0, y: 0, nw: { x: -width / 2, y: -height / 2 },
+        width, height, rotation: 0, rotationCenter: { x: 0, y: 0 },
+      }
+      const background = new Rect(position, Group.backgroundAttrs(group.params, width, height))
+      groupRenderer.addChild(background.node)
+    }
+
     // Identify shapes that are children of a parent (e.g. labels inside a box)
     // OR belong to a nested group — skip them, they're rendered inside their group
     const skipShapes = new Set<Shape.SBase>()

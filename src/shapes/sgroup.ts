@@ -35,6 +35,20 @@ export class SGroup extends SBase {
     return false
   }
 
+  // `pad 0.3` insets both axes; `pad (0.3, 0.2)` gives one each.
+  padding(): [ number, number ] {
+    const pad = this.params.padding
+    if (pad === undefined) return [ 0, 0 ]
+    if (typeof pad === `object` && pad !== null && `x` in pad)
+      return [ Number(pad.x) || 0, Number(pad.y) || 0 ]
+    return [ Number(pad) || 0, Number(pad) || 0 ]
+  }
+
+  // A background is drawn only when there is something to paint with.
+  hasBackground(): boolean {
+    return this.params.fill !== undefined || this.params.stroke !== undefined
+  }
+
   computeBoundingBox() {
     if (this.groupChildren.length === 0) {
       this.params.width = 0
@@ -70,8 +84,13 @@ export class SGroup extends SBase {
       return
     }
 
-    this.params.width = maxX - minX
-    this.params.height = maxY - minY
+    // Padding grows the group itself, so shapes laid out around it and any
+    // `with` constraint on it respect the gap. The anchor stays at the centre
+    // of the children, so padding symmetric about it moves nothing inside.
+    const [ padX, padY ] = this.padding()
+
+    this.params.width = maxX - minX + 2 * padX
+    this.params.height = maxY - minY + 2 * padY
 
     // Group anchor is at the center of the bounding box
     const anchorX = (minX + maxX) / 2

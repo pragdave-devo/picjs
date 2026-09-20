@@ -6,7 +6,8 @@ Line.stroke = ~f4
 Box.stroke = ~f6
 Label.fill = ~f6
 
-whole = {
+// A non-palette colour, because this is a background for the whole image
+whole = Group fill ~orange dashed pad dw/2 {
   Ptr = {
     Face e
     Box.height =  h
@@ -40,7 +41,3 @@ Block = {
   line -> from Ptr.C.c to Block.C.nw + (dh,0)
   line -> from Ptr.D.c to Block.D.nw + (dh,0)
 }
-
-// We use a nonpalette color here because it's a background for
-// the whole image
-box fill ~orange  dashed ht whole.ht+dw wid whole.wid+dw at whole behind whole

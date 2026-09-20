@@ -273,6 +273,7 @@ line_height  = "line_height"              ! IdentifierPart { return text() }
 maxwidth     = "maxwidth"                 ! IdentifierPart { return text() }
 opacity      = "opacity"                  ! IdentifierPart { return text() }
 outside      = "outside"                  ! IdentifierPart { return text() }
+padding      = ( "padding" / "pad" )      ! IdentifierPart { return "padding" }
 radius       = ( "radius" / "rad" / "r" ) ! IdentifierPart { return "radius" }
 rotation     = ( "rotation" / "rot" )     ! IdentifierPart { return "rotation" }
 rx           = "rx"                       ! IdentifierPart { return text() }
@@ -1099,16 +1100,16 @@ GroupExpression "group"
         body: body,
       })
     }
-  / Group __ "{" _ body:ExpressionList _ "}" args:( __ ( SECommon ))* withConstraint:( __ WithConstraint )? post:( __ ( SECommon ))*
+  / Group pre:( __ ( SEGroupOption ))* _ "{" _ body:ExpressionList _ "}" args:( __ ( SEGroupOption ))* withConstraint:( __ WithConstraint )? post:( __ ( SEGroupOption ))*
     {
       return ast({
         type: "Group",
         body: body,
-        args: mergeAttributes([...extractList(args, 1), ...extractList(post, 1)]),
+        args: mergeAttributes([...extractList(pre, 1), ...extractList(args, 1), ...extractList(post, 1)]),
         withConstraint: extractOptional(withConstraint, 1),
       })
     }
-  / "{" _ body:ExpressionList _ "}" args:( __ ( SECommon ))* withConstraint:( __ WithConstraint )? post:( __ ( SECommon ))*
+  / "{" _ body:ExpressionList _ "}" args:( __ ( SEGroupOption ))* withConstraint:( __ WithConstraint )? post:( __ ( SEGroupOption ))*
     {
       return ast({
         type: "Group",
@@ -1597,6 +1598,14 @@ PositionValue "a position: (x,y) or place.nw"
 // Attribute rules shared across shapes: labels, positioning, fill, stroke,
 // rotation, line endings, line shape, line labels, text formatting, etc.
 
+// Styling a group reads better before its body, positioning it after, so both
+// are allowed. SERadii rounds the background's corners; SEPadding holds the
+// children away from its edges.
+SEGroupOption
+  = SEPadding
+  / SERadii
+  / SECommon
+
 SECommon
   = SELabel  // must be first
   / SERotation
@@ -1829,6 +1838,13 @@ SELineLabel
 SEOpacity
   = opacity __ value:Number
     { return { opacity: value } }
+
+// A single inset, or one per axis reusing the position literal.
+SEPadding
+  = padding __ pad:Position
+    { return { padding: pad } }
+  / padding __ pad:Expression
+    { return { padding: pad } }
 
 SEFit
   // `fit` lands in params (the consumer reads parent.params.fit), and
