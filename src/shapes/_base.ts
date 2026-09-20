@@ -4,6 +4,7 @@ import { DegreesToRadians } from "../geometry.js"
 import { CardinalFactorsFromCenter, Cardinals, XY } from "../position.js"
 import { Dispatcher } from "../dispatcher.js"
 import * as AST from "../ast.js"
+import { isKnownAttribute, acceptedAttributesFor } from "./attributes.js"
 import { Binding } from "../binding.js"
 import type { SGroup } from "./sgroup.js"  // type-only import avoids circular dependency
 
@@ -170,6 +171,20 @@ export class SBase extends TBase<null> {
     return result
   }
 
+  // Reject attributes this shape does not honour. The grammar parses most
+  // options for most shapes, so without this they were stored and then quietly
+  // discarded by the renderer. See shapes/attributes.ts.
+  private checkAttributeIsKnown(attr: string) {
+    if (isKnownAttribute(this.shapeName, attr))
+      return
+
+    const name = this.shapeName.replace(/^S/, ``)
+    throw new RTE(
+      `"${name}" has no attribute "${attr}". ` +
+      `It accepts: ${acceptedAttributesFor(this.shapeName).join(`, `)}`
+    )
+  }
+
   setupParams(args: ShapeArgs) {
     if (args._shapeName) {
       this.shapeName = args._shapeName
@@ -189,11 +204,13 @@ export class SBase extends TBase<null> {
         this.hidden[k] = val
       }
       else if (k === `at`) {
+        this.checkAttributeIsKnown(k)
         this.anchorX = val.x
         this.anchorY = val.y
         this._hasExplicitAt = true
       }
       else {
+        this.checkAttributeIsKnown(k)
         this.params[k] = val
         // Explicit color attribute overrides default slot
         const slotKey = `_${k}_slot`

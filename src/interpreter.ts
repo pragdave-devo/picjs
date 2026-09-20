@@ -24,6 +24,7 @@ import {
 } from "./types.js"
 
 import { SGroup } from "./shapes/sgroup.js"
+import { isKnownAttribute, acceptedAttributesFor } from "./shapes/attributes.js"
 
 import { RegenerateSource } from "./regenerate_source.js"
 
@@ -897,8 +898,31 @@ export class Interpreter extends Visitor{
 
   // Map user-facing attribute names to the internal names used by renderers.
   // This must match the mappings in the PEG grammar's inline shape args.
-  static readonly DefaultAttrAliases: Record<string, string> = {
-    thickness: `stroke_width`,
+  // A default setter takes its attribute name from the grammar's AttrName rule,
+  // which returns the text the user typed — so `Box.wid = 3` arrives as `wid`.
+  // Inline attributes do not have this problem, because there the matching
+  // rule's own return value is used. Documented abbreviations must therefore be
+  // resolved here, or the default is stored under a name nothing ever reads.
+  static readonly DefaultAttrAliases: Record<string, string[]> = {
+    thickness: [ `stroke_width` ],
+    thick:     [ `stroke_width` ],
+    wid:       [ `width` ],
+    ht:        [ `height` ],
+    rot:       [ `rotation` ],
+    len:       [ `length` ],
+  }
+
+  // `radius` is not one attribute: a circle has a single radius, everything
+  // else has a pair of corner radii.
+  static readonly RadiusAliases: Record<string, string[]> = {
+    SCircle: [ `r` ],
+  }
+
+  private defaultAttrNames(shape: string, attr: string): string[] {
+    if (attr === `radius` || attr === `rad`)
+      return Interpreter.RadiusAliases[shape] ?? [ `rx`, `ry` ]
+
+    return Interpreter.DefaultAttrAliases[attr] ?? [ attr ]
   }
 
   // The user writes `Line` for both straight lines and polylines,
@@ -908,8 +932,8 @@ export class Interpreter extends Visitor{
   }
 
   VisitShapeDefaultGetter(node: AST.ShapeDefaultGetter) {
-    const attr = Interpreter.DefaultAttrAliases[node.attr] || node.attr
     const shape = (Interpreter.DefaultShapeAliases[node.shape] || [node.shape])[0]
+    const attr = this.defaultAttrNames(shape, node.attr)[0]
     const defaults = this.binding.getAllDefaultAttributes(`Shapes`, shape, node.klass)
     const value = defaults[attr]
     if (value === undefined)
@@ -925,20 +949,40 @@ export class Interpreter extends Visitor{
 
   VisitShapeDefaultSetter(node: AST.ShapeDefaultSetter) {
     const value = this.accept(node.value)
-    const attr = Interpreter.DefaultAttrAliases[node.attr] || node.attr
     const shapes = Interpreter.DefaultShapeAliases[node.shape] || [node.shape]
+
+    // Defaults bypass SBase.setupParams, so they need the same check: setting
+    // `Box.align` would otherwise be stored and never looked at.
+    //
+    // A name may cover more than one shape — the user writes `Line` for both
+    // lines and polylines — so the attribute need only be valid for one of
+    // them. `Line.rx` rounds polyline corners; `Line.length` sets a line's
+    // length. Neither is valid for both.
+    const attrs = this.defaultAttrNames(shapes[0], node.attr)
+
+    if (!attrs.every(a => shapes.some((s: string) => isKnownAttribute(s, a)))) {
+      const name = shapes[0].replace(/^S/, ``)
+      throw new RTE(
+        `"${name}" has no attribute "${node.attr}". ` +
+        `It accepts: ${acceptedAttributesFor(shapes[0]).join(`, `)}`
+      )
+    }
+
     // Shape params hold native values: built-in defaults are plain strings and
     // numbers, and inline attributes are converted by visit_object. Store user
     // defaults the same way, or consumers that expect a native value (such as
     // Palette.getForegroundFor, via a label's _parentFill) receive a TBase.
     const nativeValue = value instanceof TBase ? value.toNative() : value
     for (const shape of shapes) {
-      this.binding.setDefault(`Shapes`, shape, node.klass, attr, nativeValue)
-      const slotKey = `_${attr}_slot`
-      if (value instanceof TColor && value.paletteSlot) {
-        this.binding.setDefault(`Shapes`, shape, node.klass, slotKey, value.paletteSlot)
-      } else {
-        this.binding.setDefault(`Shapes`, shape, node.klass, slotKey, undefined)
+      for (const attr of attrs) {
+        this.binding.setDefault(`Shapes`, shape, node.klass, attr, nativeValue)
+
+        const slotKey = `_${attr}_slot`
+        if (value instanceof TColor && value.paletteSlot) {
+          this.binding.setDefault(`Shapes`, shape, node.klass, slotKey, value.paletteSlot)
+        } else {
+          this.binding.setDefault(`Shapes`, shape, node.klass, slotKey, undefined)
+        }
       }
     }
     return value
