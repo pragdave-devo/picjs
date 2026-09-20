@@ -60,6 +60,7 @@ export class TNumber extends TInterpolatable<number> {
   opMinus(other: TA)  { return this.checkAndApply(other, `-`, (a:number, b:number) => a - b) }
   opTimes(other: TA)  { return this.checkAndApplyTrans(other, `opTimes`, `*`, (a:number, b:number) => a * b) }
   opDivide(other: TA) { return this.checkAndApply(other, `/`, (a:number, b:number) => a / b) }
+  opModulo(other: TA) { return this.checkAndApply(other, `%`, (a:number, b:number) => a % b) }
   opPow(other: TA)    { return this.checkAndApply(other, `^`, (a:number, b:number) => Math.pow(a, b)) }
 
   opEqual_to(other: TA)     { return this.checkAndApplyBool(other, `==`, (a:number, b:number) => a === b) }

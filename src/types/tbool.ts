@@ -5,11 +5,11 @@ export class TBool extends TBase<boolean> {
     super(!!value, AnimationStyle.none)
   }
 
-  isTrue()                { return this.value }
-  equal_to(other: TA)     { return this.checkAndApply(other, `==`, (a, b) => a === b) }
-  not_equal_to(other: TA) { return this.checkAndApply(other, `!=`, (a, b) => a !== b) }
+  isTrue()                  { return this.value }
+  opEqual_to(other: TA)     { return this.checkAndApply(other, `==`, (a, b) => a === b) }
+  opNot_equal_to(other: TA) { return this.checkAndApply(other, `!=`, (a, b) => a !== b) }
 
-  negate() {
+  opNot() {
     return new TBool(!this.value)
   }
 

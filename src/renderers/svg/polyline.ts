@@ -1,4 +1,4 @@
-import { LineDirection, SvgBase, arrowDimensions, toSvgAttrNames, addUsedSlot } from "./_base.js"
+import { LineDirection, SvgBase, arrowDimensions, toSvgAttrNames, addUsedSlot, MIN_STEP_OFFSET } from "./_base.js"
 import * as Convert from "./attribute_converters.js"
 import { RenderParameters } from "../../types.js"
 import * as Shape from "../../shapes.js"
@@ -85,7 +85,136 @@ export class Polyline extends SvgBase {
   pathForPolyline() {
     const radius = this.attrs.rx || 0
     if (radius > 0) return this.roundedPolyline(radius)
-    return this.straightPolyline()
+
+    switch (this.attrs.line_path) {
+      case `smooth`:  return this.smoothPolyline()
+      case `stepped`: return this.steppedPolyline()
+      default:        return this.straightPolyline()
+    }
+  }
+
+  // Markers follow the first and last *leg* of the rendered path, which is not
+  // the same as the first and last segment once a diagonal has been stepped.
+  // markerPath shortens the endpoint in place, so pts must hold the real
+  // endpoint objects.
+  private polylineMarkers(pts: XY[], closed: boolean) {
+    if (pts.length < 2) return
+
+    if (this.attrs.line_start) {
+      const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_start, pts[0], -1, angle))
+    }
+
+    if (this.attrs.line_end && !closed) {
+      const last = pts[pts.length - 1]
+      const prev = pts[pts.length - 2]
+      const angle = Math.atan2(last.y - prev.y, last.x - prev.x)
+      this.pendingMarkers.push(this.markerPath(this.attrs.line_end, last, +1, angle))
+    }
+  }
+
+  // Replace each diagonal segment with axis-aligned legs — the same dog-leg a
+  // two-point stepped line draws. Segments already on one axis pass through
+  // untouched.
+  //
+  // A dog-leg enters and leaves on the axis it splits, so two consecutive
+  // segments splitting on the same axis double back over the waypoint between
+  // them, leaving a visible spur. Each segment therefore splits on the axis the
+  // previous one did not, which yields a staircase.
+  private stepPoints(pts: XY[]): XY[] {
+    const out: XY[] = [pts[0]]
+    let exitAxis: `x` | `y` | null = null
+
+    for (let i = 1; i < pts.length; i++) {
+      const from = pts[i - 1]
+      const to = pts[i]
+      const dx = Math.abs(to.x - from.x)
+      const dy = Math.abs(to.y - from.y)
+
+      if (dx >= MIN_STEP_OFFSET && dy >= MIN_STEP_OFFSET) {
+        const axis: `x` | `y` =
+          exitAxis === `y` ? `x` :
+          exitAxis === `x` ? `y` :
+          dx > dy ? `x` : `y`
+
+        if (axis === `x`) {
+          const split = from.x + (to.x - from.x) / 2
+          out.push({ x: split, y: from.y }, { x: split, y: to.y })
+        } else {
+          const split = from.y + (to.y - from.y) / 2
+          out.push({ x: from.x, y: split }, { x: to.x, y: split })
+        }
+        exitAxis = axis
+      }
+      // An already-aligned segment leaves along whichever axis it runs on.
+      else if (dx >= MIN_STEP_OFFSET) exitAxis = `x`
+      else if (dy >= MIN_STEP_OFFSET) exitAxis = `y`
+
+      out.push(to)
+    }
+
+    return out
+  }
+
+  steppedPolyline() {
+    const start = this.attrs.start
+    const waypoints: XY[] = this.attrs.waypoints || []
+    const closed = this.attrs.closed
+
+    if (waypoints.length === 0) return `M ${start.x} ${start.y}`
+
+    const corners = [start, ...waypoints]
+    if (closed) corners.push(start)
+
+    const pts = this.stepPoints(corners)
+    this.polylineMarkers(pts, closed)
+
+    let d = `M ${pts[0].x} ${pts[0].y}`
+    for (let i = 1; i < pts.length; i++)
+      d += ` L ${pts[i].x} ${pts[i].y}`
+    if (closed) d += ` Z`
+
+    return d
+  }
+
+  // A Catmull-Rom spline through the waypoints, expressed as cubic beziers so
+  // the curve passes through every point (unlike `radius`, which cuts corners).
+  smoothPolyline() {
+    const start = this.attrs.start
+    const waypoints: XY[] = this.attrs.waypoints || []
+    const closed = this.attrs.closed
+
+    if (waypoints.length === 0) return `M ${start.x} ${start.y}`
+
+    const pts = [start, ...waypoints]
+    this.polylineMarkers(pts, closed)
+
+    if (pts.length < 3) {
+      const d = `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`
+      return closed ? d + ` Z` : d
+    }
+
+    // Neighbours of the endpoints: wrap around when closed, otherwise repeat
+    // the endpoint so the curve starts and ends without an overshoot.
+    const at = (i: number): XY => {
+      const n = pts.length
+      if (closed) return pts[(i % n + n) % n]
+      return pts[Math.max(0, Math.min(n - 1, i))]
+    }
+
+    const last = closed ? pts.length : pts.length - 1
+    let d = `M ${pts[0].x} ${pts[0].y}`
+
+    for (let i = 0; i < last; i++) {
+      const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2)
+      const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 }
+      const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 }
+      d += ` C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${p2.x} ${p2.y}`
+    }
+
+    if (closed) d += ` Z`
+
+    return d
   }
 
   straightPolyline() {

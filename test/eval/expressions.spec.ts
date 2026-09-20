@@ -25,6 +25,19 @@ t(`-125e-2`, n(-1.25))
 
 // precedence
 
+// `%` is documented at precedence 6 (docs/picjs-reference.md) and the grammar
+// accepts it as a MultiplicativeOperator, but it had no BinOps entry.
+it(`supports modulo`, () => {
+t(`5 % 3`, n(2))
+t(`10 % 5`, n(0))
+t(`7 % 2.5`, n(2))
+})
+
+it(`gives modulo the same precedence as multiplication`, () => {
+t(`1 + 7 % 3`, n(2))
+t(`2 * 7 % 3`, n(2))
+})
+
 it(`supports precedence`, () => {
 t(`1+2*3`, n(7))
 t(`(1+2)*3`, n(9))

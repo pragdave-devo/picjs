@@ -2,6 +2,11 @@ import { SvgNode, svgNode } from "../../svg-node.js"
 import * as Shape from "../../shapes.js"
 import { RenderParameters     } from "../../types.js"
 
+// A step or a curve needs both an x and a y component; below this the endpoints
+// are effectively on one axis and the detour would just add duplicate points.
+// Diagram units, where a default Box is 1 wide.
+export const MIN_STEP_OFFSET = 0.05
+
 export type LineDirection = -1 | 1
 
 export class SvgBase {

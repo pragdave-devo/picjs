@@ -42,8 +42,10 @@ export class TBase<ValueType, > {
   opMinus(_: TA)     { this.operatorNotSupported(`-`) }
   opTimes(_: TA)     { this.operatorNotSupported(`*`) }
   opDivide(_: TA)    { this.operatorNotSupported(`/`) }
+  opModulo(_: TA)    { this.operatorNotSupported(`%`) }
   opExp(_: TA)       { this.operatorNotSupported(`^`) }
   opNegate(_: TA)    { this.operatorNotSupported(`- (negation)`) }
+  opNot()            { this.operatorNotSupported(`!`) }
   isTrue()       { this.operatorNotSupported(`test if true`) }
 
   opEqual_to(_: TA)                      { this.operatorNotSupported(`==`) }

@@ -99,11 +99,11 @@ describe(`groups`, () => {
       `)
       const shapes = dispatcher.shapes()
       const boxes = shapes.filter(s => s.shapeName === 'SBox')
-      // Second box (inside group) should have red fill
+      // Second box (inside group) should have red fill. Shape params hold
+      // native values, so a user-set default fill is a hex string here, just
+      // like a built-in default or an inline `fill` attribute.
       const redFill = boxes[1].params.fill
-      expect(redFill.value?.r).toBe(1)
-      expect(redFill.value?.g).toBe(0)
-      expect(redFill.value?.b).toBe(0)
+      expect(redFill).toBe(`#ff0000`)
       // First and third box should have the same (non-red) default fill
       expect(boxes[0].params.fill).toBe(boxes[2].params.fill)
       expect(boxes[0].params.fill).not.toBe(redFill)

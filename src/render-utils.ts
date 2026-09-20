@@ -57,7 +57,12 @@ export function calculateBoundingBox(shapes: SBase[], _padding: number = 0): Bou
   }
 }
 
-const DEFAULT_BOUNDS: BoundingBox = { minX: 0, minY: 0, maxX: 10, maxY: 7, width: 10, height: 7 }
+/**
+ * Bounds used when a diagram contains no visible shapes, so that an empty
+ * diagram still gets a usable canvas. Callers that report a size alongside the
+ * viewBox must apply the same fallback, or the two disagree.
+ */
+export const DEFAULT_BOUNDS: BoundingBox = { minX: 0, minY: 0, maxX: 10, maxY: 7, width: 10, height: 7 }
 
 /**
  * Generate SVG viewBox attribute value from bounding box, adding padding on all sides.

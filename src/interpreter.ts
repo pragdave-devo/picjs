@@ -36,6 +36,7 @@ const BinOps: { [op: string]: string } = {
   "-": `opMinus`,
   "*": `opTimes`,
   "/": `opDivide`,
+  "%": `opModulo`,
   "^": `opPow`,
 
   "==": `opEqual_to`,
@@ -126,13 +127,39 @@ export class Interpreter extends Visitor{
   }
 
   VisitBinaryExpression(node: AST.BinaryExpression) {
+    const op = node.operator
+
+    // && and || short-circuit, so they cannot go through the table below —
+    // that evaluates both sides first, and evaluating an expression in picjs
+    // can have side effects (creating shapes, assigning variables).
+    if (op === `&&` || op === `||`)
+      return this.shortCircuit(node, op)
+
     const lv = this.accept(node.left)
     const rv = this.accept(node.right)
-    const op = node.operator
     const fn = BinOps[op] || undefinedbinop(op)
     if (typeof lv[fn] !== `function`)
       throw new Error(`internal error: unknown binop "${fn}" on ${JSON.stringify(lv)}`)
     return lv[fn](rv)
+  }
+
+  // `&&` and `||` take boolean operands only and yield a boolean. The right
+  // side is evaluated only when the left does not already decide the result.
+  private shortCircuit(node: AST.BinaryExpression, op: string) {
+    const left = this.booleanOperand(this.accept(node.left), op)
+
+    if (op === `&&` && !left) return new TBool(false)
+    if (op === `||` && left)  return new TBool(true)
+
+    return new TBool(this.booleanOperand(this.accept(node.right), op))
+  }
+
+  private booleanOperand(value: TA, op: string): boolean {
+    if (value instanceof TBool)
+      return value.value
+    throw new RTE(
+      `"${op}" needs boolean operands, but was given ${value.constructor.name} (${value.toNative()})`
+    )
   }
 
   VisitBlockStatement(node: AST.ExpressionList) {
@@ -696,6 +723,10 @@ export class Interpreter extends Visitor{
       this.createStackedLabels(shape, shapeLabels)
     }
 
+    // Size to the labels once they all exist. Line labels are excluded: they
+    // sit along the path rather than inside the shape.
+    this.fitShapeToLabels(shape)
+
     // Handle line labels with above/below positioning
     if (lineLabels && lineLabels.length > 0) {
       this.createLineLabels(shape, lineLabels)
@@ -703,6 +734,27 @@ export class Interpreter extends Visitor{
 
     Object.defineProperty(node, '_memoizedShape', { value: shape, configurable: true })
     return shape
+  }
+
+  // `fit` sizes a shape to its labels, shrinking as well as growing. The size
+  // is derived from all the labels every time rather than accumulated: growing
+  // only would never shrink, and using just the latest label would let the last
+  // one win instead of the widest.
+  private fitShapeToLabels(shape: Shapes.SBase) {
+    if (!shape.params.fit || shape.children.length === 0)
+      return
+
+    let width = 0
+    let height = 0
+
+    for (const child of shape.children) {
+      const padding = Number(child.params.font_size) || 0.14
+      width  = Math.max(width,  (Number(child.width)  || 0) + padding * 2)
+      height = Math.max(height, (Number(child.height) || 0) + padding * 2)
+    }
+
+    shape.params.width  = width
+    shape.params.height = height
   }
 
   // Check if a label AST has any styling attributes beyond just text
@@ -787,18 +839,6 @@ export class Interpreter extends Visitor{
     this.addShapeToGeometry(slabel)
     this.addCreateShapeToTimeline(slabel)
 
-    // Grow parent to fit the label (with padding) — only if `fit` is set
-    if (parent.params.fit) {
-      const fontSize = Number(slabel.params.font_size) || 0.14
-      const padding = fontSize
-      const neededWidth  = (Number(slabel.width)  || 0) + padding * 2
-      const neededHeight = (Number(slabel.height) || 0) + padding * 2
-
-      if (neededWidth > Number(parent.width))
-        parent.params.width = neededWidth
-      if (neededHeight > Number(parent.height))
-        parent.params.height = neededHeight
-    }
   }
 
   // Create labels for lines/arcs with path-based positioning
@@ -887,8 +927,13 @@ export class Interpreter extends Visitor{
     const value = this.accept(node.value)
     const attr = Interpreter.DefaultAttrAliases[node.attr] || node.attr
     const shapes = Interpreter.DefaultShapeAliases[node.shape] || [node.shape]
+    // Shape params hold native values: built-in defaults are plain strings and
+    // numbers, and inline attributes are converted by visit_object. Store user
+    // defaults the same way, or consumers that expect a native value (such as
+    // Palette.getForegroundFor, via a label's _parentFill) receive a TBase.
+    const nativeValue = value instanceof TBase ? value.toNative() : value
     for (const shape of shapes) {
-      this.binding.setDefault(`Shapes`, shape, node.klass, attr, value)
+      this.binding.setDefault(`Shapes`, shape, node.klass, attr, nativeValue)
       const slotKey = `_${attr}_slot`
       if (value instanceof TColor && value.paletteSlot) {
         this.binding.setDefault(`Shapes`, shape, node.klass, slotKey, value.paletteSlot)
@@ -919,9 +964,11 @@ export class Interpreter extends Visitor{
         return val.opUnaryPlus()
       case `-`:
         return val.opUnaryMinus()
+      case `!`:
+        return val.opNot()
     }
 
-    throw new Error(`Invalid unary operator "${node.operator}`)
+    throw new Error(`Invalid unary operator "${node.operator}"`)
   }
 
   VisitVariableValue(node: AST.VariableValue) {

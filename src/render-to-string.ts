@@ -31,6 +31,7 @@ interface Deps {
   nullLogger: any
   calculateBoundingBox: any
   viewBoxFromBounds: any
+  DEFAULT_BOUNDS: any
   unionBounds: any
   resetTheme: any
   applyPaletteToTheme: any
@@ -66,6 +67,7 @@ function loadDeps(): Promise<void> {
       nullLogger: utils.nullLogger,
       calculateBoundingBox: utils.calculateBoundingBox,
       viewBoxFromBounds: utils.viewBoxFromBounds,
+      DEFAULT_BOUNDS: utils.DEFAULT_BOUNDS,
       unionBounds: utils.unionBounds,
       resetTheme: defaults.resetTheme,
       applyPaletteToTheme: defaults.applyPaletteToTheme,
@@ -104,7 +106,7 @@ function getDeps() {
  */
 export function renderToString(source: string, options: RenderOptions = {}): RenderResult {
   const { padding = 0.2, includeSource = true } = options
-  const { parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds, resetTheme, applyPaletteToTheme, getDarkThemeValue, Palette, computeSlotColors, generateCSS } = getDeps()
+  const { parseToAST, ParseStatus, Dispatcher, pegParse, nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds, DEFAULT_BOUNDS, resetTheme, applyPaletteToTheme, getDarkThemeValue, Palette, computeSlotColors, generateCSS } = getDeps()
 
   resetTheme()
   Palette.setCurrent(`sunset`)
@@ -160,6 +162,10 @@ export function renderToString(source: string, options: RenderOptions = {}): Ren
       }
     }
 
+    // calculateBoundingBox returns null when nothing visible was drawn. Use the
+    // same fallback the viewBox uses, so the reported size matches the canvas.
+    const reportedBounds = bounds || DEFAULT_BOUNDS
+
     const viewBox = viewBoxFromBounds(bounds, padding)
 
     // Emit <style> with dark/light CSS for used palette slots
@@ -191,7 +197,7 @@ export function renderToString(source: string, options: RenderOptions = {}): Ren
       svg = svg.replace("<svg", `${comment}\n<svg`)
     }
 
-    return { svg, width: bounds.width, height: bounds.height }
+    return { svg, width: reportedBounds.width, height: reportedBounds.height }
 
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)

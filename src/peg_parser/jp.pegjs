@@ -304,9 +304,12 @@ y            = "y"                        ! IdentifierPart { return text() }
 Program
   = body:ExpressionList?
     {
+      // AST.Program declares `body: ExpressionList`, so an empty program still
+      // needs an ExpressionList node — a bare [] reaches the visitor as a
+      // plain array with no `type` and dispatch fails.
       return ast({
         type: "Program",
-        body: body || [],
+        body: body || ast({ type: "ExpressionList", body: [] }),
       })
     }
 
@@ -1538,10 +1541,12 @@ SkipArgs
     { return { at }}
   / at:Position
     { return { at }}
+  // The position has to be wrapped in `at`, like the branches above: these
+  // args are evaluated by visit_object, which walks the object's own keys.
   / x __ x:Expression __ y __ y:Expression
-    { return ast({ type: "Position", x, y }) }
+    { return { at: ast({ type: "Position", x, y }) } }
   / y __ y:Expression __ x __ x:Expression
-    { return ast({ type: "Position", x, y }) }
+    { return { at: ast({ type: "Position", x, y }) } }
 
 LineOrAbbrev
   = Line
@@ -1692,7 +1697,10 @@ SEStrokeAttr
     return { stroke: color }
   }
 
-  / thickness __ exp:NonShapeExpression {
+  // `stroke_width` is the attribute's own name and the docs list it alongside
+  // `thickness`. The `stroke` alternative above cannot swallow it, because
+  // that terminal is "stroke" !IdentifierPart and `_` is an IdentifierPart.
+  / ( thickness / stroke_width ) __ exp:NonShapeExpression {
       return { "stroke_width": exp }
     }
 
@@ -1823,8 +1831,11 @@ SEOpacity
     { return { opacity: value } }
 
 SEFit
+  // `fit` lands in params (the consumer reads parent.params.fit), and
+  // visit_object evaluates every non-underscore key, so the value has to be an
+  // AST node rather than a bare true.
   = fit
-    { return { fit: true } }
+    { return { fit: ast({ type: "Boolean", value: true }) } }
 
 SEBehind
   = behind __ target:NonShapeExpression

@@ -5,6 +5,11 @@ import { TBase, TA } from "./types.js"
 import { BuiltinConstants, BuiltinFunctions } from "./builtins.js"
 import { DefaultsType } from "./defaults.js"
 
+// The shape-defaults key that `Shape.attr = …` writes to: the base every other
+// shape inherits from. Matches ShapeName in the grammar, which maps the literal
+// "Shape" to "SBase".
+const ShapeBase = `SBase`
+
 function jsonify(_key: any) {
   return `a binding`
 }
@@ -15,7 +20,10 @@ export class Binding {
   children: Binding[] = []
   toJSON     = jsonify
   bindings: Record<string, TA> = {}
+  // User-set defaults (`Box.fill = …`). Built-ins are kept separate so they can
+  // rank below every user default — see getAllDefaultAttributes.
   defaults: DefaultsType = {}
+  builtinDefaults: DefaultsType = {}
 
   constructor(public outer: Binding | null = null, public level = 0) {
     if (outer)
@@ -118,23 +126,54 @@ export class Binding {
     return (
       this.defaults?.[category]?.[base]?.[klass]?.[attr]
     ||
+      this.builtinDefaults?.[category]?.[base]?.[klass]?.[attr]
+    ||
       (this.outer && this.outer.getDefaultByKlass(category, base, klass, attr)) 
     )
   }
 
+  // Precedence, lowest to highest:
+  //
+  //   builtin  <shape>  .normal
+  //   builtin  <shape>  .<class>
+  //   user     SBase    .normal        `Shape.attr = …`
+  //   user     <shape>  .normal        `Box.attr = …`
+  //   user     SBase    .<class>
+  //   user     <shape>  .<class>
+  //
+  // so any user default outranks any built-in, and within each group a
+  // class-qualified default outranks an unclassed one, and a concrete shape
+  // outranks the SBase every shape falls back to. Outer bindings are merged
+  // first, so an inner scope overrides everything an outer one set.
   getAllDefaultAttributes(category:string, base:string, klass: string) {
     let result = {}
     if (this.outer) {
       result = this.outer.getAllDefaultAttributes(category, base, klass)
     }
 
-    result = { ...result, ...this.getAllDefaultAttributesForKlass(category, base, `.normal`) }
+    const userBases = (category === `Shapes` && base !== ShapeBase)
+      ? [ ShapeBase, base ]
+      : [ base ]
 
-    if (klass !== `.normal`) {
-      result = { ...result, ...this.getAllDefaultAttributesForKlass(category, base, klass) }
+    const hasKlass = klass !== `.normal`
+    const user = (name: string, k: string) => this.getAllDefaultAttributesForKlass(category, name, k)
+
+    const layers = [
+      this.builtinDefaultsForKlass(category, base, `.normal`),
+      ...(hasKlass ? [ this.builtinDefaultsForKlass(category, base, klass) ] : []),
+      ...userBases.map(name => user(name, `.normal`)),
+      ...(hasKlass ? userBases.map(name => user(name, klass)) : []),
+    ]
+
+    for (const layer of layers) {
+      result = { ...result, ...layer }
     }
 
     return result
+  }
+
+  builtinDefaultsForKlass(category:string, base:string, klass: string): any {
+    return this.builtinDefaults?.[category]?.[base]?.[klass] || {}
   }
 
   getAllDefaultAttributesForKlass(category:string, base:string, klass: string): any {
@@ -145,7 +184,7 @@ export class Binding {
     if (this.outer)
       throw new Error(`bulkSetDefaults should only be used on the top-level binding`)
 
-    this.defaults = defaults
+    this.builtinDefaults = defaults
   }
 
   addBuiltinFunctions() {

@@ -56,15 +56,30 @@ export class SLabel extends SBase {
   }
 
 
+
+  // A font spec (`font italic 24pt Georgia`) lives in params.font as a TFont and
+  // is only expanded into font_size / font_family / line_height by the renderer,
+  // via Convert.font. Layout runs before that, so it has to read the TFont
+  // directly or it measures every font-spec label at the default size. The spec
+  // takes precedence over a separate font_size, matching injectIntoAttrs.
+  private effectiveFont() {
+    const font = this.params.font
+    return {
+      size:       parseFontSize(font?.size ?? this.params.font_size) ?? 0.14,
+      family:     font?.family ?? this.params.font_family,
+      lineHeight: parseFontSize(font?.height) ?? this.params.line_height,
+    }
+  }
+
   // // this is so, so ugly, but I can't think of another way
   // // of getting the size without temporarily rendering it
   calculateDimensions() {
     if (typeof document === 'undefined' || !this.dispatcher?.hasSvgHolder()) {
-      const fontSize = parseFontSize(this.params.font_size) ?? 0.14
+      const { size, family, lineHeight } = this.effectiveFont()
       const { longestLine, height } = estimateWrappedExtent(
-        this.params.text || '', fontSize, this.params.line_height, !!this.params._parentWidth, this.params.maxwidth
+        this.params.text || '', size, lineHeight, !!this.params._parentWidth, this.params.maxwidth
       )
-      this.params.width  ??= estimateTextWidth(longestLine, fontSize, this.params.font_family)
+      this.params.width  ??= estimateTextWidth(longestLine, size, family)
       this.params.height ??= height
       return
     }
@@ -106,11 +121,11 @@ export class SLabel extends SBase {
       // Check if getBBox is available
       if (typeof text.getBBox !== 'function') {
         // Fallback: estimate dimensions based on text content
-        const fontSize = this.params.font?.size || 0.2
+        const { size, family, lineHeight } = this.effectiveFont()
         const { longestLine, height } = estimateWrappedExtent(
-          this.params.text || '', fontSize, this.params.line_height, !!this.params._parentWidth, this.params.maxwidth
+          this.params.text || '', size, lineHeight, !!this.params._parentWidth, this.params.maxwidth
         )
-        this.params.width  ??= estimateTextWidth(longestLine, fontSize, this.params.font_family)
+        this.params.width  ??= estimateTextWidth(longestLine, size, family)
         this.params.height ??= height
         return
       }

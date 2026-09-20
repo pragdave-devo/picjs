@@ -1,9 +1,10 @@
-import { LineDirection, SvgBase, arrowDimensions, toSvgAttrNames, addUsedSlot } from "./_base.js"
+import { LineDirection, SvgBase, arrowDimensions, toSvgAttrNames, addUsedSlot, MIN_STEP_OFFSET } from "./_base.js"
 import * as Convert from "./attribute_converters.js"
 import { RenderParameters } from "../../types.js"
 import * as Shape from "../../shapes.js"
 import { XY } from "../../position.js"
 import { SvgNode, svgNode } from "../../svg-node.js"
+
 
 
 export class Line extends SvgBase {
@@ -122,7 +123,7 @@ export class Line extends SvgBase {
     let deltaX = Math.abs(start.x - end.x)
     let deltaY = Math.abs(start.y - end.y)
 
-    if (deltaX < 5 || deltaY < 5) {
+    if (deltaX < MIN_STEP_OFFSET || deltaY < MIN_STEP_OFFSET) {
       return this.straightLine()
     }
 
@@ -166,7 +167,7 @@ export class Line extends SvgBase {
     let deltaX = Math.abs(start.x - end.x)
     let deltaY = Math.abs(start.y - end.y)
 
-    if (deltaX < 5 || deltaY < 5) {
+    if (deltaX < MIN_STEP_OFFSET || deltaY < MIN_STEP_OFFSET) {
       return this.straightLine()
     }
 
