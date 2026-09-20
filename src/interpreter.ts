@@ -910,6 +910,7 @@ export class Interpreter extends Visitor{
     ht:        [ `height` ],
     rot:       [ `rotation` ],
     len:       [ `length` ],
+    pad:       [ `padding` ],
   }
 
   // `radius` is not one attribute: a circle has a single radius, everything

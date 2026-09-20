@@ -189,6 +189,7 @@ AttrName
     / line_height
     / maxwidth
     / opacity
+    / padding
     / radius
     / rotation
     / rx
@@ -1124,8 +1125,10 @@ GroupExpression "group"
 // Face, Gap, Goto, Skip. Lines have many variants based on from/to/then
 // combinations and arrow abbreviations.
 
+// The shapes that can carry defaults. Aside is absent on purpose: it creates no
+// shape, so `Aside.fill = …` would be stored under a name nothing reads.
 ShapeName "shape"
-  = shape:( Arc / Box / Circle / Ellipse / Oval / Line / Label / Skip )
+  = shape:( Arc / Box / Circle / Ellipse / Oval / Line / Label / Skip / Group )
     { return "S" + shape }
   / "Shape" !IdentifierPart
     { return "SBase" }
