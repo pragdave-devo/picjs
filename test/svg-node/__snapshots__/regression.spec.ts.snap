@@ -52,7 +52,7 @@ exports[`SVG output regression renders "line with label" to valid SVG 1`] = `
 
 exports[`SVG output regression renders "line" to valid SVG 1`] = `
 "<svg viewBox="-0.2 -0.2 1.4 1.4" class="_myopic-1" xmlns="http://www.w3.org/2000/svg"><style>.pj-stroke-sunset-b1{stroke:#41476b}
-[data-theme="light"] .pj-stroke-sunset-b1{stroke:#8b90b8}</style><g data-jp-id="SPolyline-1"><path stroke-width="0.04" fill="none" rotation="0" x="0.5" y="0.5" d="M 0 0 L 1 0 L 1 1" class="pj-stroke-sunset-b1"></path></g></svg>"
+[data-theme="light"] .pj-stroke-sunset-b1{stroke:#8b90b8}</style><g data-jp-id="SPolyline-1"><path stroke-width="0.04" fill="none" x="0.5" y="0.5" d="M 0 0 L 1 0 L 1 1" class="pj-stroke-sunset-b1"></path></g></svg>"
 `;
 
 exports[`SVG output regression renders "nested group" to valid SVG 1`] = `
