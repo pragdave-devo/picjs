@@ -140,6 +140,21 @@ Box "B"
 Give a line endpoints and it uses them instead, leaving the current position
 alone.
 
+Either way the line stays attached. Move the shapes and it follows, shortening
+and lengthening as the gap between them changes.
+
+```picjs animated
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
+a = Box "A" at (0, 1)
+b = Box "B" at (3, 1)
+-> from a to b
+move a to (0.5, 0) take 1
+move b to (2, 0) take 1
+```
+
 ## Groups
 
 A group is anchored at the centre of its contents and behaves as one shape: it
