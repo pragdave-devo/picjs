@@ -16,6 +16,10 @@ A shape with no position of its own is placed against the previous one, edge to
 edge, in the current direction. The direction starts out east.
 
 ```picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 Box "one"
 Box "two"
 Box "three"
@@ -24,6 +28,10 @@ Box "three"
 ## Face changes the direction
 
 ```picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 Face s
 Box "one"
 Box "two"
@@ -37,6 +45,10 @@ Without a gap, shapes touch. `Gap` opens up one unit; `Gap 0.3` opens up that
 much. `Gap same` repeats whatever the last gap was.
 
 ```picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 Box "one"
 Gap
 Box "two"
@@ -50,6 +62,10 @@ Box "three"
 position. Neither draws anything.
 
 ```picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 Box "here"
 Goto (2.5, 1)
 Box "there"
@@ -61,6 +77,10 @@ A shape given `at` is centred on that point, and the ones after it carry on
 from there.
 
 ```picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 Box "A" at (0, 0)
 Box "B" at (2, 0.8)
 Box "C"
@@ -71,6 +91,10 @@ cardinal points — `.n`, `.ne`, `.e`, `.se`, `.s`, `.sw`, `.w`, `.nw` and `.c` 
 and you can do arithmetic on them.
 
 ```picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 a = Box "A"
 Box "B" at a.e + (1, 0.5)
 ```
@@ -88,9 +112,13 @@ That matters when things move. Here `b` is placed with `at` and `c` with
 `with`. Watch `a` move: `c` keeps its distance, `b` stays where it was put.
 
 ```picjs animated
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 a = Box "a"
-b = Box "b" at a.e + (0.5, 0)
-c = Box "c" with .w at a.e + (2, 0)
+b = Box "b" at a.e + (2.5, 0)
+c = Box "c" with .w at a.e + (3, 0)
 move a east 1 take 1
 ```
 
@@ -100,6 +128,10 @@ A line with no endpoints joins the shape before it to the shape after it, and
 takes up a unit of space as it goes.
 
 ```picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 Box "A"
 -> "sends"
 Box "B"
@@ -117,6 +149,10 @@ Inside a group the direction starts afresh, and whatever the group does to it
 is forgotten on the way out.
 
 ```picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 Box "before"
 Group {
   Face s
@@ -132,6 +168,10 @@ Shapes inside an `Aside` are drawn where you ask, but the current position is
 left untouched, so what follows carries on as though the aside were not there.
 
 ```picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 Box "one"
 Aside {
   Box "note" at (0.5, -1)
