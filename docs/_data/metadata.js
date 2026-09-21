@@ -9,6 +9,7 @@ export default {
 	},
 	nav: [
 		{ name: "Guide", link: "/guide/" },
+		{ name: "Layout", link: "/layout/" },
 		{ name: "Reference", link: "/picjs-reference/" },
 		{ name: "Quick Ref", link: "/quick-reference/" },
 		{ name: "READMEs", link: "/readme-files/" },
