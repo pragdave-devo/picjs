@@ -91,7 +91,7 @@ That matters when things move. Here `b` is placed with `at` and `c` with
 a = Box "a"
 b = Box "b" at a.e + (0.5, 0)
 c = Box "c" with .w at a.e + (2, 0)
-move a south 1 take 1
+move a east 1 take 1
 ```
 
 ## Lines between shapes

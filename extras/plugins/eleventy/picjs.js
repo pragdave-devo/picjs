@@ -37,6 +37,9 @@ const picjsStyles = `
   line-height: 1.3;
   font-size: calc(1em - 1pt);
 }
+.picjs-player {
+  margin-bottom: 1em;
+}
 .picjs-diagram svg {
   display: block;
   width: 100%;
