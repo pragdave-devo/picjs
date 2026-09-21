@@ -74,7 +74,12 @@ export class Label extends SvgBase {
   // computed. Alignment decides the anchor; the layout decides the breaks.
   private renderLines(layout: TextLayout) {
     const fontSize = parseFloat(this.attrs[`font-size`]) || 0.14
-    const margin = fontSize * 0.5
+
+    // The inset keeps aligned text off the edge of the shape holding it. A
+    // standalone label has no such shape — its container is its own box, which
+    // is only as wide as the text — so insetting there would push the text out
+    // of its own bounds and into whatever comes next.
+    const margin = this.parentWidth ? fontSize * 0.5 : 0
     const containerWidth = this.parentWidth || this.position.width
 
     const anchorX = this.align === `w` ? this.position.x - containerWidth / 2 + margin
