@@ -23,16 +23,16 @@ arc from b1.n to b2.n
 picjs has lists, ranges, strings, booleans, and positions. It comes with the usual set of operators
 (`+`, `-`) and so on, and it tries to apply them polymorphically:
 
-``` js
+``` picjs code
 1 + 2         // 3
-[ 1, 2 ] + 3  // [4, 5, 6]
+[ 1, 2 ] + 3  // [4, 5]
 "cow" + 99    // "cow99"
 3 * (2, 3)    // (6, 9)   (x,y) is a position
 ```
 
 It has `if` statements:
 
-``` js
+```
 if (condition)
   expression_or_block
 else
@@ -43,7 +43,7 @@ _condition_ is an expression evaluating to a boolean.
 
 _expression_or_block_ is either a single expression or a set of expressions enclosed in braces.
 
-``` js
+``` picjs code
 if (name == "Dave")
   box "Hello"
 else {
@@ -61,7 +61,7 @@ it must be followed by an _expression_or_block_.
 The _parameters_ are a list of names between parentheses, separated by commas. The parentheses
 can be omitted if there is only one parameter.
 
-``` js
+``` picjs code
 
 // a function that applies `* 2` to its parameter
 n => n * 2
@@ -92,7 +92,7 @@ Blocks and groups have identical syntax: a set of expressions enclosed in braces
 A _block_ is used when you want to provide multiple expressions as the body of a function, or in
 the arms of an `if` expression.
 
-``` js
+``` picjs example
 if (Box.width < 2) {
   Box wid 1 "Hello"
   Box wid 2 "World"
@@ -102,7 +102,7 @@ if (Box.width < 2) {
 A _group_ is used when you want to associate a set of drawing objects and treat them as a single
 entity.
 
-``` js
+``` picjs example
 {
   Box wid 1 "Hello"
   Box wid 2 "World"
