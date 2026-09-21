@@ -4,7 +4,7 @@ description: Attribute matrix and quick reference
 layout: layouts/doc.njk
 eleventyNavigation:
   key: Quick Reference
-  order: 3
+  order: 4
 ---
 # picjs Quick Reference
 

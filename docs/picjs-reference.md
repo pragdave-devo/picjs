@@ -4,7 +4,7 @@ description: Complete reference for the picjs language
 layout: layouts/doc.njk
 eleventyNavigation:
   key: Language Reference
-  order: 2
+  order: 3
 ---
 
 ## Program Structure
@@ -293,7 +293,6 @@ Leaves space. `Gap same` repeats the previous gap.
 ```
 Goto <position>
 Goto <cardinal> [<distance>]
-Goto <distance>
 ```
 
 Moves the current position without drawing.
