@@ -19,6 +19,7 @@ export default async function(eleventyConfig) {
 	eleventyConfig.addPassthroughCopy({ "../examples/": "examples/" });
 	eleventyConfig.addPassthroughCopy({ "./assets/": "assets/" });
 
+	eleventyConfig.ignores.add("README.md");        // build instructions, not site content
 	eleventyConfig.ignores.add("superpowers/**");
 	eleventyConfig.ignores.add("tools/**");
 
