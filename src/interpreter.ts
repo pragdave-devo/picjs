@@ -263,37 +263,39 @@ export class Interpreter extends Visitor{
 
   // Goto: position cursor; next shape centers there
   VisitLayoutGoto(node: AST.LayoutGoto) {
-    if (node.place) {
-      const p = this.accept(node.place)
-      // If the place is a shape, resume layout from that shape
-      if (p instanceof Shapes.SBase) {
-        this.dispatcher.setLastShape(p)
-        return p
-      }
-      const at = p.toNative()
-      const shape = this.dispatcher.addShape('SPoint', undefined, { at })
-      shape.visible = false
-      this.addShapeToGeometry(shape)
-      return shape
+    // `Goto <place>` and `Goto <distance>` are the same expression to the
+    // grammar, so a bare number arrives here as a place. Only its value tells
+    // the two apart.
+    const placeValue = node.place ? this.accept(node.place) : null
+
+    if (placeValue instanceof Shapes.SBase) {
+      this.dispatcher.setLastShape(placeValue)
+      return placeValue
+    }
+
+    if (placeValue !== null && !(placeValue instanceof TNumber)) {
+      return this.gotoPoint(placeValue.toNative())
     }
 
     const direction = node.direction ?? this.dispatcher.getDirection()
-    let distance = 1
-    if (node.distance) {
-      const d = this.accept(node.distance)
-      distance = d.toNative()
-    }
+
+    const distance = (placeValue instanceof TNumber) ? placeValue.toNative()
+                   : node.distance                   ? this.accept(node.distance).toNative()
+                   :                                   1
 
     if (node.direction) {
       this.dispatcher.setDefaultDirection(node.direction)
     }
 
     const last = this.dispatcher.getLastShape().c
-    const at = {
+    return this.gotoPoint({
       x: last.x + direction.x * distance,
       y: last.y + direction.y * distance,
-    }
+    })
+  }
 
+  // Move the layout position without drawing anything.
+  private gotoPoint(at: XY) {
     const shape = this.dispatcher.addShape('SPoint', undefined, { at })
     shape.visible = false
     this.addShapeToGeometry(shape)
