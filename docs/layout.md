@@ -152,7 +152,7 @@ a = Box "A" at (0, 1)
 b = Box "B" at (3, 1)
 -> from a to b
 move a to (0.5, 0) take 1
-move b to (2, 0) take 1
+move b to (2, 0.5) take 1
 ```
 
 ## Groups
