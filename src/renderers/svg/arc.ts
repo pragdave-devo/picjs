@@ -5,6 +5,7 @@ import * as Shape from "../../shapes.js"
 import { XY } from "../../position.js"
 import { RenderParameters } from "../../types.js"
 import { SvgNode, svgNode } from "../../svg-node.js"
+import { DegreesToRadians } from "../../geometry.js"
 
 
 const two_cos_45 = 2.0 * Math.cos(Math.PI / 4.0)
@@ -80,7 +81,7 @@ export class Arc extends LineLikeRenderer {
 
     const chordX = end.x - start.x
     const chordY = end.y - start.y
-    const chordAngleDeg = Math.atan2(chordY, chordX) / 0.0174533
+    const chordAngleDeg = Math.atan2(chordY, chordX) / DegreesToRadians
 
     const geo = this.arcGeometry(start, end)
     if (!geo) {

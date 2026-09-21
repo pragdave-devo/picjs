@@ -6,7 +6,7 @@ import { Dispatcher } from "./dispatcher.js"
 
 
 
-export const DegreesToRadians = 0.0174533
+export const DegreesToRadians = Math.PI / 180
 
 // class GeometryChange {
 //   constructor(

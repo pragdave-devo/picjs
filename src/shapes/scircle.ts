@@ -37,6 +37,15 @@ export class SCircle extends SBase {
   get rad()  { return this.params.r  }
   get radius()  { return this.params.r  }
 
+  // Turning a circle does not change the space it takes up.
+  override extent() {
+    const centre = this.c
+    const r = Number(this.r)
+    if (isNaN(centre.x) || isNaN(centre.y) || isNaN(r)) return null
+    return { minX: centre.x - r, minY: centre.y - r,
+             maxX: centre.x + r, maxY: centre.y + r }
+  }
+
   getCardinalOffsetsFromAnchor(cardinal: Cardinals) {
     const [fx, fy] = CircleCardinalFactors[cardinal]
     return [fx * this.r, fy * this.r]

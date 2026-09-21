@@ -417,6 +417,34 @@ export class SBase extends TBase<null> {
   get c() { return this.corner(`c`) }
 
 
+  // The axis-aligned box this shape occupies.
+  //
+  // This is deliberately not nw..se. A cardinal point is a point *on* the
+  // shape — a circle's diagonals sit on its circumference, and a rotated
+  // shape's corners turn with it — so neither is an extreme. Returns null when
+  // the shape has no usable size, and the caller falls back to its anchor.
+  extent(): { minX: number, minY: number, maxX: number, maxY: number } | null {
+    const centre = this.c
+    const w = Number(this.width)
+    const h = Number(this.height)
+
+    if (isNaN(centre.x) || isNaN(centre.y) || isNaN(w) || isNaN(h))
+      return null
+
+    const xs: number[] = []
+    const ys: number[] = []
+
+    for (const [dx, dy] of [ [-w/2, -h/2], [w/2, -h/2], [w/2, h/2], [-w/2, h/2] ]) {
+      xs.push(centre.x + dx * this.cosR - dy * this.sinR)
+      ys.push(centre.y + dx * this.sinR + dy * this.cosR)
+    }
+
+    return {
+      minX: Math.min(...xs), minY: Math.min(...ys),
+      maxX: Math.max(...xs), maxY: Math.max(...ys),
+    }
+  }
+
   getCardinalOffsetsFromAnchor(cardinal: Cardinals) {
     let [fx, fy] = CardinalFactorsFromCenter[cardinal]
     fx = fx * this.width

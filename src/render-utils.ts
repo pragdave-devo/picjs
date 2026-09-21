@@ -27,14 +27,13 @@ export function calculateBoundingBox(shapes: SBase[], _padding: number = 0): Bou
     if (!shape.visible) continue
     if (shape.anchorX === null || shape.anchorY === null) continue
 
-    const nw = shape.nw
-    const se = shape.se
+    const box = shape.extent()
 
-    if (!isNaN(nw.x) && !isNaN(se.x)) {
-      minX = Math.min(minX, nw.x)
-      minY = Math.min(minY, nw.y)
-      maxX = Math.max(maxX, se.x)
-      maxY = Math.max(maxY, se.y)
+    if (box) {
+      minX = Math.min(minX, box.minX)
+      minY = Math.min(minY, box.minY)
+      maxX = Math.max(maxX, box.maxX)
+      maxY = Math.max(maxY, box.maxY)
     } else {
       minX = Math.min(minX, shape.anchorX)
       minY = Math.min(minY, shape.anchorY)
