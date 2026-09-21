@@ -50,7 +50,8 @@ $ picjs process README.md
 $ picjs watch README.md      # re-render whenever the file changes
 ```
 
-It finds fenced blocks marked `picjs` and inserts the SVG after each one:
+It finds fenced blocks marked `picjs` and replaces each one with the diagram
+it describes:
 
 ~~~markdown
 ```picjs
