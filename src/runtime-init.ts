@@ -2,6 +2,9 @@ import { Dispatcher } from "./dispatcher.js"
 import { Interpreter } from "./interpreter.js"
 import { PlaybackController } from "./jp-web-playback.js"
 import { nullLogger, calculateBoundingBox, viewBoxFromBounds, unionBounds } from "./render-utils.js"
+import { computeSlotColors, generateCSS } from "./palette-css.js"
+import { getDarkThemeValue } from "./defaults.js"
+import { Palette } from "./palette.js"
 import * as AST from "./ast.js"
 
 const PLAYER_CSS = `
@@ -180,13 +183,17 @@ export class PicjsPlayer {
 
     try {
       const { stylesheets } = dispatcher.start(this.ast)
-      this.applyStylesheets(stylesheets)
 
       const animRunner = dispatcher.getAnimationRunner()
       animRunner.pause()
 
       dispatcher.applyTimelineUpTo(0)
       this.computeViewBox()
+
+      // Slots are collected while rendering, so this has to come after the
+      // first render — and after computeViewBox, which renders at later times
+      // too and so sees shapes that only appear part way through.
+      this.applyStylesheets([ ...stylesheets, this.paletteCss(dispatcher) ])
 
       const duration = dispatcher.totalDuration()
       if (duration > 0) {
@@ -256,7 +263,27 @@ export class PicjsPlayer {
 
   private styleEl: HTMLStyleElement | null = null
 
+  // Palette slots are drawn as CSS classes, and the server put their
+  // definitions inside the <svg> we are about to render into — so rendering
+  // destroys them. Generate them again here, the same way render-to-string
+  // does, and keep them in a <style> of our own that the render cannot reach.
+  private paletteCss(dispatcher: Dispatcher): string {
+    const usedSlots = dispatcher.getUsedSlots()
+    if (usedSlots.size === 0) return ``
+
+    const slotColors = computeSlotColors(
+      usedSlots,
+      (pal: string, slot: string) => Palette.getColorForPalette(pal, slot),
+      getDarkThemeValue(`NativeFg`) as string,
+      getDarkThemeValue(`NativeBg`) as string,
+      (pal: string, slot: string) => Palette.getLightColorForPalette(pal, slot),
+    )
+
+    return generateCSS(usedSlots, slotColors) || ``
+  }
+
   private applyStylesheets(stylesheets: string[]) {
+    stylesheets = stylesheets.filter(s => s && s.trim())
     if (stylesheets.length === 0) return
     if (!this.styleEl) {
       this.styleEl = document.createElement("style")
