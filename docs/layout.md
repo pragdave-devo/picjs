@@ -75,7 +75,7 @@ a = Box "A"
 Box "B" at a.e + (1, 0.5)
 ```
 
-## Constraints hold
+## Constrain relative positions with constraints
 
 `at` places a shape once. `with` pins a point on it to a place and keeps it
 there: if the target moves, the shape moves too.
@@ -88,7 +88,7 @@ That matters when things move. Here `b` is placed with `at` and `c` with
 `with`. Watch `a` move: `c` keeps its distance, `b` stays where it was put.
 
 ```picjs animated
-a = Box "a" fill ~b3
+a = Box "a"
 b = Box "b" at a.e + (0.5, 0)
 c = Box "c" with .w at a.e + (2, 0)
 move a south 1 take 1

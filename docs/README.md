@@ -1,10 +1,10 @@
 # Building the docs
 
-The site renders its `picjs` examples with the built library, so build that
-first:
+The site renders its `picjs` examples with the built library, and animated
+examples need the runtime alongside it, so build both first:
 
 ```console
-$ npm run build:lib       # in the repo root — creates dist/
+$ npm run build           # in the repo root — creates dist/
 $ cd docs
 $ npm install             # once; the site has its own dependencies
 ```
