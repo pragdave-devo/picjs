@@ -1,30 +1,52 @@
-# Picjs: A language for creating animated web graphics.
+# picjs
 
-Marvel at the examples below, then wander over to the [documentation and
-playground](https://pragdave-devo.github.io/picjs/).
-
-### Hello World!
+A language for drawing — and animating — diagrams. You describe what you want;
+picjs works out where everything goes.
 
 ![A simple flow chart with three boxes, connected by arrows](./gh-assets/hello.png)
 
-``` js
+```
 Palette.current = "shuksan"
 box "Input" -> box "Process" fill ~b2 -> box "Output"
 ```
-picjs supports themes, controlled by the Palette object. Here we select the `shuksan` theme
-which defines light and dark versions of eight foreground and eight background colors. The outer two
-boxes use the theme-default background, while the middle box uses the second background color,
-`~b2`.
 
-### Simple Turtle Graphics
+Have a play in the [**playground**](https://pragdave-devo.github.io/picjs/editor/),
+or read the [**documentation**](https://pragdave-devo.github.io/picjs/).
+
+## Diagrams in your markdown
+
+Write a diagram where it belongs — in the document that talks about it:
+
+~~~markdown
+Here is how the parts fit together:
+
+```picjs
+box "Input" -> box "Process" -> box "Output"
+```
+~~~
+
+Then run picjs over the file:
+
+```console
+$ npx picjs process README.md
+```
+
+Each block is replaced by the rendered SVG, with the source kept beside it in a
+comment. Edit the source and run it again and the picture is redrawn; leave it
+alone and nothing changes. The result is static SVG, so it works anywhere —
+including here, on GitHub.
+
+If you control your site's markdown pipeline, the
+[Lume and Eleventy plugins](./extras/plugins) do the same thing at build time.
+
+## It is a real language
 
 <table>
 <tr>
 <td width="50%">
 
-~~~ js 
+~~~
 petals = 17
-
 start_color = oklch(70%, .3, 0)
 
 petal = (color) => {
@@ -36,7 +58,7 @@ petal = (color) => {
 }
 
 petals.times(n => {
-  Face 360/petals*n     
+  Face 360/petals*n
   petal(start_color.spin(n*30))
 })
 ~~~
@@ -50,134 +72,61 @@ petals.times(n => {
 </tr>
 </table>
 
-The `petal` function draws a petal shape by repeating a set of three arcs four times. There's no
-need for positioning: by default shapes follow on from each other.
+Shapes follow on from one another, so `petal` needs no coordinates at all. The
+outer loop turns the drawing direction a little each time and shifts the hue to
+match.
 
-We then call the `petal` function 17 times, rotating the face of the turtle by 360/17 degrees each
-time, and spinning the (hue of the) color by 30 degrees each time.
+## And it animates
 
-### Run Towers of Hanoi, animating each move:
+![Screenshot of the Towers of Hanoi animation](./gh-assets/hanoi1.png)
 
-![Screenshot of the animation in action](./gh-assets/hanoi1.png)
+Towers of Hanoi, solved recursively, with every move animated — in under sixty
+lines. There is a [walk-through of how it works](./docs/hanoi-breakdown.md).
 
-~~~ js 
-NumDisks = 5
-Box.pole.fill = ~brown.lighten(5%)  // ~brown is a named color
-DiskColor = rgb(220,180,140)
+## Installing
 
+```console
+$ npm install @strike48/picjs
+```
 
-// This is just a regular function, but we're using it to define a mixin
+In a page:
 
-canHaveDisks = (aPole) => {
-  disks = []
-  aPole.push = (disk) => {
-    disks.push(disk)
-    // return the position of the bottom of the disk
-    aPole.s - (0, disks.length * (disk.ht + 2))
-  }
-  aPole.pop = () => {
-    disks.pop()
-  }
-}
-
-// draw a pole with a base.
-
-drawPole = (number) => {
-  pole = Box 20x150 rad 4 .pole  at (100 + number*230, 300)
-  Box .pole 160x20 rx 7.5 at pole.s - (0,10) // the base
-  pole.number = number
-  canHaveDisks(pole)
-  pole
-}
-
-poles = [0..2].map(drawPole)
-
-// create the disks and add them to pole #0
-[NumDisks..1].each(d => {
-  @ += 0.3
-  disk =  Box ht 20 wid 40 + d*15 rx 10 ry 5 fill DiskColor.spin(d*40)
-  disk.s = poles[0].push(disk)
-})
-
-@ += 0.3
-
-moveDisk = (pFrom, pTo) => {
-   distance = (pFrom.number - pTo.number).abs()  // will be 1 or 2
-   disk = pFrom.pop()
-   move disk.s      to pFrom.n - (0, 10) ease "cubicIn"
-   then move disk.s to pTo.n - (0, 10)   ease "linear" take 0.3 + 0.3*distance
-   then move disk.s to pTo.push(disk)    ease "cubicOut"
-   @@
-}
-
-hanoi = (n, pFrom, pTo, pVia) => {
- if (n > 0)  {
-   hanoi(n-1, pFrom, pVia, pTo)
-   moveDisk(pFrom, pTo)
-   hanoi(n-1, pVia, pTo, pFrom)
- }
-}
-
-hanoi(NumDisks, poles[0], poles[2], poles[1])
-~~~
-
-There's a lot going on here; so I wrote a [separate breakdown](docs/hanoi-breakdown.md).
-
-## Integration
-
-**Browser:**
 ```html
 <script type="module">
-  import { renderAll } from 'picjs'
-  renderAll('.picjs')  // renders all elements with class "picjs"
+  import { renderAll } from '@strike48/picjs'
+  renderAll('.picjs')          // renders every element with class "picjs"
 </script>
 <div class="picjs">box "Hello"</div>
 ```
 
-**Server-side (Node.js):**
+On a server:
+
 ```typescript
 import { renderToStringAsync } from '@strike48/picjs'
 const { svg, width, height } = await renderToStringAsync('box "Hello"')
 ```
 
-**CLI (for markdown files):**
-```bash
-npx picjs process README.md   # renders ```picjs blocks to SVG
-npx picjs watch README.md     # watch mode
-```
+## Documentation
 
-The CLI preserves code blocks and caches rendered SVGs—unchanged blocks are skipped on reprocessing.
+* [Guide](https://pragdave-devo.github.io/picjs/guide/) — start here
+* [How layout works](https://pragdave-devo.github.io/picjs/layout/) — where things end up, and why
+* [The language](https://pragdave-devo.github.io/picjs/language/) — variables, functions, closures
+* [Animation](https://pragdave-devo.github.io/picjs/animation/)
+* [Reference](https://pragdave-devo.github.io/picjs/picjs-reference/) — every shape and option
+* [Playground](https://pragdave-devo.github.io/picjs/editor/) — nothing to install
 
-## Features
+The `skills/` directory has two skills files, should you want an AI to write
+picjs with you.
 
-* Integrates a JavaScript-like language with the drawing and animation DSL
+## What you get
 
-* All values can be extended with attributes, allowing you to implement mixins and to tag shapes
-  with extra information
-
-* Functions with closures
-
-* Timeline handling
-
-* Built-in types include boolean, color, font, function, list, number, position, range, and string.
-
-* Ranges allow interpolation (`45% * [~red..~blue]` is a color almost halfway between red and blue).
-
-* Shapes may be positioned absolutely or relative to each other. Relative positioning can be one-off,
-  or can act as a constraint (if the target shape moves, the dependent shape follows it to maintain the
-  constraint).
-
-* Shapes can be grouped together, and groups can be nested. A group becomes shape-like, and so can
-  be positioned and animated like any other shape.
-
-* Shapes can be created and destroyed on the timeline
-
-* Attributes can be animated. Where possible, the animation will interpolate the start and end values. Where
-  not possible, the animation will do a cross fade (WIP).
-
-* Comes with a browser-based environment to let you experiment and debug your code.
-
-* The `skills/` directory contains basic skills and a separate animation skills file.
+* Shapes that flow one after another, or sit where you pin them
+* Constraints that hold: move a shape and whatever is attached follows
+* Groups that nest, and behave as shapes themselves
+* Colour palettes with light and dark variants, checked for contrast
+* A timeline: shapes appear, move, and change over it
+* Numbers, strings, lists, ranges, colours, positions and functions, with
+  closures — and attributes on every value, which is enough to build mixins
 
 ## License
 
