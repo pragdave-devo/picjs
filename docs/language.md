@@ -14,6 +14,10 @@ constructors possible.
 picjs is a mini programming language. It has variables:
 
 ~~~ picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 b1 = box "one"
 Gap
 b2 = box "two"
@@ -79,6 +83,10 @@ n => n * 2
 You'll typically assign function values to variables or pass them to other functions.
 
 ~~~ picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 short_box = label =>
    box ht 0.3 "--#{label}--"
 
@@ -93,6 +101,10 @@ A _block_ is used when you want to provide multiple expressions as the body of a
 the arms of an `if` expression.
 
 ``` picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 if (Box.width < 2) {
   Box wid 1 "Hello"
   Box wid 2 "World"
@@ -103,6 +115,10 @@ A _group_ is used when you want to associate a set of drawing objects and treat 
 entity.
 
 ``` picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 {
   Box wid 1 "Hello"
   Box wid 2 "World"
@@ -119,6 +135,10 @@ in a group, it is restored when the group exits.
 This is a common pattern for centering variable height lists.
 
 ``` picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 {
   Face s
   box "A"
@@ -138,6 +158,10 @@ box "F"
 Because they're shapes, groups can be positioned.
 
 ``` picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 c = circle "Circle"
 {
   box "A"
@@ -146,74 +170,57 @@ c = circle "Circle"
 } with .s at c.n
 ```
 
-This is often used to draw a background around a group of shapes.
+A group can also paint a background behind its contents, and `pad` holds them
+away from its edges.
 
 ``` picjs example
-details = {
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
+Group fill ~b7 pad .2 {
   box "Pat"
   Gap .2
   box "Joey"
   Gap .2
   box "Syd"
 }
-
-box fill ~b7
-    wid details.width * 120%
-    ht details.height * 120%
-    at details
-    behind details
 ```
 
-If you do this multiple times in a drawing, use a function:
+Because a group is a value, you can pass one to a function — and you do not
+have to name it first. Here the second group is written straight into the call.
 
 ``` picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 Palette.current = "sunset"
 
-Face s
+titled = (g, title) => Label (title) with .s at g.n - (0, .1)
 
-surround = (shape, label) => {
-  {
-    b = box fill ~b3
-        width shape.width * 120%
-        height shape.height * 120% + .4
-        at shape.c - (0,.1)
-    Label (label) with .n at b.n + (0,.05)
-  } behind shape
-}
-
-details = {
+titled(Group fill ~b3 pad .2 {
   Face s
   box "Pat"
-  Gap .2
   box "Joey"
-  Gap .2
-  box "Syd"
-}
+}, "Team One")
 
-surround(details, "Team One")
+Gap .5
 
-Gap
-
-surround({
+titled(Group fill ~b3 pad .2 {
   Face e
-  box "Pat"
-  Gap .2
-  box "Joey"
-  Gap .2
-  box "Syd"
-
+  box "Sam"
+  box "Kim"
 }, "Team Two")
 ```
-
-There are two subtleties here. First, inside the `surround` function we put the box and label
-inside their own group, which lets us put them both behind the shape.
-
-Second, we don't have to store the group we're wrapping in a variable. The second team is passed
-as a literal group to `surround`.
 
 ## Functions Are Closures
 
 ~~~ picjs example scale=15
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 multiplier = a => {
   b => Label "#{a} x #{b} = #{a*b}"
 }
@@ -260,6 +267,10 @@ have a `.add` function that places its argument at the next available position i
 
 
 ``` picjs example
+//-
+Box.stroke = ~f1
+Box.thickness = 0.01
+//+
 make_container_of = shape => {
    next_nw = (0,0)
    shape.add = other => {
